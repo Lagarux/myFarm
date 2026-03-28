@@ -60,20 +60,34 @@ canvas{display:block;touch-action:none;}
 /* ── MODAL ── */
 #modal{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:50;}
 #modal.show{display:flex;}
-.mbox{background:#110700;border:2px solid #9B6A33;border-radius:14px;padding:16px;min-width:275px;max-width:390px;width:92vw;color:#FFD700;font-family:var(--font-ui);font-size:12px;max-height:84vh;overflow-y:auto;}
-.mbox h2{font-family:var(--font-main);font-size:16px;font-weight:700;margin-bottom:10px;border-bottom:1px solid #7A4A1B;padding-bottom:6px;}
-.mrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(154,106,51,0.2);gap:6px;flex-wrap:wrap;}
-.mbtn{background:#1E4A0A;border:1px solid #3A8A15;color:#A0FF60;font-family:var(--font-ui);font-size:10px;font-weight:700;padding:4px 9px;border-radius:6px;cursor:pointer;transition:background .1s;}
+.mbox{background:#110700;border:2px solid #9B6A33;border-radius:14px;padding:18px;min-width:280px;max-width:400px;width:94vw;color:#FFD700;font-family:var(--font-ui);font-size:14px;max-height:86vh;overflow-y:auto;}
+.mbox h2{font-family:var(--font-main);font-size:20px;font-weight:700;margin-bottom:12px;border-bottom:1px solid #7A4A1B;padding-bottom:7px;}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(154,106,51,0.2);gap:8px;flex-wrap:wrap;}
+.mrow-label{font-size:14px;font-weight:700;color:#FFD700;}
+.mrow-sub{font-size:12px;color:#C8A060;margin-top:2px;}
+.mrow-stat{font-size:13px;color:#aaa;}
+.mbtn{background:#1E4A0A;border:1.5px solid #3A8A15;color:#A0FF60;font-family:var(--font-ui);font-size:13px;font-weight:700;padding:7px 13px;border-radius:8px;cursor:pointer;transition:background .1s;touch-action:manipulation;}
 .mbtn:hover{background:#2A6A12;}
+.mbtn:active{transform:scale(0.95);}
 .mbtn.red{background:#4A1010;border-color:#8A2020;color:#FF8888;}
 .mbtn.blue{background:#0A1E4A;border-color:#153A8A;color:#88AAFF;}
 .mbtn.gold{background:#4A3A00;border-color:#8A7000;color:#FFD700;}
-.mclose{float:right;background:none;border:1px solid #9B6A33;color:#FFD700;font-family:var(--font-ui);padding:3px 9px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;margin-bottom:5px;}
-.acard{background:rgba(255,255,255,0.04);border:1px solid #6B4A1B;border-radius:8px;padding:7px;margin:5px 0;}
-.abar-wrap{background:#1A1A1A;border-radius:3px;height:6px;margin:2px 0;}
-.abar{height:6px;border-radius:3px;transition:width .3s;}
-.quest-item{background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);border-radius:7px;padding:6px;margin:5px 0;}
+.mclose{float:right;background:rgba(80,40,0,0.6);border:1.5px solid #9B6A33;color:#FFD700;font-family:var(--font-ui);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:6px;touch-action:manipulation;}
+.acard{background:rgba(255,255,255,0.05);border:1.5px solid #6B4A1B;border-radius:10px;padding:10px;margin:6px 0;}
+.acard-name{font-size:15px;font-weight:700;color:#FFD700;}
+.acard-sub{font-size:12px;color:#C8A060;margin-top:1px;}
+.abar-wrap{background:#1A1A1A;border-radius:4px;height:8px;margin:3px 0;}
+.abar{height:8px;border-radius:4px;transition:width .3s;}
+.abar-label{font-size:12px;color:#aaa;margin-bottom:1px;}
+.quest-item{background:rgba(255,200,0,0.07);border:1.5px solid rgba(255,200,0,0.2);border-radius:9px;padding:10px;margin:6px 0;}
+.quest-title{font-size:15px;font-weight:700;color:#FFD700;}
+.quest-desc{font-size:13px;color:#C8A060;margin:3px 0 5px;}
+.quest-prog{font-size:12px;color:#888;}
 .quest-done{opacity:.4;text-decoration:line-through;}
+.section-label{color:#C8A060;font-size:13px;font-weight:700;margin:10px 0 6px;border-bottom:1px solid rgba(154,106,51,0.15);padding-bottom:4px;}
+/* Mini game overlay */
+#minigame-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;z-index:55;background:#0a0400;pointer-events:all;}
+#mgc{display:block;}
 
 /* ── OVERLAYS ── */
 #weather-banner{position:absolute;top:32px;left:50%;transform:translateX(-50%);background:rgba(0,40,100,0.88);border:1px solid #5090FF;border-radius:8px;padding:4px 14px;color:#BBDDFF;font-family:var(--font-ui);font-size:10px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .5s;}
@@ -182,7 +196,16 @@ canvas{display:block;touch-action:none;}
   <div id="sleep-text">😴 Uyuyor...<br><span id="sleep-sub" style="font-family:var(--font-ui);font-size:13px;opacity:.7"></span></div>
 </div>
 
-<!-- ══ NAKLİYE MİNİ OYUNU ══ -->
+<!-- ══ HAYVAN MİNİ OYUNLARI ══ -->
+<div id="minigame-overlay">
+  <canvas id="mgc"></canvas>
+  <div style="position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;padding:8px 12px;background:rgba(0,0,0,0.7);pointer-events:none;">
+    <div class="hp" id="mg-title" style="font-size:14px;">Mini Oyun</div>
+    <div class="hp" id="mg-stats" style="font-size:13px;">⏱15s</div>
+    <div class="hp" style="pointer-events:all;cursor:pointer;font-size:13px;" onclick="endMiniGame(false)">✖ Çık</div>
+  </div>
+  <div id="mg-msg" style="position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);border:2px solid #FFD700;color:#FFD700;padding:12px 24px;border-radius:12px;font-family:var(--font-main);font-size:18px;font-weight:700;text-align:center;display:none;pointer-events:none;"></div>
+</div>
 <div id="pickup-overlay">
   <canvas id="puc"></canvas>
   <div id="pu-hud-bar">
@@ -436,38 +459,45 @@ function handlePointer(e){
 function handleClick(e){handlePointer(e);}
 
 // ══ BARN ══
+const FOOD_NAMES={carrot:'🥕 Havuç',wheat:'🌾 Buğday',corn:'🌽 Mısır'};
+const MG_LABEL={chicken:'🥚 Yumurta Topla',cow:'🍶 Süt Sağ',sheep:'✂️ Yün Kırp'};
+
 function openBarn(){
   const mc=document.getElementById('modal-content');
-  let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🐄 Ahır Yönetimi</h2>';
-  html+='<div style="color:#aaa;font-size:10px;margin-bottom:7px;">Hayvan Satın Al:</div>';
+  let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🐄 Ahır</h2>';
+  html+='<div class="section-label">Hayvan Satın Al</div>';
   Object.entries(ADEF).forEach(([type,d])=>{
-    html+=`<div class="mrow"><span>${d.emoji} ${d.name}</span><span style="color:#aaa;font-size:10px;">Yem: ${d.food}</span><button class="mbtn" onclick="buyAnimal('${type}')">Satın Al ${d.buy}₺</button></div>`;
+    html+=`<div class="mrow">
+      <div><div class="mrow-label">${d.emoji} ${d.name}</div><div class="mrow-sub">Yem: ${FOOD_NAMES[d.food]||d.food} · Ürün: ${d.produceItem}</div></div>
+      <button class="mbtn" onclick="buyAnimal('${type}')">${d.buy}₺ Satın Al</button>
+    </div>`;
   });
   if(animals.length>0){
-    html+='<div style="color:#aaa;font-size:10px;margin:10px 0 5px;">Hayvanlarım ('+animals.length+'):</div>';
+    html+='<div class="section-label">Hayvanlarım ('+animals.length+')</div>';
     animals.forEach(a=>{
       const d=ADEF[a.type];
       const hc=a.hunger>60?'#4FA028':a.hunger>30?'#F0A500':'#CC3300';
       const hpc=a.happy>60?'#5BB8F5':a.happy>30?'#F0A500':'#CC3300';
+      const canMG=a.hunger>20;
       html+=`<div class="acard">
-        <div style="display:flex;justify-content:space-between;">
-          <span>${d.emoji} <b>${a.name}</b>${a.pregnant?' 🤰':''}${a.readyProduce?' 🎁':''}</span>
-          <span style="font-size:9px;color:#888;">Yaş:${Math.floor(a.age)}g</span>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div><div class="acard-name">${d.emoji} ${a.name}${a.pregnant?' 🤰':''}${a.readyProduce?' 🎁':''}</div>
+          <div class="acard-sub">Yaş: ${Math.floor(a.age)} gün &nbsp;·&nbsp; Yem: ${FOOD_NAMES[d.food]||d.food}</div></div>
         </div>
-        <div style="font-size:10px;margin:2px 0">
-          🍽️<div class="abar-wrap"><div class="abar" style="width:${a.hunger}%;background:${hc}"></div></div>
-          😊<div class="abar-wrap"><div class="abar" style="width:${a.happy}%;background:${hpc}"></div></div>
-        </div>
-        <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">
+        <div class="abar-label">🍽️ Açlık: ${Math.floor(a.hunger)}%</div>
+        <div class="abar-wrap"><div class="abar" style="width:${a.hunger}%;background:${hc}"></div></div>
+        <div class="abar-label" style="margin-top:4px;">😊 Mutluluk: ${Math.floor(a.happy)}%</div>
+        <div class="abar-wrap"><div class="abar" style="width:${a.happy}%;background:${hpc}"></div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
           <button class="mbtn" onclick="feedAnimal(${a.id})">🍽️ Besle</button>
-          ${a.readyProduce?`<button class="mbtn blue" onclick="collectProduce(${a.id})">🎁 ${d.produceItem}</button>`:''}
+          ${canMG?`<button class="mbtn blue" onclick="startAnimalMiniGame(${a.id},'${a.type}')">${MG_LABEL[a.type]}</button>`:''}
           ${!a.pregnant&&a.age>=5?`<button class="mbtn blue" onclick="breedAnimal(${a.id})">🍀 Çiftleş</button>`:''}
           <button class="mbtn red" onclick="confirmSlaughter(${a.id})">🔪 Mezbaha</button>
           <button class="mbtn gold" onclick="sellAnimal(${a.id})">💰 Sat ${d.sellPrice}₺</button>
         </div>
       </div>`;
     });
-  }else html+='<div style="color:#555;font-size:10px;margin-top:10px;">Henüz hayvanın yok.</div>';
+  }else html+='<div style="color:#666;font-size:14px;margin-top:14px;text-align:center;line-height:1.8;">Henüz hayvanın yok.<br>Yukarıdan satın alabilirsin!</div>';
   mc.innerHTML=html;document.getElementById('modal').classList.add('show');
 }
 function buyAnimal(type){
@@ -477,7 +507,7 @@ function buyAnimal(type){
 }
 function feedAnimal(id){
   const a=animals.find(x=>x.id===id);if(!a)return;const d=ADEF[a.type];
-  if(inventory[d.food]<1){showMsg('🍽️ Yem yok! '+d.food+' gerekli.');return;}
+  if(inventory[d.food]<1){showMsg('🍽️ Yem yok! Gereken: '+( FOOD_NAMES[d.food]||d.food));return;}
   inventory[d.food]--;a.hunger=Math.min(100,a.hunger+40);a.happy=Math.min(100,a.happy+25);
   checkQuestProgress('feed_animal',1,true);updateHUD();openBarn();showMsg(d.emoji+' beslendi!');
 }
@@ -488,17 +518,17 @@ function collectProduce(id){
 }
 function breedAnimal(id){
   const a=animals.find(x=>x.id===id);if(!a)return;
-  if(animals.filter(x=>x.type===a.type).length<2){showMsg('2. hayvan gerekli!');return;}
-  if(a.pregnant){showMsg('Zaten gebe!');return;}
+  if(animals.filter(x=>x.type===a.type).length<2){showMsg('Çiftleşmek için aynı türden 2. hayvan gerekli!');return;}
+  if(a.pregnant){showMsg('Bu hayvan zaten gebe!');return;}
   a.pregnant=true;a.pregnancyDays=0;openBarn();showMsg('🍀 Gebe! '+ADEF[a.type].gestationDays+' gün sonra doğum.');
 }
 function confirmSlaughter(id){
   const a=animals.find(x=>x.id===id);if(!a)return;const d=ADEF[a.type];
   const mc=document.getElementById('modal-content');
   mc.innerHTML=`<button class="mclose" onclick="openBarn()">← Geri</button><h2>🔪 Mezbaha</h2>
-  <div style="padding:10px 0;color:#FF9090;">${d.emoji} <b>${a.name}</b> → <b>${d.slaughterMeat} kg 🥩 et</b></div>
-  <div style="color:#666;font-size:10px;margin-bottom:10px;">Bu işlem geri alınamaz.</div>
-  <div style="display:flex;gap:8px;">
+  <div style="padding:12px 0;color:#FF9090;font-size:15px;">${d.emoji} <b>${a.name}</b><br>→ <b>${d.slaughterMeat} kg 🥩 et</b> elde edilir</div>
+  <div style="color:#888;font-size:13px;margin-bottom:14px;">⚠️ Bu işlem geri alınamaz!</div>
+  <div style="display:flex;gap:10px;">
     <button class="mbtn red" onclick="slaughterAnimal(${id})">✅ Evet, Kes</button>
     <button class="mbtn" onclick="openBarn()">❌ Vazgeç</button>
   </div>`;
@@ -511,7 +541,7 @@ function slaughterAnimal(id){
 }
 function sellAnimal(id){
   const a=animals.find(x=>x.id===id);if(!a)return;const d=ADEF[a.type];
-  earnGold(d.sellPrice);animals=animals.filter(x=>x.id!==id);addXp(5);updateHUD();openBarn();showMsg('💰 '+a.name+' satıldı!');saveGame();
+  earnGold(d.sellPrice);animals=animals.filter(x=>x.id!==id);addXp(5);updateHUD();openBarn();showMsg('💰 '+a.name+' '+d.sellPrice+'₺\'ye satıldı!');saveGame();
 }
 
 // ══ MARKET ══
@@ -526,12 +556,20 @@ function openMarket(){
     {key:'wool',icon:'🧶',name:'Yün'},{key:'egg',icon:'🥚',name:'Yumurta'},{key:'milk',icon:'🍶',name:'Süt'}
   ];
   let totalValue=0;
-  items.forEach(it=>{const qty=inventory[it.key]||0;const price=MARKET_PRICES[it.key]||0;const val=qty*price;totalValue+=val;
-    html+=`<div class="mrow"><span>${it.icon} ${it.name}</span><span style="color:#aaa;">×${qty}</span><span style="color:#FFD700;">${val}₺</span><button class="mbtn" onclick="sellAll('${it.key}')">Sat</button></div>`;
+  items.forEach(it=>{
+    const qty=inventory[it.key]||0;const price=MARKET_PRICES[it.key]||0;const val=qty*price;totalValue+=val;
+    html+=`<div class="mrow">
+      <div><div class="mrow-label">${it.icon} ${it.name}</div><div class="mrow-sub">${price}₺/adet · Elimde: ${qty}</div></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:#FFD700;font-size:15px;font-weight:800;">${val}₺</span>
+        <button class="mbtn" onclick="sellAll('${it.key}')">Sat</button>
+      </div>
+    </div>`;
   });
-  html+=`<div style="margin-top:10px;padding-top:8px;border-top:1px solid #7A4A1B;display:flex;justify-content:space-between;align-items:center;">
-    <span style="color:#aaa;">Toplam:</span><span style="color:#FFD700;font-size:14px;font-weight:bold;">${totalValue}₺</span>
-    <button class="mbtn gold" onclick="sellAllItems()">Tümünü Sat</button></div>`;
+  html+=`<div style="margin-top:12px;padding-top:10px;border-top:2px solid #7A4A1B;display:flex;justify-content:space-between;align-items:center;">
+    <div><div style="color:#aaa;font-size:13px;">Toplam Değer:</div><div style="color:#FFD700;font-size:20px;font-weight:800;">${totalValue}₺</div></div>
+    <button class="mbtn gold" onclick="sellAllItems()">Tümünü Sat</button>
+  </div>`;
   mc.innerHTML=html;document.getElementById('modal').classList.add('show');
 }
 function sellAll(key){
@@ -548,17 +586,21 @@ function sellAllItems(){
 function openQuests(){
   const mc=document.getElementById('modal-content');
   let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>📋 Görevler</h2>';
+  if(activeQuests.length===0){html+='<div style="color:#666;font-size:14px;text-align:center;margin-top:14px;">Tüm görevler tamamlandı! 🏆</div>';}
   activeQuests.forEach(q=>{
     const pct=Math.min(100,Math.floor((q.progress/q.target)*100));
     html+=`<div class="quest-item${q.done?' quest-done':''}">
-      <div style="display:flex;justify-content:space-between;"><b>${q.title}</b><span style="color:#FFD700;">${q.done?'✅':pct+'%'}</span></div>
-      <div style="color:#aaa;font-size:10px;margin:2px 0;">${q.desc}</div>
-      <div style="background:#1A1A1A;border-radius:3px;height:5px;margin:3px 0;"><div style="height:5px;border-radius:3px;background:${q.done?'#4FA028':'#F0A500'};width:${pct}%"></div></div>
-      <div style="color:#888;font-size:9px;">${q.progress}/${q.target} | 💰+${q.reward}₺ ⭐+${q.xpReward}</div>
-      ${q.done?`<button class="mbtn gold" onclick="claimQuest('${q.id}')">🎁 Ödülü Al</button>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="quest-title">${q.title}</div>
+        <span style="color:#FFD700;font-size:14px;font-weight:800;">${q.done?'✅':pct+'%'}</span>
+      </div>
+      <div class="quest-desc">${q.desc}</div>
+      <div style="background:#1A1A1A;border-radius:4px;height:8px;margin:4px 0;"><div style="height:8px;border-radius:4px;background:${q.done?'#4FA028':'#F0A500'};width:${pct}%"></div></div>
+      <div class="quest-prog">${q.progress} / ${q.target} &nbsp;·&nbsp; 💰 +${q.reward}₺ &nbsp;·&nbsp; ⭐ +${q.xpReward}</div>
+      ${q.done?`<button class="mbtn gold" style="margin-top:6px;" onclick="claimQuest('${q.id}')">🎁 Ödülü Al</button>`:''}
     </div>`;
   });
-  html+='<div style="color:#555;font-size:10px;margin-top:8px;">Tamamlanan: '+completedQuests.length+'/'+QUESTS_DEF.length+'</div>';
+  html+='<div style="color:#666;font-size:13px;margin-top:10px;text-align:right;">Tamamlanan: '+completedQuests.length+'/'+QUESTS_DEF.length+'</div>';
   mc.innerHTML=html;document.getElementById('modal').classList.add('show');
 }
 function checkQuestProgress(type,amount,isInc=false){
@@ -574,23 +616,33 @@ function claimQuest(id){
   activeQuests=activeQuests.filter(x=>x.id!==id);
   const nextQ=QUESTS_DEF.find(qd=>!completedQuests.includes(qd.id)&&!activeQuests.find(a=>a.id===qd.id));
   if(nextQ)activeQuests.push({...nextQ,progress:0,done:false});
-  updateHUD();openQuests();showMsg('🎁 Ödül alındı! +'+q.reward+'₺');saveGame();
+  updateHUD();openQuests();showMsg('🎁 Ödül alındı! +'+q.reward+'₺ +'+q.xpReward+'xp');saveGame();
 }
 
 // ══ NEIGHBOR ══
 function openNeighbor(){
   const mc=document.getElementById('modal-content');
   let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🧑‍🌾 Komşu Çiftçiler</h2>';
-  html+='<div style="color:#aaa;font-size:10px;margin-bottom:8px;">Komşular ürün istiyor. Yardım et, altın kazan!</div>';
+  html+='<div class="section-label" style="font-size:13px;font-weight:400;color:#aaa;">Komşular ürün istiyor — yardım et, altın kazan!</div>';
   const icons={wheat:'🌾',corn:'🌽',tomato:'🍅',carrot:'🥕',egg:'🥚',wool:'🧶',milk:'🍶',meat:'🥩',apple:'🍎',grape:'🍇'};
+  const itemNames={wheat:'Buğday',corn:'Mısır',tomato:'Domates',carrot:'Havuç',egg:'Yumurta',wool:'Yün',milk:'Süt',meat:'Et',apple:'Elma',grape:'Üzüm'};
   neighborRequests.forEach((req,i)=>{
     const have=inventory[req.type]||0;const canFill=have>=req.qty&&!req.fulfilled;
     html+=`<div class="mrow">
-      <div><div><b>${req.name}</b></div><div style="color:#aaa;font-size:10px;">${icons[req.type]||'📦'} ${req.qty}x ${req.type}</div><div style="color:#666;font-size:9px;">Elimde:${have} | Ödül:${req.reward}₺</div></div>
-      ${req.fulfilled?'<span style="color:#4FA028">✅</span>':canFill?`<button class="mbtn" onclick="giveNeighbor(${i})">Ver +${req.reward}₺</button>`:`<span style="color:#555;font-size:10px;">Yok</span>`}
+      <div>
+        <div class="mrow-label">${req.name}</div>
+        <div class="mrow-sub">${icons[req.type]||'📦'} ${req.qty}× ${itemNames[req.type]||req.type} istiyor</div>
+        <div style="font-size:13px;margin-top:3px;">
+          <span style="color:${have>=req.qty?'#4FA028':'#CC3300'}">Elimde: ${have}</span>
+          &nbsp;·&nbsp;<span style="color:#FFD700;">Ödül: +${req.reward}₺</span>
+        </div>
+      </div>
+      <div style="min-width:80px;text-align:right;">
+        ${req.fulfilled?'<span style="color:#4FA028;font-size:18px;">✅</span>':canFill?`<button class="mbtn" onclick="giveNeighbor(${i})">Ver +${req.reward}₺</button>`:`<span style="color:#CC3300;font-size:12px;">Yeterli yok</span>`}
+      </div>
     </div>`;
   });
-  html+=`<div style="margin-top:10px;"><button class="mbtn gold" onclick="refreshNeighborRequests()">🔄 Yeni İstekler</button></div>`;
+  html+=`<div style="margin-top:12px;"><button class="mbtn gold" onclick="refreshNeighborRequests()">🔄 İstekleri Yenile</button></div>`;
   mc.innerHTML=html;document.getElementById('modal').classList.add('show');
 }
 function giveNeighbor(i){
@@ -1070,6 +1122,240 @@ function endPickup(auto){
 
 function closeModal(){document.getElementById('modal').classList.remove('show');}
 
+// ══════════════════════════════════════════════════════
+// HAYVAN MİNİ OYUNLARI
+// ══════════════════════════════════════════════════════
+let MG={active:false},mgRAF=null;
+
+function startAnimalMiniGame(animalId,type){
+  closeModal();
+  const ov=document.getElementById('minigame-overlay');
+  ov.style.display='block';
+  const mgc=document.getElementById('mgc');
+  const mw=window.innerWidth,mh=window.innerHeight;
+  mgc.width=mw;mgc.height=mh;
+  const mc=mgc.getContext('2d');
+
+  const configs={
+    chicken:{title:'🐔 Yumurta Toplama',time:20,reward:'egg',rewardName:'Yumurta',icon:'🥚',color:'#FFE566',bgColor:'#8B4513'},
+    cow:{title:'🐄 Süt Sağma',time:18,reward:'milk',rewardName:'Süt',icon:'🍶',color:'#FFFFFF',bgColor:'#7A9A5A'},
+    sheep:{title:'🐑 Yün Kırpma',time:22,reward:'wool',rewardName:'Yün',icon:'🧶',color:'#E8E0D0',bgColor:'#9B7A5A'}
+  };
+  const cfg=configs[type];
+  document.getElementById('mg-title').textContent=cfg.title;
+  document.getElementById('mg-stats').textContent='⏱'+cfg.time+'s · 0 '+cfg.icon;
+  document.getElementById('mg-msg').style.display='none';
+
+  // Spawn targets based on type
+  const targets=[];
+  function spawnTarget(){
+    if(MG.won||MG.gameOver)return;
+    const margin=60;
+    targets.push({
+      x:margin+Math.random()*(mw-margin*2),
+      y:80+Math.random()*(mh-200),
+      r:type==='cow'?38:32,
+      hit:false,
+      scale:1,
+      pulse:Math.random()*Math.PI*2,
+      id:Date.now()+Math.random()
+    });
+  }
+  // Initial spawn
+  const initCount={chicken:4,cow:3,sheep:4}[type];
+  for(let i=0;i<initCount;i++){setTimeout(()=>spawnTarget(),i*300);}
+
+  // For cow: dragging mechanic
+  let cowDrag={active:false,x:0,y:0,fill:0,targetId:null};
+
+  MG={
+    active:true,ctx:mc,w:mw,h:mh,type,cfg,
+    animalId,targets,
+    score:0,timeLeft:cfg.time,animT:0,
+    won:false,gameOver:false,
+    spawnTimer:0,
+    cowDrag,
+    touchActive:false
+  };
+
+  // Input handlers
+  function getTapPos(e){
+    const rect=mgc.getBoundingClientRect();
+    if(e.changedTouches){return{x:e.changedTouches[0].clientX-rect.left,y:e.changedTouches[0].clientY-rect.top};}
+    return{x:e.clientX-rect.left,y:e.clientY-rect.top};
+  }
+
+  function handleMGTap(e){
+    if(!MG.active||MG.won||MG.gameOver)return;
+    e.preventDefault();
+    const{x,y}=getTapPos(e);
+    if(type==='chicken'||type==='sheep'){
+      let hit=false;
+      MG.targets.forEach(t=>{
+        if(!t.hit){const dx=x-t.x,dy=y-t.y;if(dx*dx+dy*dy<(t.r+15)*(t.r+15)){t.hit=true;t.scale=1.4;MG.score++;hit=true;}}
+      });
+      if(hit){spawnTarget();showMgMsg(cfg.icon+' +1',600);}
+    }
+  }
+
+  // Cow: pointer drag on targets
+  function handleCowDragStart(e){
+    if(!MG.active||type!=='cow')return;
+    const{x,y}=getTapPos(e);
+    MG.targets.forEach(t=>{
+      if(!t.hit){const dx=x-t.x,dy=y-t.y;if(dx*dx+dy*dy<(t.r+10)*(t.r+10)){MG.cowDrag={active:true,x,y,fill:0,targetId:t.id};}}
+    });
+  }
+  function handleCowDragMove(e){
+    if(!MG.active||!MG.cowDrag.active||type!=='cow')return;
+    e.preventDefault();
+    const{x,y}=getTapPos(e);
+    const dist=Math.sqrt((x-MG.cowDrag.x)**2+(y-MG.cowDrag.y)**2);
+    MG.cowDrag.fill=Math.min(100,MG.cowDrag.fill+dist*1.2);
+    MG.cowDrag.x=x;MG.cowDrag.y=y;
+    if(MG.cowDrag.fill>=100){
+      const t=MG.targets.find(t2=>t2.id===MG.cowDrag.targetId&&!t2.hit);
+      if(t){t.hit=true;t.scale=1.4;MG.score++;spawnTarget();showMgMsg('🍶 +1 Süt!',700);}
+      MG.cowDrag={active:false,x:0,y:0,fill:0,targetId:null};
+    }
+  }
+  function handleCowDragEnd(){MG.cowDrag={active:false,x:0,y:0,fill:0,targetId:null};}
+
+  mgc.addEventListener('touchstart',e=>{handleMGTap(e);handleCowDragStart(e);},{passive:false});
+  mgc.addEventListener('touchmove',handleCowDragMove,{passive:false});
+  mgc.addEventListener('touchend',handleCowDragEnd,{passive:true});
+  mgc.addEventListener('mousedown',e=>{handleMGTap(e);handleCowDragStart(e);});
+  mgc.addEventListener('mousemove',handleCowDragMove);
+  mgc.addEventListener('mouseup',handleCowDragEnd);
+
+  mgLoop();
+}
+
+function showMgMsg(txt,dur){
+  const m=document.getElementById('mg-msg');m.textContent=txt;m.style.display='block';
+  clearTimeout(m._t);m._t=setTimeout(()=>m.style.display='none',dur);
+}
+
+function mgLoop(){
+  if(!MG.active)return;
+  const mc=MG.ctx,mw=MG.w,mh=MG.h;
+  MG.animT++;
+  if(!MG.won&&!MG.gameOver){
+    MG.timeLeft-=1/60;
+    MG.spawnTimer+=1/60;
+    // Auto-spawn every 3.5s if few targets
+    if(MG.spawnTimer>3.5&&MG.targets.filter(t=>!t.hit).length<3){
+      MG.spawnTimer=0;
+      const margin=60;
+      MG.targets.push({x:margin+Math.random()*(mw-margin*2),y:80+Math.random()*(mh-220),r:MG.type==='cow'?38:32,hit:false,scale:1,pulse:Math.random()*Math.PI*2,id:Date.now()});
+    }
+    document.getElementById('mg-stats').textContent='⏱'+Math.ceil(MG.timeLeft)+'s · '+MG.score+' '+MG.cfg.icon;
+    if(MG.timeLeft<=0){MG.won=true;setTimeout(()=>endMiniGame(true),1400);}
+  }
+
+  // ── DRAW ──
+  // Background based on type
+  const bgColors={chicken:'#C8864A',cow:'#6A9A4A',sheep:'#8A7A5A'};
+  mc.fillStyle=bgColors[MG.type];mc.fillRect(0,0,mw,mh);
+
+  // Ground
+  mc.fillStyle=MG.type==='chicken'?'#A06030':MG.type==='cow'?'#4A8A30':'#7A6A4A';
+  mc.fillRect(0,mh*0.7,mw,mh*0.3);
+  // Fence decoration
+  mc.strokeStyle='#5A3A10';mc.lineWidth=3;
+  mc.beginPath();mc.moveTo(0,mh*0.7);mc.lineTo(mw,mh*0.7);mc.stroke();
+  for(let fx=0;fx<mw;fx+=60){mc.fillStyle='#8B5A2B';mc.fillRect(fx,mh*0.68,8,mh*0.08);}
+
+  // Background animal silhouette
+  mc.globalAlpha=0.12;mc.font=`${mh*0.45}px serif`;mc.textAlign='center';
+  mc.fillStyle='#FFF';mc.fillText(MG.type==='chicken'?'🐔':MG.type==='cow'?'🐄':'🐑',mw/2,mh*0.72);
+  mc.globalAlpha=1;mc.textAlign='left';
+
+  // Animate and draw targets
+  MG.targets.forEach(t=>{
+    if(t.hit){t.scale=Math.max(0,t.scale-0.06);if(t.scale<=0)return;}
+    else{t.scale=1+Math.sin(MG.animT*0.08+t.pulse)*0.06;} // gentle pulse
+    mc.save();mc.translate(t.x,t.y);mc.scale(t.scale,t.scale);
+
+    if(MG.type==='chicken'){
+      // Egg shape
+      mc.fillStyle='rgba(255,230,100,0.2)';mc.beginPath();mc.arc(0,0,t.r+12,0,Math.PI*2);mc.fill();
+      mc.fillStyle='#FFF5D0';mc.beginPath();mc.ellipse(0,0,t.r*0.75,t.r,0,0,Math.PI*2);mc.fill();
+      mc.strokeStyle='#E8C878';mc.lineWidth=2;mc.beginPath();mc.ellipse(0,0,t.r*0.75,t.r,0,0,Math.PI*2);mc.stroke();
+      mc.font=`${t.r*1.1}px serif`;mc.textAlign='center';mc.fillText('🥚',0,t.r*0.38);
+    }else if(MG.type==='cow'){
+      // Udder/milk spot
+      const progress=MG.cowDrag.targetId===t.id?MG.cowDrag.fill/100:0;
+      mc.fillStyle=`rgba(255,255,255,${0.15+progress*0.2})`;mc.beginPath();mc.arc(0,0,t.r+10,0,Math.PI*2);mc.fill();
+      mc.fillStyle='#F0F0F0';mc.beginPath();mc.ellipse(0,0,t.r,t.r*0.75,0,0,Math.PI*2);mc.fill();
+      mc.strokeStyle='#DDD';mc.lineWidth=2;mc.beginPath();mc.ellipse(0,0,t.r,t.r*0.75,0,0,Math.PI*2);mc.stroke();
+      // Fill bar
+      if(progress>0){
+        mc.fillStyle='rgba(100,180,255,0.35)';mc.beginPath();mc.arc(0,0,t.r*progress,0,Math.PI*2);mc.fill();
+      }
+      mc.font=`${t.r*0.85}px serif`;mc.textAlign='center';mc.fillText('🍶',0,t.r*0.3);
+      if(MG.cowDrag.targetId===t.id){
+        mc.fillStyle='#FFD700';mc.font='bold 11px Nunito,sans-serif';mc.textAlign='center';
+        mc.fillText('← Sürükle →',0,t.r+22);
+      }
+    }else{
+      // Wool puff
+      mc.fillStyle='rgba(220,210,195,0.2)';mc.beginPath();mc.arc(0,0,t.r+10,0,Math.PI*2);mc.fill();
+      for(let wi=0;wi<5;wi++){
+        const wa=wi/5*Math.PI*2;const wr=t.r*0.65;
+        mc.fillStyle='#E8E0D0';mc.beginPath();mc.arc(Math.cos(wa)*wr*0.5,Math.sin(wa)*wr*0.5,t.r*0.55,0,Math.PI*2);mc.fill();
+      }
+      mc.strokeStyle='#C8B89A';mc.lineWidth=1.5;mc.beginPath();mc.arc(0,0,t.r,0,Math.PI*2);mc.stroke();
+      mc.font=`${t.r*0.9}px serif`;mc.textAlign='center';mc.fillText('🧶',0,t.r*0.35);
+    }
+    mc.textAlign='left';mc.restore();
+  });
+
+  // Clean up fully scaled-down hit targets
+  MG.targets=MG.targets.filter(t=>!t.hit||t.scale>0);
+
+  // Timer ring
+  const tprog=MG.timeLeft/MG.cfg.time;
+  mc.strokeStyle=tprog>0.4?'#00FF88':tprog>0.2?'#FFD700':'#FF4444';
+  mc.lineWidth=6;mc.beginPath();mc.arc(mw/2,mh-28,20,-Math.PI/2,-Math.PI/2+tprog*Math.PI*2);mc.stroke();
+  mc.fillStyle='#FFF';mc.font='bold 13px Nunito,sans-serif';mc.textAlign='center';
+  mc.fillText(Math.ceil(MG.timeLeft)+'s',mw/2,mh-23);mc.textAlign='left';
+
+  // Score badge top right area
+  mc.fillStyle='rgba(0,0,0,0.6)';mc.beginPath();
+  mc.roundRect?mc.roundRect(mw-100,48,90,40,10):mc.fillRect(mw-100,48,90,40);
+  mc.fill();
+  mc.fillStyle='#FFD700';mc.font='bold 16px Nunito,sans-serif';mc.textAlign='center';
+  mc.fillText(MG.score+' '+MG.cfg.icon,mw-55,72);mc.textAlign='left';
+
+  // Win overlay
+  if(MG.won){
+    mc.fillStyle='rgba(0,0,0,0.6)';mc.fillRect(0,0,mw,mh);
+    mc.font=`${mh*0.18}px serif`;mc.textAlign='center';mc.fillText('🎉',mw/2,mh*0.42);
+    mc.fillStyle='#FFD700';mc.font='bold 28px Fredoka,sans-serif';mc.fillText('Harika!',mw/2,mh*0.56);
+    mc.fillStyle='#FFF';mc.font='18px Nunito,sans-serif';
+    mc.fillText('+'+MG.score+' '+MG.cfg.rewardName+' kazandın!',mw/2,mh*0.65);
+    mc.textAlign='left';
+  }
+
+  mgRAF=requestAnimationFrame(mgLoop);
+}
+
+function endMiniGame(auto){
+  if(!MG.active)return;
+  MG.active=false;cancelAnimationFrame(mgRAF);
+  const ov=document.getElementById('minigame-overlay');
+  if(auto&&MG.score>0){
+    inventory[MG.cfg.reward]=(inventory[MG.cfg.reward]||0)+MG.score;
+    const a=animals.find(x=>x.id===MG.animalId);
+    if(a){a.happy=Math.min(100,a.happy+15);a.readyProduce=false;}
+    addXp(MG.score*5);updateHUD();
+    showMsg('🎉 +'+MG.score+' '+MG.cfg.icon+' '+MG.cfg.rewardName+' kazandın!',3000);
+    saveGame();
+  }
+  setTimeout(()=>{ov.style.display='none';},auto?1800:0);
+}
+
 // ══ RENDER HELPERS ══
 function lerpC(c1,c2,t){
   const p=v=>parseInt(v,16);
@@ -1446,6 +1732,7 @@ else document.getElementById('ls-user').focus();
 window.doLogin=doLogin;window.setTool=setTool;window.openBarn=openBarn;window.openMarket=openMarket;
 window.openQuests=openQuests;window.openNeighbor=openNeighbor;window.doSleep=doSleep;
 window.startPickup=startPickup;window.endPickup=endPickup;window.closeModal=closeModal;
+window.startAnimalMiniGame=startAnimalMiniGame;window.endMiniGame=endMiniGame;
 window.buyAnimal=buyAnimal;window.feedAnimal=feedAnimal;window.collectProduce=collectProduce;
 window.breedAnimal=breedAnimal;window.confirmSlaughter=confirmSlaughter;window.slaughterAnimal=slaughterAnimal;
 window.sellAnimal=sellAnimal;window.sellAll=sellAll;window.sellAllItems=sellAllItems;
