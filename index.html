@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Tarlam">
+<meta name="theme-color" content="#8B5A2B">
+<title>Tarlam - Çiftlik Oyunu</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--font-main:'Fredoka',sans-serif;--font-ui:'Nunito',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;image-rendering:pixelated;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a0a00;font-family:var(--font-ui);user-select:none;}
+canvas{display:block;touch-action:none;}
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+
+/* ── HUD ── */
+#hud{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 6px 4px;gap:5px;}
+.hp{background:rgba(10,5,0,0.88);border:1.5px solid #9B6A33;border-radius:9px;padding:4px 8px;color:#FFD700;font-family:var(--font-ui);font-size:10.5px;font-weight:700;line-height:1.55;}
+.hp .row{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:10px;}
+.hp .val{color:#fff;font-weight:800;}
+.hp .lbl{color:#C8A060;font-size:9px;}
+.hp-center{flex:1;text-align:center;display:flex;align-items:flex-start;justify-content:center;}
+#sbar{font-family:var(--font-main);font-size:11px;font-weight:600;color:#FFD700;background:rgba(10,5,0,0.88);border:1.5px solid #9B6A33;border-radius:18px;padding:3px 12px;white-space:nowrap;}
+
+/* ── TOOLBAR ── */
+#toolbar{
+  position:absolute;bottom:0;left:0;right:0;
+  display:flex;flex-direction:row;flex-wrap:nowrap;
+  gap:5px;pointer-events:all;
+  padding:7px 10px calc(7px + env(safe-area-inset-bottom));
+  background:rgba(8,4,0,0.94);
+  border-top:2px solid #5A3A10;
+  overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  z-index:20;
+}
+#toolbar::-webkit-scrollbar{display:none;}
+.tb{
+  flex:0 0 56px;width:56px;height:56px;
+  background:rgba(18,9,0,0.96);border:2px solid #6A3A10;border-radius:10px;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#FFD700;font-family:var(--font-ui);font-size:9px;font-weight:700;gap:1px;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.tb:active{border-color:#FFD700;background:rgba(60,30,0,0.98);transform:scale(0.93);}
+.tb.on{border-color:#00FF88;background:rgba(0,50,20,0.96);box-shadow:0 0 10px rgba(0,255,136,0.4);}
+.ti{font-size:22px;line-height:1.1;}
+
+/* ── MESSAGES ── */
+#msg{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);border:2px solid #FFD700;color:#FFD700;padding:8px 18px;border-radius:10px;font-family:var(--font-ui);font-size:13px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .3s;text-align:center;max-width:82vw;}
+
+/* ── MODAL ── */
+#modal{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:50;}
+#modal.show{display:flex;}
+.mbox{background:#110700;border:2px solid #9B6A33;border-radius:14px;padding:16px;min-width:275px;max-width:390px;width:92vw;color:#FFD700;font-family:var(--font-ui);font-size:12px;max-height:84vh;overflow-y:auto;}
+.mbox h2{font-family:var(--font-main);font-size:16px;font-weight:700;margin-bottom:10px;border-bottom:1px solid #7A4A1B;padding-bottom:6px;}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(154,106,51,0.2);gap:6px;flex-wrap:wrap;}
+.mbtn{background:#1E4A0A;border:1px solid #3A8A15;color:#A0FF60;font-family:var(--font-ui);font-size:10px;font-weight:700;padding:4px 9px;border-radius:6px;cursor:pointer;transition:background .1s;}
+.mbtn:hover{background:#2A6A12;}
+.mbtn.red{background:#4A1010;border-color:#8A2020;color:#FF8888;}
+.mbtn.blue{background:#0A1E4A;border-color:#153A8A;color:#88AAFF;}
+.mbtn.gold{background:#4A3A00;border-color:#8A7000;color:#FFD700;}
+.mclose{float:right;background:none;border:1px solid #9B6A33;color:#FFD700;font-family:var(--font-ui);padding:3px 9px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;margin-bottom:5px;}
+.acard{background:rgba(255,255,255,0.04);border:1px solid #6B4A1B;border-radius:8px;padding:7px;margin:5px 0;}
+.abar-wrap{background:#1A1A1A;border-radius:3px;height:6px;margin:2px 0;}
+.abar{height:6px;border-radius:3px;transition:width .3s;}
+.quest-item{background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);border-radius:7px;padding:6px;margin:5px 0;}
+.quest-done{opacity:.4;text-decoration:line-through;}
+
+/* ── OVERLAYS ── */
+#weather-banner{position:absolute;top:32px;left:50%;transform:translateX(-50%);background:rgba(0,40,100,0.88);border:1px solid #5090FF;border-radius:8px;padding:4px 14px;color:#BBDDFF;font-family:var(--font-ui);font-size:10px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .5s;}
+#sleep-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,20,0);display:none;align-items:center;justify-content:center;z-index:60;transition:background 1s;}
+#sleep-overlay.show{display:flex;}
+#sleep-text{color:#AACCFF;font-family:var(--font-main);font-size:22px;font-weight:700;text-align:center;opacity:0;transition:opacity 1s;}
+#save-indicator{position:absolute;bottom:76px;right:8px;background:rgba(0,70,20,0.88);border:1px solid #20A040;color:#80FF80;font-family:var(--font-ui);font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;pointer-events:none;opacity:0;transition:opacity .5s;}
+
+/* ── PICKUP OVERLAY ── */
+#pickup-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;background:#1a0a00;z-index:40;pointer-events:all;}
+#puc{display:block;}
+#pu-hud-bar{position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;padding:7px 12px;background:rgba(0,0,0,0.75);pointer-events:none;gap:8px;}
+#pu-hud-bar .hp{font-size:12px;}
+#pu-hud-bar .hp.exit{pointer-events:all;cursor:pointer;}
+#pu-msg{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);border:2px solid #FFD700;color:#FFD700;padding:10px 22px;border-radius:10px;font-family:var(--font-main);font-size:15px;font-weight:700;text-align:center;display:none;pointer-events:none;}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{position:fixed;inset:0;z-index:999;background:#0a0400;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+#login-screen.hidden{display:none;}
+.ls-bg{position:absolute;inset:0;overflow:hidden;}
+.ls-star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 3s infinite alternate;}
+@keyframes twinkle{0%{opacity:.15}100%{opacity:.95}}
+.ls-hill{position:absolute;bottom:0;border-radius:50% 50% 0 0;}
+.ls-card{position:relative;z-index:2;background:rgba(14,7,0,0.94);border:2px solid #9B6A33;border-radius:18px;padding:34px 30px;width:min(340px,90vw);text-align:center;}
+.ls-logo{font-size:56px;margin-bottom:4px;display:block;animation:bounce 2.2s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.ls-title{font-family:var(--font-main);font-size:30px;font-weight:700;color:#FFD700;letter-spacing:4px;margin-bottom:3px;}
+.ls-sub{font-family:var(--font-ui);font-size:11px;color:#8B6A3B;margin-bottom:26px;letter-spacing:1px;font-weight:600;}
+.ls-label{display:block;text-align:left;font-family:var(--font-ui);font-size:11px;color:#8B6A3B;margin-bottom:4px;font-weight:700;letter-spacing:.5px;}
+.ls-input{width:100%;background:rgba(0,0,0,0.55);border:1.5px solid #5A3A10;border-radius:8px;color:#FFD700;font-family:var(--font-ui);font-size:14px;font-weight:600;padding:10px 13px;outline:none;margin-bottom:14px;transition:border-color .2s;box-sizing:border-box;}
+.ls-input:focus{border-color:#9B6A33;}
+.ls-input::placeholder{color:#3A2A0A;}
+.ls-btn{width:100%;background:#7A4A10;border:2px solid #C07030;border-radius:10px;color:#FFD700;font-family:var(--font-main);font-size:17px;font-weight:700;padding:12px;cursor:pointer;letter-spacing:2px;transition:all .15s;margin-top:4px;}
+.ls-btn:hover{background:#9A6A20;transform:scale(1.02);}
+.ls-btn:active{transform:scale(.97);}
+.ls-error{color:#FF6060;font-family:var(--font-ui);font-size:11px;font-weight:700;margin-top:10px;min-height:16px;}
+.ls-error.shake{animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.ls-divider{border:none;border-top:1px solid rgba(154,106,51,0.25);margin:18px 0;}
+.ls-hint{font-family:var(--font-ui);font-size:9px;color:#3A2A0A;font-weight:600;}
+</style>
+</head>
+<body>
+
+<!-- ══ GİRİŞ EKRANI ══ -->
+<div id="login-screen">
+  <div class="ls-bg" id="ls-bg"></div>
+  <div class="ls-card">
+    <span class="ls-logo">🌾</span>
+    <div class="ls-title">TARLAM</div>
+    <div class="ls-sub">2B ÇIFTLIK OYUNU</div>
+    <label class="ls-label" for="ls-user">KULLANICI ADI</label>
+    <input class="ls-input" id="ls-user" type="text" placeholder="kullanici_adi" autocomplete="username" spellcheck="false">
+    <label class="ls-label" for="ls-pass">ŞİFRE</label>
+    <input class="ls-input" id="ls-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+    <button class="ls-btn" onclick="doLogin()">🚜 GİRİŞ YAP</button>
+    <div class="ls-error" id="ls-err"></div>
+    <hr class="ls-divider">
+    <div class="ls-hint">Erişim için oyun sahibiyle iletişime geçin.</div>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <div id="hud">
+    <div class="hp">
+      <div class="row">💰 <span class="val" id="gold">300</span>₺</div>
+      <div class="row">⚡ <span class="val" id="eng">100</span>/<span class="val" id="meng">100</span></div>
+      <div class="row"><span class="lbl">🌾</span><span class="val" id="iw">0</span> <span class="lbl">🌽</span><span class="val" id="ic">0</span> <span class="lbl">🍅</span><span class="val" id="it">0</span> <span class="lbl">🥕</span><span class="val" id="ir">0</span></div>
+      <div class="row"><span class="lbl">🍎</span><span class="val" id="iapple">0</span> <span class="lbl">🍊</span><span class="val" id="iorange">0</span> <span class="lbl">🍇</span><span class="val" id="igrape">0</span></div>
+    </div>
+    <div class="hp hp-center">
+      <div id="sbar">🌸 Gün <span id="dn">1</span> · <span id="ts">06:00</span></div>
+    </div>
+    <div class="hp" style="text-align:right">
+      <div class="row" style="justify-content:flex-end"><span class="lbl">Lv</span><span class="val" id="lv">1</span> ⭐<span class="val" id="xp">0</span>/<span class="val" id="mxp">100</span></div>
+      <div class="row" style="justify-content:flex-end">🐄<span class="val" id="acow">0</span> 🐑<span class="val" id="asheep">0</span> 🐔<span class="val" id="achicken">0</span></div>
+      <div class="row" style="justify-content:flex-end">🥩<span class="val" id="imeat">0</span> 🧶<span class="val" id="iwool">0</span> 🥚<span class="val" id="iegg">0</span></div>
+    </div>
+  </div>
+  <div id="weather-banner">🌤️</div>
+  <div id="msg"></div>
+  <div id="save-indicator">💾 Kaydedildi</div>
+</div>
+
+<div id="toolbar">
+  <div class="tb on" id="btn-hoe" onclick="setTool('hoe')"><div class="ti">🪛</div>Çapa</div>
+  <div class="tb" id="btn-wheat" onclick="setTool('wheat')"><div class="ti">🌾</div>Buğday</div>
+  <div class="tb" id="btn-corn" onclick="setTool('corn')"><div class="ti">🌽</div>Mısır</div>
+  <div class="tb" id="btn-tomato" onclick="setTool('tomato')"><div class="ti">🍅</div>Domates</div>
+  <div class="tb" id="btn-carrot" onclick="setTool('carrot')"><div class="ti">🥕</div>Havuç</div>
+  <div class="tb" id="btn-water" onclick="setTool('water')"><div class="ti">💧</div>Sula</div>
+  <div class="tb" id="btn-harvest" onclick="setTool('harvest')"><div class="ti">✂️</div>Hasat</div>
+  <div class="tb" id="btn-barn" onclick="openBarn()"><div class="ti">🐄</div>Ahır</div>
+  <div class="tb" id="btn-market" onclick="openMarket()"><div class="ti">🛒</div>Pazar</div>
+  <div class="tb" id="btn-quests" onclick="openQuests()"><div class="ti">📋</div>Görev</div>
+  <div class="tb" id="btn-neighbor" onclick="openNeighbor()"><div class="ti">🧑‍🌾</div>Komşu</div>
+  <div class="tb" id="btn-sleep" onclick="doSleep()"><div class="ti">😴</div>Uyu</div>
+  <div class="tb" id="btn-pickup" onclick="startPickup()"><div class="ti">🚛</div>Nakliye</div>
+</div>
+
+<div id="modal"><div class="mbox" id="modal-content"></div></div>
+
+<div id="sleep-overlay">
+  <div id="sleep-text">😴 Uyuyor...<br><span id="sleep-sub" style="font-family:var(--font-ui);font-size:13px;opacity:.7"></span></div>
+</div>
+
+<!-- ══ NAKLİYE MİNİ OYUNU ══ -->
+<div id="pickup-overlay">
+  <canvas id="puc"></canvas>
+  <div id="pu-hud-bar">
+    <div class="hp">🚛 Nakliye</div>
+    <div class="hp" id="pu-stats">⏱100s · 💰+0 · 📦0/5</div>
+    <div class="hp exit" onclick="endPickup(false)">✖ Çık</div>
+  </div>
+  <div id="pu-msg"></div>
+  <!-- Mobile lane buttons -->
+  <div id="pu-lane-btns" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;pointer-events:all;">
+    <button onclick="if(PU.truck&&PU.truck.lane>0){PU.truck.lane--;}" style="width:50px;height:50px;background:rgba(0,0,0,0.7);border:2px solid #FFD700;border-radius:10px;color:#FFD700;font-size:22px;cursor:pointer;">▲</button>
+    <button onclick="if(PU.truck&&PU.truck.lane<2){PU.truck.lane++;}" style="width:50px;height:50px;background:rgba(0,0,0,0.7);border:2px solid #FFD700;border-radius:10px;color:#FFD700;font-size:22px;cursor:pointer;">▼</button>
+  </div>
+  <!-- Mobile gas button -->
+  <div style="position:absolute;left:10px;bottom:20px;pointer-events:all;">
+    <button onpointerdown="PU.keys&&(PU.keys['ArrowRight']=true)" onpointerup="PU.keys&&(PU.keys['ArrowRight']=false)" onpointerleave="PU.keys&&(PU.keys['ArrowRight']=false)"
+      style="width:80px;height:60px;background:rgba(0,180,0,0.8);border:2px solid #00FF88;border-radius:12px;color:#FFF;font-size:13px;font-weight:bold;cursor:pointer;">⛽ İLERİ</button>
+  </div>
+</div>
+
+<script>
+// ══════════════ KULLANICI LİSTESİ ══════════════
+// Format: 'kullanici_adi': 'sifre'
+const USERS={
+  'Ciftci':'ciftci123',
+  'Elif':'esg_123',
+  'Semse':'semse047',
+  'admin':'yonetici2026',
+};
+// ═══════════════════════════════════════════════
+
+// ══ CONSTANTS ══
+const COLS=6,ROWS=5,CELL=72;
+const CROPS={
+  wheat:{seedCost:5,growTime:30,price:8,xp:5,icon:'🌾'},
+  corn:{seedCost:10,growTime:50,price:15,xp:10,icon:'🌽'},
+  tomato:{seedCost:15,growTime:70,price:25,xp:15,icon:'🍅'},
+  carrot:{seedCost:12,growTime:60,price:20,xp:12,icon:'🥕'}
+};
+const FRUIT_TREES=[
+  {type:'apple',name:'Elma',icon:'🍎',x:0,y:0,color:'#CC2200',trunkColor:'#7A4A22',leafColor:'#2D7A1E',price:18,xp:8},
+  {type:'orange',name:'Portakal',icon:'🍊',x:0,y:0,color:'#FF8800',trunkColor:'#7A4A22',leafColor:'#3A8A15',price:22,xp:10},
+  {type:'grape',name:'Üzüm',icon:'🍇',x:0,y:0,color:'#7B2FBE',trunkColor:'#6B4A22',leafColor:'#1E6B10',price:28,xp:12}
+];
+const ADEF={
+  cow:{name:'İnek',buy:80,food:'carrot',produceItem:'milk',sellPrice:120,slaughterMeat:3,gestationDays:5,emoji:'🐄'},
+  sheep:{name:'Koyun',buy:60,food:'wheat',produceItem:'wool',sellPrice:90,slaughterMeat:2,gestationDays:4,emoji:'🐑'},
+  chicken:{name:'Tavuk',buy:30,food:'corn',produceItem:'egg',sellPrice:50,slaughterMeat:1,gestationDays:3,emoji:'🐔'}
+};
+const MARKET_PRICES={wheat:8,corn:15,tomato:25,carrot:20,meat:45,wool:30,egg:12,milk:18,apple:18,orange:22,grape:28};
+const SEASONS=['❄️ Kış','🌸 İlkbahar','☀️ Yaz','🍂 Sonbahar'];
+const WEATHER_TYPES=['sunny','cloudy','rainy','stormy','windy'];
+const QUESTS_DEF=[
+  {id:'q1',title:'İlk Hasat',desc:'5 ürün hasat et',type:'harvest',target:5,reward:50,xpReward:20},
+  {id:'q2',title:'Çiftçi Başlangıcı',desc:'İlk hayvanı satın al',type:'buy_animal',target:1,reward:80,xpReward:30},
+  {id:'q3',title:'Nakliyeci',desc:'Nakliye oyununu 1 kez oyna',type:'pickup',target:1,reward:60,xpReward:25},
+  {id:'q4',title:'Hayvan Çobanı',desc:'5 hayvan besle',type:'feed_animal',target:5,reward:100,xpReward:40},
+  {id:'q5',title:'Büyük Çiftçi',desc:'500₺ kazan',type:'earn_gold',target:500,reward:150,xpReward:60},
+  {id:'q6',title:'Doğa Dostu',desc:'20 kez sula',type:'water',target:20,reward:70,xpReward:30},
+  {id:'q7',title:'Et Üreticisi',desc:'5 kg et elde et',type:'slaughter',target:5,reward:120,xpReward:50},
+  {id:'q8',title:'Komşu Yardımı',desc:'Komşuya 3 ürün ver',type:'give_neighbor',target:3,reward:90,xpReward:35},
+  {id:'q9',title:'Usta Çiftçi',desc:'Seviye 5\'e ulaş',type:'reach_level',target:5,reward:300,xpReward:100},
+  {id:'q10',title:'Hayvan Ailesi',desc:'Hayvanın yavru doğurmasını sağla',type:'breed',target:1,reward:150,xpReward:60}
+];
+const NEIGHBOR_REQUESTS=[
+  {type:'wheat',qty:3,reward:40,name:'Ahmet Abi'},{type:'corn',qty:2,reward:45,name:'Fatma Hanım'},
+  {type:'tomato',qty:2,reward:60,name:'Mehmet Bey'},{type:'carrot',qty:3,reward:55,name:'Ayşe Hanım'},
+  {type:'egg',qty:4,reward:70,name:'Hasan Dede'},{type:'wool',qty:2,reward:75,name:'Zeynep Hanım'},
+  {type:'milk',qty:3,reward:65,name:'Ali Usta'},{type:'apple',qty:2,reward:55,name:'Recep Amca'},
+  {type:'grape',qty:2,reward:70,name:'Nurgül Teyze'}
+];
+
+// ══ STATE ══
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H,SCALE,OX,OY;
+let tiles=[],animals=[],animalId=1;
+let player={x:2,y:2};
+let gold=300,energy=100,maxEnergy=100,level=1,xp=0,maxXp=100;
+let inventory={wheat:0,corn:0,tomato:0,carrot:0,meat:0,wool:0,egg:0,milk:0,apple:0,orange:0,grape:0};
+let fruitTrees=[];// {type,x,y,stage(0-3),timer,ready}
+let currentTool='hoe';
+let gameTime=6*60,dayCount=1,animT=0,totalGoldEarned=0;
+let clouds=[],particles=[];
+let weather='sunny',weatherTimer=300,weatherIntensity=0;
+let rainDrops=[];
+let activeQuests=[],completedQuests=[];
+let questProgress={harvest:0,buy_animal:0,feed_animal:0,pickup:0,earn_gold:0,water:0,slaughter:0,give_neighbor:0,breed:0};
+let neighborRequests=[],neighborCooldown=0;
+let lastSaveTime=0,autoSaveInterval=30;
+
+// ══ SAVE/LOAD ══
+function saveGame(){
+  const data={gold,energy,maxEnergy,level,xp,maxXp,inventory,
+    tiles:tiles.map(t=>({c:t.c,r:t.r,state:t.state,crop:t.crop,growProgress:t.growProgress,watered:t.watered})),
+    animals,animalId,gameTime,dayCount,totalGoldEarned,weather,weatherTimer,
+    activeQuests,completedQuests,questProgress,neighborRequests,neighborCooldown,
+    fruitTrees,currentTool,savedAt:Date.now()};
+  try{
+    localStorage.setItem('tarlam_save',JSON.stringify(data));
+    const si=document.getElementById('save-indicator');si.style.opacity='1';setTimeout(()=>si.style.opacity='0',1500);
+  }catch(e){console.warn('Kayıt hatası:',e);}
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem('tarlam_save');if(!raw)return false;
+    const d=JSON.parse(raw);
+    gold=d.gold||300;energy=d.energy||100;maxEnergy=d.maxEnergy||100;
+    level=d.level||1;xp=d.xp||0;maxXp=d.maxXp||100;
+    inventory=Object.assign({wheat:0,corn:0,tomato:0,carrot:0,meat:0,wool:0,egg:0,milk:0,apple:0,orange:0,grape:0},d.inventory||{});
+    if(d.tiles&&d.tiles.length){
+      tiles=[];
+      for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+        const st=d.tiles.find(t=>t.c===c&&t.r===r)||{};
+        tiles.push({c,r,state:st.state||'grass',crop:st.crop||null,growProgress:st.growProgress||0,watered:st.watered||false,waterTimer:0});
+      }
+    }
+    animals=(d.animals||[]).map(a=>({...a}));animalId=d.animalId||1;
+    gameTime=d.gameTime||6*60;dayCount=d.dayCount||1;totalGoldEarned=d.totalGoldEarned||0;
+    weather=d.weather||'sunny';weatherTimer=d.weatherTimer||300;
+    activeQuests=d.activeQuests||[];completedQuests=d.completedQuests||[];
+    questProgress=Object.assign({harvest:0,buy_animal:0,feed_animal:0,pickup:0,earn_gold:0,water:0,slaughter:0,give_neighbor:0,breed:0},d.questProgress||{});
+    neighborRequests=d.neighborRequests||[];neighborCooldown=d.neighborCooldown||0;
+    fruitTrees=d.fruitTrees||[];
+    currentTool=d.currentTool||'hoe';
+    return true;
+  }catch(e){console.warn('Yükleme hatası:',e);return false;}
+}
+
+// ══ INIT ══
+function initTiles(){
+  tiles=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)
+    tiles.push({c,r,state:'grass',crop:null,growProgress:0,watered:false,waterTimer:0});
+}
+function initFruitTrees(){
+  if(fruitTrees.length>0)return;
+  // Place fruit trees at fixed positions in the background (screen-relative, set during resize)
+  fruitTrees=[
+    {type:'apple',stage:2,timer:60,ready:false},
+    {type:'orange',stage:1,timer:90,ready:false},
+    {type:'grape',stage:3,timer:0,ready:true}
+  ];
+}
+function initQuests(){
+  if(activeQuests.length===0)activeQuests=QUESTS_DEF.slice(0,3).map(q=>({...q,progress:0,done:false}));
+}
+function initNeighborRequests(){
+  if(neighborRequests.length===0){
+    neighborRequests=[];
+    for(let i=0;i<3;i++){const r=NEIGHBOR_REQUESTS[Math.floor(Math.random()*NEIGHBOR_REQUESTS.length)];neighborRequests.push({...r,id:i,fulfilled:false});}
+  }
+}
+
+function resize(){
+  W=window.innerWidth;H=window.innerHeight;
+  canvas.width=W;canvas.height=H;
+  // toolbar height ~70px, HUD ~80px
+  const TOOLBAR_H=76;
+  const HUD_H=82;
+  const availH=H-TOOLBAR_H-HUD_H;
+  const availW=W-16;
+  SCALE=Math.min(availW/(COLS*CELL), availH/(ROWS*CELL), W/720);
+  OX=(W-COLS*CELL*SCALE)/2;
+  OY=HUD_H+(availH-ROWS*CELL*SCALE)/2;
+  clouds=[];
+  for(let i=0;i<6;i++)clouds.push({x:Math.random()*W,y:25+Math.random()*60,w:50+Math.random()*80,speed:.12+Math.random()*.2});
+}
+
+// ══ HUD ══
+function updateHUD(){
+  document.getElementById('gold').textContent=gold;
+  document.getElementById('eng').textContent=energy;document.getElementById('meng').textContent=maxEnergy;
+  document.getElementById('iw').textContent=inventory.wheat;document.getElementById('ic').textContent=inventory.corn;
+  document.getElementById('it').textContent=inventory.tomato;document.getElementById('ir').textContent=inventory.carrot;
+  document.getElementById('iapple').textContent=inventory.apple||0;
+  document.getElementById('iorange').textContent=inventory.orange||0;
+  document.getElementById('igrape').textContent=inventory.grape||0;
+  document.getElementById('lv').textContent=level;document.getElementById('xp').textContent=xp;document.getElementById('mxp').textContent=maxXp;
+  document.getElementById('acow').textContent=animals.filter(a=>a.type==='cow').length;
+  document.getElementById('asheep').textContent=animals.filter(a=>a.type==='sheep').length;
+  document.getElementById('achicken').textContent=animals.filter(a=>a.type==='chicken').length;
+  document.getElementById('imeat').textContent=inventory.meat;
+  document.getElementById('iwool').textContent=inventory.wool;document.getElementById('iegg').textContent=inventory.egg;
+}
+
+// ══ MESSAGES ══
+function showMsg(txt,dur=1800){
+  const m=document.getElementById('msg');m.innerHTML=txt;m.style.opacity='1';
+  clearTimeout(m._t);m._t=setTimeout(()=>m.style.opacity='0',dur);
+}
+function addParticle(x,y,text,color='#FFD700'){particles.push({x,y,text,color,life:1,vy:-1.5});}
+
+// ══ TOOLS ══
+function setTool(t){
+  currentTool=t;
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  const el=document.getElementById('btn-'+t);if(el)el.classList.add('on');
+}
+function useEnergy(a){if(energy<a){showMsg('⚡ Enerji bitti! Uyu veya yeni gün bekle.');return false;}energy-=a;updateHUD();return true;}
+function addXp(a){
+  xp+=a;
+  while(xp>=maxXp){xp-=maxXp;level++;maxXp=Math.floor(maxXp*1.4);maxEnergy=100+(level-1)*10;energy=maxEnergy;
+    showMsg('🎉 SEVİYE '+level+'!',3000);addParticle(W/2,H/2,'🎉 LEVEL UP!','#FFD700');checkQuestProgress('reach_level',level);}
+  updateHUD();
+}
+function earnGold(amount){gold+=amount;totalGoldEarned+=amount;checkQuestProgress('earn_gold',totalGoldEarned);updateHUD();}
+
+// ══ CLICK / TOUCH ══
+// Mobile: touchstart fires immediately on first tap (no delay, no 2-finger issues)
+let _lastTouchTarget=null;
+function handlePointer(e){
+  if(document.getElementById('modal').classList.contains('show'))return;
+  if(document.getElementById('pickup-overlay').style.display==='block')return;
+  let clientX,clientY;
+  if(e.changedTouches){
+    clientX=e.changedTouches[0].clientX;clientY=e.changedTouches[0].clientY;
+  }else{clientX=e.clientX;clientY=e.clientY;}
+  const rect=canvas.getBoundingClientRect();
+  const sx=clientX-rect.left,sy=clientY-rect.top;
+  const c=Math.floor((sx-OX)/(CELL*SCALE)),r=Math.floor((sy-OY)/(CELL*SCALE));
+  if(c<0||c>=COLS||r<0||r>=ROWS)return;
+  const tile=tiles.find(t=>t.c===c&&t.r===r);if(!tile)return;
+  player.x=c;player.y=r;
+  const cx=OX+(c+.5)*CELL*SCALE,cy=OY+(r+.5)*CELL*SCALE;
+  const rainBonus=(weather==='rainy'||weather==='stormy');
+  if(currentTool==='hoe'){
+    if(tile.state==='grass'){if(!useEnergy(5))return;tile.state='tilled';addParticle(cx,cy-20,'⛏️+2xp','#A0522D');addXp(2);showMsg('Toprak sürüldü!');}
+    else showMsg('Bu arazi zaten hazır.');
+  }else if(currentTool==='water'){
+    if(tile.state==='tilled'||(tile.state==='planted'&&!tile.watered)){
+      if(!useEnergy(3))return;tile.watered=true;tile.waterTimer=rainBonus?200:120;
+      addParticle(cx,cy-20,'💧','#5BB8F5');checkQuestProgress('water',1,true);showMsg('Sulandı!'+(rainBonus?' (Yağmur bonusu!)':''));
+    }else showMsg('Sulanacak alan yok.');
+  }else if(currentTool==='harvest'){
+    if(tile.state==='ready'){
+      if(!useEnergy(4))return;const cn=tile.crop;inventory[cn]++;
+      addParticle(cx,cy-20,CROPS[cn].icon+' +1',CROPS[cn]?.color||'#FFD700');
+      tile.state='tilled';tile.crop=null;tile.growProgress=0;tile.watered=false;
+      addXp(CROPS[cn].xp);checkQuestProgress('harvest',1,true);updateHUD();showMsg('Hasat yapıldı!');
+    }else showMsg('Henüz hasat zamanı değil.');
+  }else if(CROPS[currentTool]){
+    if(tile.state==='tilled'){
+      const cost=CROPS[currentTool].seedCost;
+      if(gold<cost){showMsg('💰 Yeterli altın yok! Gereken: '+cost+'₺');return;}
+      if(!useEnergy(4))return;gold-=cost;tile.state='planted';tile.crop=currentTool;tile.growProgress=0;
+      addParticle(cx,cy-20,'🌱 Ekildi!','#4FA028');updateHUD();showMsg(CROPS[currentTool].icon+' ekildi! -'+cost+'₺');
+    }else showMsg('Önce toprağı çapalayın!');
+  }
+}
+// Keep handleClick as alias for keyboard use
+function handleClick(e){handlePointer(e);}
+
+// ══ BARN ══
+function openBarn(){
+  const mc=document.getElementById('modal-content');
+  let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🐄 Ahır Yönetimi</h2>';
+  html+='<div style="color:#aaa;font-size:10px;margin-bottom:7px;">Hayvan Satın Al:</div>';
+  Object.entries(ADEF).forEach(([type,d])=>{
+    html+=`<div class="mrow"><span>${d.emoji} ${d.name}</span><span style="color:#aaa;font-size:10px;">Yem: ${d.food}</span><button class="mbtn" onclick="buyAnimal('${type}')">Satın Al ${d.buy}₺</button></div>`;
+  });
+  if(animals.length>0){
+    html+='<div style="color:#aaa;font-size:10px;margin:10px 0 5px;">Hayvanlarım ('+animals.length+'):</div>';
+    animals.forEach(a=>{
+      const d=ADEF[a.type];
+      const hc=a.hunger>60?'#4FA028':a.hunger>30?'#F0A500':'#CC3300';
+      const hpc=a.happy>60?'#5BB8F5':a.happy>30?'#F0A500':'#CC3300';
+      html+=`<div class="acard">
+        <div style="display:flex;justify-content:space-between;">
+          <span>${d.emoji} <b>${a.name}</b>${a.pregnant?' 🤰':''}${a.readyProduce?' 🎁':''}</span>
+          <span style="font-size:9px;color:#888;">Yaş:${Math.floor(a.age)}g</span>
+        </div>
+        <div style="font-size:10px;margin:2px 0">
+          🍽️<div class="abar-wrap"><div class="abar" style="width:${a.hunger}%;background:${hc}"></div></div>
+          😊<div class="abar-wrap"><div class="abar" style="width:${a.happy}%;background:${hpc}"></div></div>
+        </div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">
+          <button class="mbtn" onclick="feedAnimal(${a.id})">🍽️ Besle</button>
+          ${a.readyProduce?`<button class="mbtn blue" onclick="collectProduce(${a.id})">🎁 ${d.produceItem}</button>`:''}
+          ${!a.pregnant&&a.age>=5?`<button class="mbtn blue" onclick="breedAnimal(${a.id})">🍀 Çiftleş</button>`:''}
+          <button class="mbtn red" onclick="confirmSlaughter(${a.id})">🔪 Mezbaha</button>
+          <button class="mbtn gold" onclick="sellAnimal(${a.id})">💰 Sat ${d.sellPrice}₺</button>
+        </div>
+      </div>`;
+    });
+  }else html+='<div style="color:#555;font-size:10px;margin-top:10px;">Henüz hayvanın yok.</div>';
+  mc.innerHTML=html;document.getElementById('modal').classList.add('show');
+}
+function buyAnimal(type){
+  const d=ADEF[type];if(gold<d.buy){showMsg('💰 Yeterli altın yok!');return;}
+  gold-=d.buy;animals.push({id:animalId++,type,name:d.name+' #'+animalId,hunger:100,happy:100,age:0,pregnant:false,pregnancyDays:0,readyProduce:false,produceTimer:0});
+  addXp(15);checkQuestProgress('buy_animal',1,true);updateHUD();openBarn();showMsg(d.emoji+' '+d.name+' satın alındı!');saveGame();
+}
+function feedAnimal(id){
+  const a=animals.find(x=>x.id===id);if(!a)return;const d=ADEF[a.type];
+  if(inventory[d.food]<1){showMsg('🍽️ Yem yok! '+d.food+' gerekli.');return;}
+  inventory[d.food]--;a.hunger=Math.min(100,a.hunger+40);a.happy=Math.min(100,a.happy+25);
+  checkQuestProgress('feed_animal',1,true);updateHUD();openBarn();showMsg(d.emoji+' beslendi!');
+}
+function collectProduce(id){
+  const a=animals.find(x=>x.id===id);if(!a||!a.readyProduce)return;const d=ADEF[a.type];
+  inventory[d.produceItem]=(inventory[d.produceItem]||0)+1;a.readyProduce=false;a.produceTimer=0;
+  addXp(8);updateHUD();openBarn();showMsg(d.emoji+' → +1 '+d.produceItem+'!');
+}
+function breedAnimal(id){
+  const a=animals.find(x=>x.id===id);if(!a)return;
+  if(animals.filter(x=>x.type===a.type).length<2){showMsg('2. hayvan gerekli!');return;}
+  if(a.pregnant){showMsg('Zaten gebe!');return;}
+  a.pregnant=true;a.pregnancyDays=0;openBarn();showMsg('🍀 Gebe! '+ADEF[a.type].gestationDays+' gün sonra doğum.');
+}
+function confirmSlaughter(id){
+  const a=animals.find(x=>x.id===id);if(!a)return;const d=ADEF[a.type];
+  const mc=document.getElementById('modal-content');
+  mc.innerHTML=`<button class="mclose" onclick="openBarn()">← Geri</button><h2>🔪 Mezbaha</h2>
+  <div style="padding:10px 0;color:#FF9090;">${d.emoji} <b>${a.name}</b> → <b>${d.slaughterMeat} kg 🥩 et</b></div>
+  <div style="color:#666;font-size:10px;margin-bottom:10px;">Bu işlem geri alınamaz.</div>
+  <div style="display:flex;gap:8px;">
+    <button class="mbtn red" onclick="slaughterAnimal(${id})">✅ Evet, Kes</button>
+    <button class="mbtn" onclick="openBarn()">❌ Vazgeç</button>
+  </div>`;
+}
+function slaughterAnimal(id){
+  const a=animals.find(x=>x.id===id);if(!a)return;const d=ADEF[a.type];
+  inventory.meat+=d.slaughterMeat;animals=animals.filter(x=>x.id!==id);
+  checkQuestProgress('slaughter',d.slaughterMeat,true);addXp(10);updateHUD();closeModal();
+  showMsg('🔪 '+a.name+' kesildi! +'+d.slaughterMeat+' 🥩');saveGame();
+}
+function sellAnimal(id){
+  const a=animals.find(x=>x.id===id);if(!a)return;const d=ADEF[a.type];
+  earnGold(d.sellPrice);animals=animals.filter(x=>x.id!==id);addXp(5);updateHUD();openBarn();showMsg('💰 '+a.name+' satıldı!');saveGame();
+}
+
+// ══ MARKET ══
+function openMarket(){
+  const mc=document.getElementById('modal-content');
+  let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🛒 Pazar Yeri</h2>';
+  const items=[
+    {key:'wheat',icon:'🌾',name:'Buğday'},{key:'corn',icon:'🌽',name:'Mısır'},
+    {key:'tomato',icon:'🍅',name:'Domates'},{key:'carrot',icon:'🥕',name:'Havuç'},
+    {key:'apple',icon:'🍎',name:'Elma'},{key:'orange',icon:'🍊',name:'Portakal'},
+    {key:'grape',icon:'🍇',name:'Üzüm'},{key:'meat',icon:'🥩',name:'Et'},
+    {key:'wool',icon:'🧶',name:'Yün'},{key:'egg',icon:'🥚',name:'Yumurta'},{key:'milk',icon:'🍶',name:'Süt'}
+  ];
+  let totalValue=0;
+  items.forEach(it=>{const qty=inventory[it.key]||0;const price=MARKET_PRICES[it.key]||0;const val=qty*price;totalValue+=val;
+    html+=`<div class="mrow"><span>${it.icon} ${it.name}</span><span style="color:#aaa;">×${qty}</span><span style="color:#FFD700;">${val}₺</span><button class="mbtn" onclick="sellAll('${it.key}')">Sat</button></div>`;
+  });
+  html+=`<div style="margin-top:10px;padding-top:8px;border-top:1px solid #7A4A1B;display:flex;justify-content:space-between;align-items:center;">
+    <span style="color:#aaa;">Toplam:</span><span style="color:#FFD700;font-size:14px;font-weight:bold;">${totalValue}₺</span>
+    <button class="mbtn gold" onclick="sellAllItems()">Tümünü Sat</button></div>`;
+  mc.innerHTML=html;document.getElementById('modal').classList.add('show');
+}
+function sellAll(key){
+  const qty=inventory[key]||0;if(qty<=0){showMsg('Satacak yok!');openMarket();return;}
+  earnGold(qty*(MARKET_PRICES[key]||0));inventory[key]=0;addXp(5);updateHUD();openMarket();showMsg('✅ +'+(qty*(MARKET_PRICES[key]||0))+'₺ kazanıldı!');saveGame();
+}
+function sellAllItems(){
+  let total=0;Object.keys(MARKET_PRICES).forEach(k=>{total+=(inventory[k]||0)*(MARKET_PRICES[k]||0);inventory[k]=0;});
+  if(total===0){showMsg('Satacak ürün yok!');openMarket();return;}
+  earnGold(total);addXp(15);updateHUD();closeModal();showMsg('🎉 +'+total+'₺ kazanıldı!');saveGame();
+}
+
+// ══ QUESTS ══
+function openQuests(){
+  const mc=document.getElementById('modal-content');
+  let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>📋 Görevler</h2>';
+  activeQuests.forEach(q=>{
+    const pct=Math.min(100,Math.floor((q.progress/q.target)*100));
+    html+=`<div class="quest-item${q.done?' quest-done':''}">
+      <div style="display:flex;justify-content:space-between;"><b>${q.title}</b><span style="color:#FFD700;">${q.done?'✅':pct+'%'}</span></div>
+      <div style="color:#aaa;font-size:10px;margin:2px 0;">${q.desc}</div>
+      <div style="background:#1A1A1A;border-radius:3px;height:5px;margin:3px 0;"><div style="height:5px;border-radius:3px;background:${q.done?'#4FA028':'#F0A500'};width:${pct}%"></div></div>
+      <div style="color:#888;font-size:9px;">${q.progress}/${q.target} | 💰+${q.reward}₺ ⭐+${q.xpReward}</div>
+      ${q.done?`<button class="mbtn gold" onclick="claimQuest('${q.id}')">🎁 Ödülü Al</button>`:''}
+    </div>`;
+  });
+  html+='<div style="color:#555;font-size:10px;margin-top:8px;">Tamamlanan: '+completedQuests.length+'/'+QUESTS_DEF.length+'</div>';
+  mc.innerHTML=html;document.getElementById('modal').classList.add('show');
+}
+function checkQuestProgress(type,amount,isInc=false){
+  activeQuests.forEach(q=>{
+    if(q.done||q.type!==type)return;
+    if(isInc)q.progress+=amount;else q.progress=Math.max(q.progress,amount);
+    if(q.progress>=q.target){q.done=true;showMsg('📋 Görev Tamamlandı: '+q.title+'!',2500);}
+  });
+}
+function claimQuest(id){
+  const q=activeQuests.find(x=>x.id===id);if(!q||!q.done)return;
+  earnGold(q.reward);addXp(q.xpReward);completedQuests.push(id);
+  activeQuests=activeQuests.filter(x=>x.id!==id);
+  const nextQ=QUESTS_DEF.find(qd=>!completedQuests.includes(qd.id)&&!activeQuests.find(a=>a.id===qd.id));
+  if(nextQ)activeQuests.push({...nextQ,progress:0,done:false});
+  updateHUD();openQuests();showMsg('🎁 Ödül alındı! +'+q.reward+'₺');saveGame();
+}
+
+// ══ NEIGHBOR ══
+function openNeighbor(){
+  const mc=document.getElementById('modal-content');
+  let html='<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🧑‍🌾 Komşu Çiftçiler</h2>';
+  html+='<div style="color:#aaa;font-size:10px;margin-bottom:8px;">Komşular ürün istiyor. Yardım et, altın kazan!</div>';
+  const icons={wheat:'🌾',corn:'🌽',tomato:'🍅',carrot:'🥕',egg:'🥚',wool:'🧶',milk:'🍶',meat:'🥩',apple:'🍎',grape:'🍇'};
+  neighborRequests.forEach((req,i)=>{
+    const have=inventory[req.type]||0;const canFill=have>=req.qty&&!req.fulfilled;
+    html+=`<div class="mrow">
+      <div><div><b>${req.name}</b></div><div style="color:#aaa;font-size:10px;">${icons[req.type]||'📦'} ${req.qty}x ${req.type}</div><div style="color:#666;font-size:9px;">Elimde:${have} | Ödül:${req.reward}₺</div></div>
+      ${req.fulfilled?'<span style="color:#4FA028">✅</span>':canFill?`<button class="mbtn" onclick="giveNeighbor(${i})">Ver +${req.reward}₺</button>`:`<span style="color:#555;font-size:10px;">Yok</span>`}
+    </div>`;
+  });
+  html+=`<div style="margin-top:10px;"><button class="mbtn gold" onclick="refreshNeighborRequests()">🔄 Yeni İstekler</button></div>`;
+  mc.innerHTML=html;document.getElementById('modal').classList.add('show');
+}
+function giveNeighbor(i){
+  const req=neighborRequests[i];if(!req||req.fulfilled)return;
+  if((inventory[req.type]||0)<req.qty){showMsg('Yeterli ürün yok!');return;}
+  inventory[req.type]-=req.qty;earnGold(req.reward);req.fulfilled=true;
+  addXp(20);checkQuestProgress('give_neighbor',1,true);updateHUD();openNeighbor();showMsg('🧑‍🌾 '+req.name+'\'e verildi! +'+req.reward+'₺');saveGame();
+}
+function refreshNeighborRequests(){
+  neighborRequests=[];
+  for(let i=0;i<3;i++){const r=NEIGHBOR_REQUESTS[Math.floor(Math.random()*NEIGHBOR_REQUESTS.length)];neighborRequests.push({...r,id:i,fulfilled:false});}
+  openNeighbor();
+}
+
+// ══ SLEEP ══
+function doSleep(){
+  if(energy>=maxEnergy){showMsg('Enerjin dolu!');return;}
+  const overlay=document.getElementById('sleep-overlay'),txt=document.getElementById('sleep-text');
+  document.getElementById('sleep-sub').textContent='Sabaha kadar uyuyor... (+enerji)';
+  overlay.style.display='flex';overlay.style.background='rgba(0,0,20,0)';txt.style.opacity='0';
+  setTimeout(()=>{overlay.style.background='rgba(0,0,20,0.97)';txt.style.opacity='1';},100);
+  setTimeout(()=>{gameTime=6*60;dayCount++;energy=maxEnergy;
+    animals.forEach(a=>{a.hunger=Math.max(0,a.hunger-15);});updateHUD();saveGame();},1200);
+  setTimeout(()=>txt.style.opacity='0',2200);
+  setTimeout(()=>{overlay.style.background='rgba(0,0,20,0)';
+    setTimeout(()=>overlay.style.display='none',1000);showMsg('☀️ Günaydın! Gün '+dayCount+'.',2500);},2800);
+}
+
+// ══ WEATHER ══
+function updateWeather(dt){
+  weatherTimer-=dt;
+  if(weatherTimer<=0){
+    const types=level<3?['sunny','sunny','cloudy','rainy']:WEATHER_TYPES;
+    weather=types[Math.floor(Math.random()*types.length)];weatherTimer=180+Math.random()*300;weatherIntensity=Math.random();
+    const msgs={sunny:'☀️ Hava açıldı!',cloudy:'⛅ Bulutlanıyor.',rainy:'🌧️ Yağmur! Bitkiler 2x büyür.',stormy:'⛈️ Fırtına!',windy:'💨 Rüzgar!'};
+    const wb=document.getElementById('weather-banner');wb.textContent=msgs[weather]||'';wb.style.opacity='1';setTimeout(()=>wb.style.opacity='0',3000);
+    if(weather==='rainy'||weather==='stormy')tiles.forEach(t=>{if(t.state==='planted'){t.watered=true;t.waterTimer=200;}});
+  }
+  if(weather==='rainy'||weather==='stormy')
+    for(let i=0;i<3;i++)rainDrops.push({x:Math.random()*W,y:-10,vy:8+Math.random()*6,vx:weather==='stormy'?-2:0,life:1});
+  rainDrops.forEach(d=>{d.x+=d.vx;d.y+=d.vy;d.life-=dt*3;});
+  rainDrops=rainDrops.filter(d=>d.life>0&&d.y<H);
+}
+
+// ══ ANIMALS ══
+function updateAnimals(dt){
+  const dp=dt*(2/60/24);
+  animals.forEach(a=>{
+    a.hunger=Math.max(0,a.hunger-dt*.8);
+    if(a.hunger<20)a.happy=Math.max(0,a.happy-dt*1.5);
+    a.age+=dp*100;a.produceTimer+=(dt/60);
+    if(a.produceTimer>=1&&a.hunger>25&&!a.readyProduce){a.readyProduce=true;a.produceTimer=0;}
+    if(a.pregnant){
+      a.pregnancyDays+=dp*100;const d=ADEF[a.type];
+      if(a.pregnancyDays>=d.gestationDays){
+        a.pregnant=false;a.pregnancyDays=0;
+        animals.push({id:animalId++,type:a.type,name:ADEF[a.type].name+' Yavru',hunger:100,happy:100,age:0,pregnant:false,pregnancyDays:0,readyProduce:false,produceTimer:0});
+        checkQuestProgress('breed',1,true);showMsg('🍼 Yavru doğdu!',3000);updateHUD();saveGame();
+      }
+    }
+  });
+  // Fruit trees grow slowly
+  fruitTrees.forEach(ft=>{
+    if(!ft.ready){ft.timer-=dt*0.2;if(ft.timer<=0){ft.stage=Math.min(3,ft.stage+1);ft.timer=ft.stage<3?90:0;if(ft.stage===3)ft.ready=true;}}
+  });
+}
+
+// ══════════════════════════════════════════════
+// NAKLİYE MİNİ OYUNU — YENİ HARITA + WIN ANİMASYON
+// ══════════════════════════════════════════════
+let PU={active:false},puRAF=null;
+const LANE_COUNT=3;
+
+// Touch state for pickup controls
+let puTouch={startX:0,startY:0,active:false};
+
+function getLaneY(lane,ph){
+  // Perspective-style: top lane is narrower/higher, bottom is wider/lower
+  const tops=[ph*0.38, ph*0.58, ph*0.74];
+  return tops[lane];
+}
+function getLaneH(lane,ph){
+  const hs=[ph*0.14, ph*0.13, ph*0.12];
+  return hs[lane];
+}
+
+function startPickup(){
+  const tot=Object.values(inventory).reduce((a,b)=>a+b,0);
+  if(tot===0){showMsg('Taşıyacak ürün yok! Önce hasat yap.');return;}
+  const ov=document.getElementById('pickup-overlay');ov.style.display='block';
+  const puc=document.getElementById('puc');
+  const pw=window.innerWidth,ph=window.innerHeight;
+  puc.width=pw;puc.height=ph;
+  const pc=puc.getContext('2d');
+  const maxCargo=Math.min(6,tot);
+  const ROAD_LEN=4000;
+
+  const cropKeys=Object.keys(inventory).filter(k=>inventory[k]>0);
+
+  // Build obstacles first (6 obstacles, spread evenly, random lanes)
+  const obstacles=[];
+  for(let i=0;i<6;i++){
+    const baseX=700+i*480;
+    const lane=Math.floor(Math.random()*LANE_COUNT);
+    obstacles.push({wx:baseX+Math.random()*80,lane,type:['rock','barrel','hay'][i%3]});
+  }
+
+  // Place crops: ensure at least 120 units away from any obstacle
+  const cropItems=[];
+  let attempts=0;
+  while(cropItems.length<10&&attempts<200){
+    attempts++;
+    const wx=250+(cropItems.length*340)+Math.random()*120;
+    const lane=cropItems.length%LANE_COUNT;
+    // Check not near obstacle
+    const nearOb=obstacles.some(ob=>ob.lane===lane&&Math.abs(ob.wx-wx)<150);
+    if(!nearOb)cropItems.push({wx,lane,collected:false,type:cropKeys[cropItems.length%cropKeys.length]});
+  }
+
+  // Markets at 3 positions, different lanes, spread across road
+  const markets=[
+    {wx:1400,lane:0,reached:false,label:'1. Pazar'},
+    {wx:2600,lane:2,reached:false,label:'2. Pazar'},
+    {wx:ROAD_LEN-300,lane:1,reached:false,label:'🏁 Son Pazar',isFinal:true}
+  ];
+
+  // Win animation state
+  const winAnim={active:false,t:0,confetti:[]};
+  for(let i=0;i<60;i++){
+    winAnim.confetti.push({
+      x:Math.random()*pw,y:-20-Math.random()*100,
+      vx:(Math.random()-0.5)*4,vy:2+Math.random()*4,
+      color:['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7'][i%6],
+      size:6+Math.random()*8,rot:Math.random()*Math.PI*2,rotV:(Math.random()-0.5)*0.2
+    });
+  }
+
+  PU={
+    active:true,ctx:pc,w:pw,h:ph,
+    truck:{wx:60,lane:1},
+    cargo:0,maxCargo,score:0,timeLeft:100,animT:0,
+    gameOver:false,won:false,winAnim,
+    cropItems,markets,obstacles,
+    ROAD_LEN,camX:0,
+    keys:{},laneCooldown:0
+  };
+
+  // Touch controls for pickup
+  puc.addEventListener('touchstart',e=>{
+    puTouch.startX=e.touches[0].clientX;puTouch.startY=e.touches[0].clientY;puTouch.active=true;
+  },{passive:true});
+  puc.addEventListener('touchend',e=>{
+    if(!puTouch.active)return;puTouch.active=false;
+    const dx=e.changedTouches[0].clientX-puTouch.startX;
+    const dy=e.changedTouches[0].clientY-puTouch.startY;
+    if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>30){
+      // Vertical swipe = lane change
+      if(dy<0&&PU.truck.lane>0)PU.truck.lane--;
+      else if(dy>0&&PU.truck.lane<LANE_COUNT-1)PU.truck.lane++;
+    }
+  },{passive:true});
+
+  // Tap right half = forward, left = slow
+  puc.addEventListener('touchmove',e=>{
+    if(e.touches.length>0){
+      const tx=e.touches[0].clientX;
+      if(tx>pw*0.5)PU.keys['ArrowRight']=true;
+      else PU.keys['ArrowLeft']=true;
+    }
+  },{passive:true});
+  puc.addEventListener('touchend',()=>{PU.keys['ArrowRight']=false;PU.keys['ArrowLeft']=false;},{passive:true});
+
+  document.getElementById('pu-msg').style.display='none';
+  checkQuestProgress('pickup',1,true);
+  puLoop();
+  showMsg('🚛 Kaydır ↑↓ şerit değiştir | → ilerle | Ürünleri topla → pazara götür!',3500);
+}
+
+function puDrawScene(){
+  const pc=PU.ctx,pw=PU.w,ph=PU.h,t=PU.truck;
+  const camX=PU.camX;
+
+  // ── SKY gradient ──
+  const skyGrad=pc.createLinearGradient(0,0,0,ph*0.4);
+  skyGrad.addColorStop(0,'#1a6bba');skyGrad.addColorStop(1,'#7ac8f5');
+  pc.fillStyle=skyGrad;pc.fillRect(0,0,pw,ph*0.4);
+
+  // Distant mountains
+  pc.fillStyle='#4a6080';
+  const mts=[[0.1,0.32],[0.25,0.38],[0.45,0.28],[0.65,0.35],[0.82,0.30],[1.0,0.36]];
+  for(let i=0;i<mts.length-1;i++){
+    const [x1,h1]= mts[i],[ x2,h2]=mts[i+1];
+    pc.beginPath();pc.moveTo(x1*pw,ph*0.42);pc.lineTo(x1*pw+(x2-x1)*pw*0.5,ph*(0.42-Math.max(h1,h2)));pc.lineTo(x2*pw,ph*0.42);pc.fill();
+  }
+  // Snow caps
+  pc.fillStyle='rgba(240,245,255,0.7)';
+  mts.forEach(([x,h])=>{const px2=x*pw,py2=ph*(0.42-h);pc.beginPath();pc.moveTo(px2-12,py2+14);pc.lineTo(px2,py2);pc.lineTo(px2+12,py2+14);pc.closePath();pc.fill();});
+
+  // Green fields / horizon
+  const fieldGrad=pc.createLinearGradient(0,ph*0.38,0,ph*0.55);
+  fieldGrad.addColorStop(0,'#2d8a1e');fieldGrad.addColorStop(1,'#4aaa2a');
+  pc.fillStyle=fieldGrad;pc.fillRect(0,ph*0.38,pw,ph*0.18);
+
+  // Scrolling background trees (parallax 0.15x)
+  const treeOffsets=[80,240,420,600,760,940,1100,1300,1480,1660,1840,2020];
+  treeOffsets.forEach(wo=>{
+    const sx=((wo-(camX*0.15))%pw+pw)%pw;
+    const ty=ph*0.38-8;
+    pc.fillStyle='#5a3311';pc.fillRect(sx-4,ty-22,8,24);
+    pc.fillStyle='#1e5a12';pc.beginPath();pc.arc(sx,ty-22,16,0,Math.PI*2);pc.fill();
+    pc.fillStyle='#2a7a1a';pc.beginPath();pc.arc(sx-8,ty-12,11,0,Math.PI*2);pc.fill();
+    pc.beginPath();pc.arc(sx+9,ty-16,12,0,Math.PI*2);pc.fill();
+  });
+
+  // ── ROAD: draw all 3 lanes with perspective ──
+  // Bottom fill (dirt shoulder)
+  pc.fillStyle='#8B6A3B';pc.fillRect(0,getLaneY(2,ph),pw,ph-getLaneY(2,ph));
+
+  for(let ln=0;ln<LANE_COUNT;ln++){
+    const ly=getLaneY(ln,ph);
+    const lh=getLaneH(ln,ph);
+    // Road surface (slightly different shades for depth)
+    const shades=['#A08050','#9A7848','#907040'];
+    pc.fillStyle=shades[ln];pc.fillRect(0,ly,pw,lh);
+    // Center dashes
+    pc.strokeStyle='rgba(255,255,200,0.3)';pc.lineWidth=2;pc.setLineDash([28,18]);
+    pc.beginPath();pc.moveTo(0,ly+lh*0.5);pc.lineTo(pw,ly+lh*0.5);pc.stroke();pc.setLineDash([]);
+    // Road edge lines
+    pc.strokeStyle='rgba(255,255,200,0.5)';pc.lineWidth=1.5;pc.setLineDash([]);
+    pc.beginPath();pc.moveTo(0,ly);pc.lineTo(pw,ly);pc.stroke();
+    pc.beginPath();pc.moveTo(0,ly+lh);pc.lineTo(pw,ly+lh);pc.stroke();
+    // Grass divider between lanes
+    if(ln<LANE_COUNT-1){
+      pc.fillStyle='#3d8a18';pc.fillRect(0,ly+lh,pw,getLaneY(ln+1,ph)-(ly+lh));
+      // Flower dots
+      pc.fillStyle='#FFD700';
+      for(let fi=0;fi<8;fi++){const fx=((fi*180)-(camX*0.5))%pw;if(fx>0&&fx<pw)pc.fillRect(fx,ly+lh+2,3,3);}
+    }
+  }
+
+  // ── OBSTACLES ──
+  PU.obstacles.forEach(ob=>{
+    const sx=ob.wx-camX;
+    if(sx<-80||sx>pw+80)return;
+    const ly=getLaneY(ob.lane,ph);
+    const lh=getLaneH(ob.lane,ph);
+    const cy2=ly+lh*0.5;
+    if(ob.type==='rock'){
+      pc.fillStyle='#7a7a7a';pc.beginPath();pc.ellipse(sx,cy2,22,15,0,0,Math.PI*2);pc.fill();
+      pc.fillStyle='#555';pc.beginPath();pc.ellipse(sx-5,cy2-3,14,10,0.3,0,Math.PI*2);pc.fill();
+      pc.fillStyle='#999';pc.beginPath();pc.ellipse(sx+4,cy2-8,8,6,-.2,0,Math.PI*2);pc.fill();
+    }else if(ob.type==='barrel'){
+      pc.fillStyle='#8B4513';pc.fillRect(sx-12,cy2-18,24,24);
+      pc.strokeStyle='#5A2D0A';pc.lineWidth=3;
+      pc.beginPath();pc.moveTo(sx-14,cy2-12);pc.lineTo(sx+14,cy2-12);pc.stroke();
+      pc.beginPath();pc.moveTo(sx-14,cy2-2);pc.lineTo(sx+14,cy2-2);pc.stroke();
+      pc.fillStyle='#FFD700';pc.font='12px serif';pc.textAlign='center';pc.fillText('⚠️',sx,cy2-4);pc.textAlign='left';
+    }else{
+      // hay bale
+      pc.fillStyle='#DAA520';pc.beginPath();pc.ellipse(sx,cy2-8,22,16,0,0,Math.PI*2);pc.fill();
+      pc.strokeStyle='#B8860B';pc.lineWidth=2;pc.beginPath();pc.arc(sx,cy2-8,22,0,Math.PI*2);pc.stroke();
+      pc.beginPath();pc.moveTo(sx,cy2+8);pc.lineTo(sx,cy2-24);pc.stroke();
+    }
+    // Warning shadow on road
+    pc.fillStyle='rgba(255,80,0,0.15)';pc.beginPath();pc.ellipse(sx,cy2+4,26,8,0,0,Math.PI*2);pc.fill();
+  });
+
+  // ── CROP ITEMS ──
+  const icons={wheat:'🌾',corn:'🌽',tomato:'🍅',carrot:'🥕',meat:'🥩',wool:'🧶',egg:'🥚',milk:'🍶',apple:'🍎',orange:'🍊',grape:'🍇'};
+  PU.cropItems.forEach(ci=>{
+    if(ci.collected)return;
+    const sx=ci.wx-camX;
+    if(sx<-50||sx>pw+50)return;
+    const ly=getLaneY(ci.lane,ph);const lh=getLaneH(ci.lane,ph);
+    const cy2=ly+lh*0.5;
+    // Glow
+    pc.fillStyle='rgba(0,255,120,0.18)';pc.beginPath();pc.arc(sx,cy2-5,22,0,Math.PI*2);pc.fill();
+    // Bob animation
+    const bob=Math.sin(PU.animT*0.06+ci.wx*0.01)*3;
+    pc.font='22px serif';pc.textAlign='center';pc.fillText(icons[ci.type]||'📦',sx,cy2-8+bob);pc.textAlign='left';
+  });
+
+  // ── MARKETS ──
+  PU.markets.forEach(mk=>{
+    const sx=mk.wx-camX;
+    if(sx<-100||sx>pw+100)return;
+    const ly=getLaneY(mk.lane,ph);const lh=getLaneH(mk.lane,ph);
+    const by=ly; // base Y of lane top
+    // Building
+    pc.fillStyle=mk.reached?'#3a4a3a':'#6B1A1A';pc.fillRect(sx-35,by-80,70,80);
+    pc.fillStyle=mk.reached?'#2a3a2a':'#922B1A';
+    pc.beginPath();pc.moveTo(sx-50,by-80);pc.lineTo(sx,by-112);pc.lineTo(sx+50,by-80);pc.closePath();pc.fill();
+    // Sign
+    pc.fillStyle='#FFF';pc.font='bold 10px Nunito,sans-serif';pc.textAlign='center';
+    pc.fillText(mk.reached?'✅ TAMAM':mk.label,sx,by-48);pc.textAlign='left';
+    // Gold vertical guide line
+    if(!mk.reached){
+      pc.strokeStyle='rgba(255,215,0,0.6)';pc.lineWidth=2;pc.setLineDash([8,6]);
+      pc.beginPath();pc.moveTo(sx,getLaneY(0,ph));pc.lineTo(sx,ph);pc.stroke();pc.setLineDash([]);
+    }
+    // Shimmer on active market
+    if(!mk.reached&&PU.cargo>0&&mk.lane===t.lane&&Math.abs(t.wx-mk.wx)<200){
+      pc.fillStyle=`rgba(255,215,0,${0.12+0.08*Math.sin(PU.animT*0.15)})`;
+      pc.fillRect(sx-35,by-80,70,80);
+    }
+  });
+
+  // ── FINISH GATE ──
+  const goalSX=PU.ROAD_LEN-camX;
+  if(goalSX>-60&&goalSX<pw+60){
+    // Checkered gate posts
+    for(let p=-1;p<=1;p+=2){
+      pc.fillStyle='#FFF';pc.fillRect(goalSX+p*55-6,getLaneY(0,ph)-20,12,ph-getLaneY(0,ph)+20);
+      // Checkered pattern
+      for(let ci=0;ci<8;ci++){pc.fillStyle=ci%2===0?'#222':'#FFF';pc.fillRect(goalSX+p*55-6,getLaneY(0,ph)-20+ci*12,12,12);}
+    }
+    // Finish banner
+    pc.fillStyle='#FF2222';pc.fillRect(goalSX-54,getLaneY(0,ph)-20,108,22);
+    pc.fillStyle='#FFF';pc.font='bold 12px Nunito,sans-serif';pc.textAlign='center';
+    pc.fillText('🏁 BİTİŞ',goalSX,getLaneY(0,ph)-4);pc.textAlign='left';
+    // Vertical line all lanes
+    pc.strokeStyle='rgba(255,50,50,0.7)';pc.lineWidth=3;pc.setLineDash([12,8]);
+    pc.beginPath();pc.moveTo(goalSX,getLaneY(0,ph));pc.lineTo(goalSX,ph);pc.stroke();pc.setLineDash([]);
+  }
+
+  // ── PROGRESS BAR ──
+  const prog=Math.min(1,t.wx/PU.ROAD_LEN);
+  const pbx=pw*0.12,pbw=pw*0.76,pby=ph-14;
+  pc.fillStyle='rgba(0,0,0,0.55)';pc.beginPath();pc.roundRect?pc.roundRect(pbx-2,pby-2,pbw+4,12,5):pc.fillRect(pbx-2,pby-2,pbw+4,12);pc.fill();
+  const pGrad=pc.createLinearGradient(pbx,0,pbx+pbw,0);
+  pGrad.addColorStop(0,'#00AA44');pGrad.addColorStop(0.7,'#00FF88');pGrad.addColorStop(1,'#FFD700');
+  pc.fillStyle=pGrad;pc.fillRect(pbx,pby,pbw*prog,8);
+  // Market markers on bar
+  PU.markets.forEach(mk=>{
+    const mx=pbx+pbw*(mk.wx/PU.ROAD_LEN);
+    pc.fillStyle=mk.reached?'#4FA028':'#FFD700';pc.fillRect(mx-2,pby-3,4,14);
+  });
+  pc.fillStyle='#FFD700';pc.font='bold 9px monospace';pc.textAlign='center';
+  pc.fillText('🏁 '+Math.round(prog*100)+'%',pw/2,pby-4);pc.textAlign='left';
+
+  // ── TRUCK ──
+  const TSX=pw*0.28; // fixed screen position
+  const TSY=getLaneY(t.lane,ph)+getLaneH(t.lane,ph)*0.5;
+  // Shadow
+  pc.fillStyle='rgba(0,0,0,0.2)';pc.beginPath();pc.ellipse(TSX-5,TSY+12,40,8,0,0,Math.PI*2);pc.fill();
+  // Truck body
+  pc.fillStyle='#D0392B';pc.fillRect(TSX-52,TSY-22,90,22);
+  // Cab
+  pc.fillStyle='#A02820';pc.fillRect(TSX+28,TSY-36,24,36);
+  // Windshield
+  pc.fillStyle='rgba(180,230,255,0.88)';pc.fillRect(TSX+30,TSY-34,20,14);
+  // Headlights
+  pc.fillStyle='#FFE566';pc.fillRect(TSX+46,TSY-22,6,8);
+  // Wheels
+  [[TSX-30,TSY+12],[TSX+14,TSY+12]].forEach(([wx2,wy2])=>{
+    pc.fillStyle='#1a1a2e';pc.beginPath();pc.arc(wx2,wy2,11,0,Math.PI*2);pc.fill();
+    pc.fillStyle='#888';pc.beginPath();pc.arc(wx2,wy2,5,0,Math.PI*2);pc.fill();
+    // Spin
+    pc.strokeStyle='#555';pc.lineWidth=1.5;
+    const a=PU.animT*0.15;
+    pc.beginPath();pc.moveTo(wx2+5*Math.cos(a),wy2+5*Math.sin(a));pc.lineTo(wx2-5*Math.cos(a),wy2-5*Math.sin(a));pc.stroke();
+  });
+  // Exhaust smoke
+  if(PU.keys['ArrowRight']){
+    for(let s=0;s<3;s++){
+      const sa=((PU.animT+s*8)%24)/24;
+      pc.fillStyle=`rgba(180,180,180,${0.4-sa*0.4})`;pc.beginPath();pc.arc(TSX-54+s*2,TSY-10-sa*20,4+sa*6,0,Math.PI*2);pc.fill();
+    }
+  }
+  // Cargo on truck bed
+  for(let ci=0;ci<PU.cargo;ci++){pc.font='13px serif';pc.fillText(['🌾','🌽','🍅','🥕'][ci%4],TSX-48+ci*14,TSY-10);}
+  // FULL indicator
+  if(PU.cargo===PU.maxCargo){
+    pc.fillStyle=`rgba(255,215,0,${0.15+0.1*Math.sin(PU.animT*0.15)})`;pc.beginPath();pc.arc(TSX-5,TSY-28,28,0,Math.PI*2);pc.fill();
+    pc.fillStyle='#FFD700';pc.font='bold 9px Nunito,sans-serif';pc.textAlign='center';pc.fillText('DOLU→PAZAR!',TSX-5,TSY-52);pc.textAlign='left';
+  }
+
+  // Lane change arrows on truck
+  if(t.lane>0){pc.fillStyle='rgba(255,255,255,0.7)';pc.font='bold 16px serif';pc.textAlign='center';pc.fillText('▲',TSX-5,TSY-38);pc.textAlign='left';}
+  if(t.lane<LANE_COUNT-1){pc.fillStyle='rgba(255,255,255,0.7)';pc.font='bold 16px serif';pc.textAlign='center';pc.fillText('▼',TSX-5,TSY+32);pc.textAlign='left';}
+
+  // ── WIN ANIMATION ──
+  if(PU.winAnim.active){
+    PU.winAnim.t++;
+    const wt=PU.winAnim.t;
+    // Dark overlay fade in
+    pc.fillStyle=`rgba(0,0,0,${Math.min(0.6,wt*0.015)})`;pc.fillRect(0,0,pw,ph);
+    // Confetti
+    PU.winAnim.confetti.forEach(c=>{
+      c.x+=c.vx;c.y+=c.vy;c.rot+=c.rotV;
+      if(c.y>ph+20){c.y=-10;c.x=Math.random()*pw;}
+      pc.save();pc.translate(c.x,c.y);pc.rotate(c.rot);
+      pc.fillStyle=c.color;pc.fillRect(-c.size/2,-c.size/2,c.size,c.size);
+      pc.restore();
+    });
+    // Trophy + text
+    if(wt>20){
+      const bounce=Math.sin(wt*0.12)*6;
+      pc.font='bold 70px serif';pc.textAlign='center';pc.fillText('🏆',pw/2,ph*0.35+bounce);
+      pc.fillStyle='#FFD700';pc.font='bold 28px Fredoka,sans-serif';pc.fillText('TEBRİKLER!',pw/2,ph*0.52);
+      pc.fillStyle='#FFF';pc.font='18px Nunito,sans-serif';pc.fillText('Nakliye tamamlandı! +'+PU.score+'₺',pw/2,ph*0.60);
+      pc.fillStyle='rgba(255,215,0,0.8)';pc.font='13px Nunito,sans-serif';pc.fillText('Ekrana dokun veya devam et...',pw/2,ph*0.68);
+      pc.textAlign='left';
+    }
+    if(wt>180){endPickup(true);}
+  }
+}
+
+function puLoop(){
+  if(!PU.active)return;
+  const pc=PU.ctx,pw=PU.w,ph=PU.h;
+  PU.animT++;
+
+  if(!PU.winAnim.active){
+    PU.timeLeft-=1/60;
+    document.getElementById('pu-stats').textContent=`⏱${Math.ceil(PU.timeLeft)}s · 💰+${PU.score} · 📦${PU.cargo}/${PU.maxCargo}`;
+
+    const t=PU.truck;
+    if((PU.keys['ArrowRight']||PU.keys['d']||PU.keys['D'])&&t.wx<PU.ROAD_LEN-50)t.wx+=4.5;
+    if((PU.keys['ArrowLeft']||PU.keys['a']||PU.keys['A'])&&t.wx>30)t.wx-=2;
+
+    PU.laneCooldown=Math.max(0,PU.laneCooldown-1);
+    if(PU.laneCooldown===0){
+      if((PU.keys['ArrowUp']||PU.keys['w'])&&t.lane>0){t.lane--;PU.laneCooldown=20;}
+      if((PU.keys['ArrowDown']||PU.keys['s'])&&t.lane<LANE_COUNT-1){t.lane++;PU.laneCooldown=20;}
+    }
+    PU.camX=Math.max(0,t.wx-pw*0.28);
+
+    const truckWX=t.wx;
+    // Collect crops
+    PU.cropItems.forEach(ci=>{
+      if(!ci.collected&&ci.lane===t.lane&&Math.abs(truckWX-ci.wx)<55&&PU.cargo<PU.maxCargo){
+        ci.collected=true;PU.cargo++;PU.score+=10;showPuMsg('📦 +Ürün! ×'+PU.cargo,800);
+      }
+    });
+    // Market collision
+    PU.markets.forEach(mk=>{
+      if(!mk.reached&&mk.lane===t.lane&&Math.abs(truckWX-mk.wx)<70){
+        if(PU.cargo>0){
+          const earned=PU.cargo*28;PU.score+=earned;earnGold(earned);PU.cargo=0;mk.reached=true;
+          updateHUD();showPuMsg('🛒 +'+earned+'₺ KAZANILDI!',1800);
+        }else if(mk.isFinal){mk.reached=true;}
+      }
+    });
+    // Obstacle
+    PU.obstacles.forEach(ob=>{
+      if(ob.lane===t.lane&&Math.abs(truckWX-ob.wx)<48){
+        if(PU.cargo>0){PU.cargo=Math.max(0,PU.cargo-1);showPuMsg('💥 Çarpma! -1 ürün',1000);}
+        t.wx=Math.max(30,t.wx-80);
+      }
+    });
+    // End conditions
+    if(PU.markets.every(m=>m.reached)||t.wx>=PU.ROAD_LEN-30){
+      PU.won=true;PU.winAnim.active=true;addXp(30);updateHUD();saveGame();
+    }
+    if(PU.timeLeft<=0&&!PU.winAnim.active){PU.gameOver=true;endPickup(true);}
+  }
+
+  puDrawScene();
+  puRAF=requestAnimationFrame(puLoop);
+}
+
+function showPuMsg(txt,dur){
+  const m=document.getElementById('pu-msg');m.textContent=txt;m.style.display='block';
+  clearTimeout(m._t);m._t=setTimeout(()=>m.style.display='none',dur);
+}
+function endPickup(auto){
+  PU.active=false;cancelAnimationFrame(puRAF);
+  const ov=document.getElementById('pickup-overlay');
+  if(!auto){ov.style.display='none';return;}
+  if(!PU.won){
+    showMsg('⏱ Süre doldu! +'+PU.score+'₺ kazandın.',2800);
+    addXp(10);updateHUD();saveGame();
+  }
+  setTimeout(()=>{ov.style.display='none';},PU.won?200:2400);
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+// ══ RENDER HELPERS ══
+function lerpC(c1,c2,t){
+  const p=v=>parseInt(v,16);
+  const r1=p(c1.slice(1,3)),g1=p(c1.slice(3,5)),b1=p(c1.slice(5,7));
+  const r2=p(c2.slice(1,3)),g2=p(c2.slice(3,5)),b2=p(c2.slice(5,7));
+  return'#'+[Math.round(r1+(r2-r1)*t),Math.round(g1+(g2-g1)*t),Math.round(b1+(b2-b1)*t)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+function getSkyColor(){
+  const h=(gameTime/60)%24;
+  if(h<5)return'#0D1B4B';if(h<7)return lerpC('#0D1B4B','#FF9B7A',(h-5)/2);
+  if(h<9)return lerpC('#FF9B7A','#87CEEB',(h-7)/2);
+  if(h<18){if(weather==='stormy')return'#445566';if(weather==='rainy')return'#7799AA';return'#87CEEB';}
+  if(h<20)return lerpC('#87CEEB','#FF6B35',(h-18)/2);if(h<22)return lerpC('#FF6B35','#0D1B4B',(h-20)/2);return'#0D1B4B';
+}
+
+// Compute ground line Y for a given screen X (hills in bg)
+function groundY(sx){
+  // gentle hills following sin wave
+  return H*0.46 - Math.sin(sx/W*Math.PI*1.5)*H*0.04;
+}
+
+function drawBg(){
+  ctx.fillStyle=getSkyColor();ctx.fillRect(0,0,W,H);
+  const h=(gameTime/60)%24;
+  // Sun/Moon
+  if(h>=5&&h<20&&weather!=='stormy'){
+    const sx=W*((h-5)/15),sy=H*.25-Math.sin(((h-5)/15)*Math.PI)*H*.18;
+    ctx.fillStyle=h>17?'#FF8C00':'#FFE566';ctx.beginPath();ctx.arc(sx,sy,18*SCALE,0,Math.PI*2);ctx.fill();
+  }else if(h<5||h>=20){
+    ctx.fillStyle='#E0E8FF';ctx.beginPath();ctx.arc(W*.83,H*.13,14*SCALE,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.6)';
+    for(let i=0;i<28;i++){ctx.globalAlpha=(.4+.5*Math.sin(animT*.02+i))*.7;ctx.fillRect((i*137)%W,(i*83)%(H*.38),2,2);}
+    ctx.globalAlpha=1;
+  }
+  // Mountains
+  ctx.fillStyle='#6B7A8D';
+  for(let i=0;i<4;i++){
+    const mx=W*(.06+i*.25),mh=H*(.19+(i%2)*.1);
+    ctx.beginPath();ctx.moveTo(mx-88*SCALE,H*.44);ctx.lineTo(mx,H*.44-mh);ctx.lineTo(mx+88*SCALE,H*.44);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#E8EDF2';ctx.beginPath();ctx.moveTo(mx-18*SCALE,H*.44-mh*.78);ctx.lineTo(mx,H*.44-mh);ctx.lineTo(mx+18*SCALE,H*.44-mh*.78);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#6B7A8D';
+  }
+  // Clouds
+  clouds.forEach(cl=>{
+    const alpha=weather==='stormy'?.45:.88;
+    ctx.fillStyle=weather==='stormy'?`rgba(90,100,120,${alpha})`:`rgba(255,255,255,${alpha})`;
+    ctx.beginPath();const cw=cl.w*SCALE,ch=20*SCALE;
+    ctx.ellipse(cl.x,cl.y,cw,ch,0,0,Math.PI*2);ctx.ellipse(cl.x-cw*.3,cl.y+5,cw*.5,ch*.8,0,0,Math.PI*2);ctx.ellipse(cl.x+cw*.3,cl.y+5,cw*.5,ch*.8,0,0,Math.PI*2);ctx.fill();
+  });
+  // Rain
+  if(weather==='rainy'||weather==='stormy'){
+    ctx.strokeStyle=weather==='stormy'?'rgba(180,200,255,.5)':'rgba(150,180,255,.4)';ctx.lineWidth=1;
+    rainDrops.forEach(d=>{ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-2,d.y+12);ctx.stroke();});
+  }
+  // Wind
+  if(weather==='windy'){ctx.fillStyle='rgba(200,200,150,.25)';
+    for(let i=0;i<12;i++){const wx=(animT*3+i*150)%W,wy=H*.3+Math.sin(animT*.05+i)*H*.1;ctx.fillRect(wx,wy,20+i*5,2);}
+  }
+
+  // ── GROUND with proper hills ──
+  // Fill green ground using groundY function
+  ctx.fillStyle='#2A5A12';
+  ctx.beginPath();ctx.moveTo(0,groundY(0));
+  for(let sx=0;sx<=W;sx+=20)ctx.lineTo(sx,groundY(sx));
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#3A7A1E';
+  ctx.beginPath();ctx.moveTo(0,groundY(0)+H*.025);
+  for(let sx=0;sx<=W;sx+=20)ctx.lineTo(sx,groundY(sx)+H*.025);
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
+
+  // River — left side of farm
+  ctx.fillStyle='#2980B9';
+  const riverLeft=OX-90*SCALE,riverRight=OX-18*SCALE;
+  ctx.beginPath();ctx.moveTo(riverLeft,groundY(riverLeft)-5);ctx.lineTo(riverRight,groundY(riverRight)-5);ctx.lineTo(riverRight,H);ctx.lineTo(riverLeft,H);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(90,184,245,.5)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(riverLeft+8,groundY(riverLeft));ctx.lineTo(riverRight-8,groundY(riverRight));ctx.stroke();
+
+  // ── TREES anchored to groundY ──
+  const tx1=OX-88*SCALE, ty1=groundY(OX-88*SCALE);
+  const tx2=OX-52*SCALE, ty2=groundY(OX-52*SCALE);
+  const tx3=OX-118*SCALE,ty3=groundY(OX-118*SCALE);
+  drawTree(tx1,ty1,SCALE);
+  drawTree(tx2,ty2,SCALE*.82);
+  drawTree(tx3,ty3,SCALE*.72);
+
+  // ── FRUIT TREES (right side, anchored to groundY) ──
+  const ftPositions=[
+    {sx:W-OX+110*SCALE},{sx:W-OX+148*SCALE},{sx:W-OX+90*SCALE}
+  ];
+  fruitTrees.forEach((ft,i)=>{
+    const pos=ftPositions[i]||{sx:W-OX+(80+i*40)*SCALE};
+    const fsx=pos.sx,fsy=groundY(pos.sx);
+    drawFruitTree(ft,fsx,fsy,SCALE*.85);
+  });
+
+  // House
+  const hx=W-OX-15,hy=groundY(W-OX-15)-8;
+  drawHouse(hx,hy,SCALE*.9);
+
+  // Barn
+  const bx=W-OX+38,by=groundY(W-OX+38);
+  drawBarnBld(bx,by,SCALE*.73);
+
+  // Windmill anchored to its ground position
+  const wmx=OX+COLS*CELL*SCALE+55*SCALE;
+  const wmy=groundY(wmx);
+  drawWindmill(wmx,wmy,SCALE);
+
+  // Animals near barn
+  const emojiMap={cow:'🐄',sheep:'🐑',chicken:'🐔'};
+  animals.slice(0,6).forEach((a,i)=>{
+    const ax=bx+(i%3-1)*28*SCALE,ay=by+Math.floor(i/3)*22*SCALE;
+    ctx.font=(13*SCALE)+'px serif';ctx.fillText(emojiMap[a.type]||'🐾',ax,ay);
+  });
+}
+
+function drawTree(x,y,sc){
+  // Trunk starts at ground (y)
+  ctx.fillStyle='#6B3D11';ctx.fillRect(x-5*sc,y-30*sc,10*sc,30*sc);
+  ctx.fillStyle='#2D6B1E';ctx.beginPath();ctx.arc(x,y-42*sc,22*sc,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#3A8A24';ctx.beginPath();ctx.arc(x-8*sc,y-32*sc,14*sc,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x+8*sc,y-38*sc,16*sc,0,Math.PI*2);ctx.fill();
+}
+
+function drawFruitTree(ft,x,y,sc){
+  // Trunk from ground up
+  ctx.fillStyle='#7A4A22';ctx.fillRect(x-5*sc,y-35*sc,10*sc,35*sc);
+  const def=FRUIT_TREES.find(d=>d.type===ft.type)||FRUIT_TREES[0];
+  // Foliage
+  ctx.fillStyle=def.leafColor;
+  ctx.beginPath();ctx.arc(x,y-52*sc,20*sc,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x-12*sc,y-40*sc,14*sc,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x+12*sc,y-44*sc,15*sc,0,Math.PI*2);ctx.fill();
+  // Fruit dots if stage>=2
+  if(ft.stage>=2){
+    const positions=[[-8,-56],[ 5,-60],[12,-50],[-3,-46],[8,-40]];
+    const fcount=ft.stage>=3?5:3;
+    ctx.fillStyle=def.color;
+    for(let i=0;i<fcount;i++){
+      const [fx,fy]=positions[i];
+      ctx.beginPath();ctx.arc(x+fx*sc,y+fy*sc,4*sc,0,Math.PI*2);ctx.fill();
+    }
+  }
+  // Ready glow + harvest label
+  if(ft.ready){
+    ctx.fillStyle='rgba(255,255,100,.2)';ctx.beginPath();ctx.arc(x,y-48*sc,28*sc,0,Math.PI*2);ctx.fill();
+    ctx.font=(9*sc)+'px serif';ctx.textAlign='center';
+    ctx.fillText(def.icon+' Hasat!',x,y-76*sc);ctx.textAlign='left';
+  }
+}
+
+function drawHouse(x,y,sc){
+  // y = ground level
+  ctx.fillStyle='#D4A066';ctx.fillRect(x-45*sc,y-70*sc,90*sc,70*sc);
+  ctx.fillStyle='#8B2222';ctx.beginPath();ctx.moveTo(x-55*sc,y-70*sc);ctx.lineTo(x,y-115*sc);ctx.lineTo(x+55*sc,y-70*sc);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#6B3D11';ctx.fillRect(x-12*sc,y-35*sc,24*sc,35*sc);
+  ctx.fillStyle='#87CEEB';ctx.fillRect(x-38*sc,y-55*sc,20*sc,18*sc);ctx.fillRect(x+18*sc,y-55*sc,20*sc,18*sc);
+  ctx.strokeStyle='#8B5A2B';ctx.lineWidth=1*sc;
+  ctx.strokeRect(x-38*sc,y-55*sc,20*sc,18*sc);ctx.strokeRect(x+18*sc,y-55*sc,20*sc,18*sc);
+}
+function drawBarnBld(x,y,sc){
+  ctx.fillStyle='#C0392B';ctx.fillRect(x-38*sc,y-58*sc,76*sc,58*sc);
+  ctx.fillStyle='#7B241C';ctx.beginPath();ctx.moveTo(x-46*sc,y-58*sc);ctx.lineTo(x,y-90*sc);ctx.lineTo(x+46*sc,y-58*sc);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#8B2222';ctx.fillRect(x-20*sc,y-36*sc,40*sc,36*sc);
+  ctx.fillStyle='#FFD700';ctx.font=(9*sc)+'px monospace';ctx.textAlign='center';ctx.fillText('AHIR',x,y-44*sc);ctx.textAlign='left';
+}
+function drawWindmill(x,y,sc){
+  ctx.fillStyle='#D4C5A0';ctx.beginPath();ctx.moveTo(x-10*sc,y);ctx.lineTo(x-5*sc,y-72*sc);ctx.lineTo(x+5*sc,y-72*sc);ctx.lineTo(x+10*sc,y);ctx.closePath();ctx.fill();
+  const br=(animT*(weather==='windy'?.06:.02))%(Math.PI*2);
+  ctx.save();ctx.translate(x,y-66*sc);ctx.rotate(br);ctx.fillStyle='#8B7355';
+  for(let i=0;i<4;i++){ctx.save();ctx.rotate(Math.PI/2*i);ctx.fillRect(-3*sc,0,6*sc,26*sc);ctx.restore();}
+  ctx.restore();ctx.fillStyle='#555';ctx.beginPath();ctx.arc(x,y-66*sc,4*sc,0,Math.PI*2);ctx.fill();
+}
+function drawFence(){
+  ctx.strokeStyle='#8B5A2B';ctx.lineWidth=3*SCALE;
+  const x0=OX-8*SCALE,y0=OY-8*SCALE,x1=OX+COLS*CELL*SCALE+8*SCALE,y1=OY+ROWS*CELL*SCALE+8*SCALE;
+  ctx.strokeRect(x0,y0,x1-x0,y1-y0);ctx.fillStyle='#8B5A2B';
+  for(let i=0;i<=COLS;i++){const px=OX+i*CELL*SCALE;ctx.fillRect(px-4*SCALE,y0-8*SCALE,8*SCALE,16*SCALE);ctx.fillRect(px-4*SCALE,y1-4*SCALE,8*SCALE,16*SCALE);}
+  for(let i=0;i<=ROWS;i++){const py=OY+i*CELL*SCALE;ctx.fillRect(x0-8*SCALE,py-4*SCALE,16*SCALE,8*SCALE);ctx.fillRect(x1-4*SCALE,py-4*SCALE,16*SCALE,8*SCALE);}
+}
+function drawTile(tile){
+  const x=OX+tile.c*CELL*SCALE,y=OY+tile.r*CELL*SCALE,cs=CELL*SCALE;
+  if(tile.state==='grass'){
+    ctx.fillStyle='#4FA028';ctx.fillRect(x,y,cs,cs);
+    ctx.fillStyle='#2A5A12';for(let g=0;g<4;g++)ctx.fillRect(x+(tile.c*17+g*13)%(cs-6),y+(tile.r*11+g*19)%(cs-6),2,3*SCALE);
+  }else{
+    ctx.fillStyle=tile.watered?'#3B2A0E':'#7A4A22';ctx.fillRect(x,y,cs,cs);
+    ctx.fillStyle=tile.watered?'#2A1C08':'#6B3D11';for(let rw=0;rw<4;rw++)ctx.fillRect(x+4*SCALE,y+(rw*cs/4)+4*SCALE,cs-8*SCALE,3*SCALE);
+  }
+  if(tile.state==='planted'||tile.state==='ready')drawCrop(tile,x,y,cs);
+  ctx.strokeStyle='rgba(0,0,0,.14)';ctx.lineWidth=1;ctx.strokeRect(x,y,cs,cs);
+}
+
+// ══ CROP DRAWING — realistic visuals ══
+function drawCrop(tile,x,y,cs){
+  const crop=CROPS[tile.crop];if(!crop)return;
+  const prog=Math.min(1,tile.growProgress/crop.growTime);
+  const stage=Math.min(3,Math.floor(prog*4));
+  const cx=x+cs/2,cy=y+cs*.82;
+  const sh=[.12,.28,.5,.68][stage]*cs;
+
+  // Stem
+  ctx.strokeStyle='#4A7A22';ctx.lineWidth=2.5*SCALE;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,cy-sh);ctx.stroke();
+
+  // Leaves at stage 1+
+  if(stage>=1){
+    ctx.fillStyle='#3A8A1E';
+    ctx.beginPath();ctx.ellipse(cx-9*SCALE,cy-sh*.45,11*SCALE,5*SCALE,-.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx+9*SCALE,cy-sh*.6,11*SCALE,5*SCALE,.5,0,Math.PI*2);ctx.fill();
+  }
+
+  if(stage>=2){
+    if(stage===3){
+      // Stage 3: draw the actual produce emoji as large text
+      const fz=Math.round(18*SCALE);
+      ctx.font=fz+'px serif';ctx.textAlign='center';
+      ctx.fillText(crop.icon,cx,cy-sh+fz*0.38);
+      ctx.textAlign='left';
+      // Glow
+      ctx.fillStyle='rgba(255,255,120,.22)';ctx.beginPath();ctx.arc(cx,cy-sh,16*SCALE,0,Math.PI*2);ctx.fill();
+    }else{
+      // Stage 2: unripe bud (small, greenish)
+      ctx.fillStyle='#A8C050';ctx.beginPath();ctx.arc(cx,cy-sh,9*SCALE,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  // Progress bar
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+4*SCALE,y+cs-8*SCALE,cs-8*SCALE,5*SCALE);
+  ctx.fillStyle=stage===3?'#00FF88':'#80D020';ctx.fillRect(x+4*SCALE,y+cs-8*SCALE,(cs-8*SCALE)*prog,5*SCALE);
+}
+
+function drawPlayer(){
+  const px=OX+player.x*CELL*SCALE+CELL*SCALE*.5,py=OY+player.y*CELL*SCALE+CELL*SCALE*.7;
+  const sc=SCALE,bob=Math.sin(animT*.12)*2*sc;
+  ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(px,py+2*sc,12*sc,4*sc,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#4A90D9';ctx.fillRect(px-8*sc,py-20*sc+bob,16*sc,18*sc);
+  ctx.fillStyle='#2D5FA0';ctx.fillRect(px-6*sc,py-14*sc+bob,12*sc,12*sc);
+  ctx.fillStyle='#F5C5A0';ctx.beginPath();ctx.arc(px,py-28*sc+bob,11*sc,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#8B4513';ctx.fillRect(px-13*sc,py-36*sc+bob,26*sc,4*sc);ctx.fillRect(px-8*sc,py-48*sc+bob,16*sc,14*sc);
+  ctx.fillStyle='#333';ctx.fillRect(px-5*sc,py-31*sc+bob,3*sc,3*sc);ctx.fillRect(px+2*sc,py-31*sc+bob,3*sc,3*sc);
+  ctx.fillStyle='#2C3E50';ctx.fillRect(px-8*sc,py-2*sc+bob,6*sc,10*sc);ctx.fillRect(px+2*sc,py-2*sc+bob,6*sc,10*sc);
+  if(currentTool==='hoe'){ctx.strokeStyle='#8B5A2B';ctx.lineWidth=2*sc;ctx.beginPath();ctx.moveTo(px+8*sc,py-18*sc+bob);ctx.lineTo(px+22*sc,py-36*sc+bob);ctx.stroke();ctx.fillStyle='#888';ctx.fillRect(px+18*sc,py-39*sc+bob,10*sc,4*sc);}
+  else if(currentTool==='water'){ctx.fillStyle='#5BB8F5';ctx.fillRect(px+8*sc,py-22*sc+bob,14*sc,10*sc);}
+}
+function drawDarkOverlay(){
+  const h=(gameTime/60)%24;let d=0;
+  if(h<5)d=.55;else if(h<7)d=.55*(1-(h-5)/2);else if(h<18)d=weather==='stormy'?.22:0;else if(h<20)d=.4*((h-18)/2);else d=.55;
+  if(d>0){ctx.fillStyle=`rgba(0,0,20,${d})`;ctx.fillRect(0,0,W,H);}
+}
+
+// ══ MAIN LOOP ══
+const keys2={};
+window.addEventListener('keydown',e=>{
+  keys2[e.key]=true;if(PU.active)PU.keys=keys2;
+  if(['ArrowUp','ArrowDown',' '].includes(e.key))e.preventDefault();
+  if(e.key==='Escape')closeModal();
+});
+window.addEventListener('keyup',e=>{keys2[e.key]=false;if(PU.active)PU.keys=keys2;});
+
+let mvT=0,lastGL=0;
+function mainLoop(ts){
+  const dt=Math.min((ts-lastGL)/1000,.1);lastGL=ts;
+  if(PU.active){PU.keys=keys2;requestAnimationFrame(mainLoop);return;}
+  animT+=dt*60;gameTime+=dt*2;
+  if(gameTime>=24*60){
+    gameTime-=24*60;dayCount++;energy=Math.min(maxEnergy,energy+30);
+    animals.forEach(a=>a.hunger=Math.max(0,a.hunger-10));
+    updateHUD();showMsg('🌅 Sabah! Gün '+dayCount);if(dayCount%7===0)refreshNeighborRequests();
+  }
+  const h=Math.floor(gameTime/60),m=Math.floor(gameTime%60);
+  const si=Math.floor(dayCount/7)%4;
+  document.getElementById('sbar').textContent=SEASONS[si]+' · Gün '+dayCount+' · '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+
+  // Grow crops
+  tiles.forEach(tile=>{
+    if(tile.state==='planted'){
+      const bonus=(weather==='rainy'||weather==='stormy')?1.8:1;
+      tile.growProgress+=(tile.watered?dt*1.8:dt*1.0)*bonus;
+      if(tile.waterTimer>0){tile.waterTimer-=dt*60;if(tile.waterTimer<=0)tile.watered=false;}
+      if(tile.growProgress>=CROPS[tile.crop].growTime){
+        tile.state='ready';tile.growProgress=CROPS[tile.crop].growTime;
+        addParticle(OX+(tile.c+.5)*CELL*SCALE,OY+(tile.r+.3)*CELL*SCALE,'✅ Hazır!',CROPS[tile.crop]?.color||'#FFD700');
+      }
+    }
+  });
+
+  updateAnimals(dt);updateWeather(dt);
+  clouds.forEach(cl=>{cl.x+=cl.speed*dt*60*(weather==='windy'?2.5:.3);if(cl.x>W+120)cl.x=-160;});
+  particles.forEach(p=>{p.y+=p.vy;p.life-=dt*.6;});particles=particles.filter(p=>p.life>0);
+
+  // Keyboard movement
+  mvT-=dt;
+  if(mvT<=0){
+    if(keys2['ArrowLeft']||keys2['a']){if(player.x>0){player.x--;mvT=.18;}}
+    if(keys2['ArrowRight']||keys2['d']){if(player.x<COLS-1){player.x++;mvT=.18;}}
+    if(keys2['ArrowUp']||keys2['w']){if(player.y>0){player.y--;mvT=.18;}}
+    if(keys2['ArrowDown']||keys2['s']){if(player.y<ROWS-1){player.y++;mvT=.18;}}
+    if(keys2[' ']||keys2['Enter']){
+      const rect=canvas.getBoundingClientRect();
+      handleClick({clientX:rect.left+OX+(player.x+.5)*CELL*SCALE,clientY:rect.top+OY+(player.y+.5)*CELL*SCALE});mvT=.28;
+    }
+  }
+
+  lastSaveTime+=dt;if(lastSaveTime>=autoSaveInterval){lastSaveTime=0;saveGame();}
+
+  ctx.clearRect(0,0,W,H);
+  drawBg();drawFence();tiles.forEach(drawTile);drawPlayer();drawDarkOverlay();
+  ctx.globalAlpha=1;
+  particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.font=(12*SCALE)+'px sans-serif';ctx.fillStyle=p.color;ctx.textAlign='center';ctx.fillText(p.text,p.x,p.y);});
+  ctx.globalAlpha=1;ctx.textAlign='left';
+  requestAnimationFrame(mainLoop);
+}
+
+// ══ LOGIN ══
+(function buildLoginBg(){
+  const bg=document.getElementById('ls-bg');if(!bg)return;
+  for(let i=0;i<60;i++){const s=document.createElement('div');s.className='ls-star';const sz=1+Math.random()*2;s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*65}%;animation-delay:${Math.random()*3}s;animation-duration:${2+Math.random()*3}s;`;bg.appendChild(s);}
+  [{w:'70%',h:'180px',left:'-10%',color:'#1A3A0A'},{w:'55%',h:'140px',left:'40%',color:'#142E08'},{w:'40%',h:'110px',left:'65%',color:'#0F2206'}].forEach(h=>{const d=document.createElement('div');d.className='ls-hill';d.style.cssText=`width:${h.w};height:${h.h};left:${h.left};background:${h.color};`;bg.appendChild(d);});
+  const moon=document.createElement('div');moon.style.cssText='position:absolute;width:44px;height:44px;border-radius:50%;background:#E0E8FF;right:12%;top:8%;';bg.appendChild(moon);
+})();
+
+function doLogin(){
+  const user=document.getElementById('ls-user').value.trim().toLowerCase();
+  const pass=document.getElementById('ls-pass').value;const err=document.getElementById('ls-err');
+  if(!user||!pass){err.textContent='⚠️ Boş bırakmayın.';return;}
+  if(USERS[user]&&USERS[user]===pass){
+    sessionStorage.setItem('tarlam_auth',btoa(user+':'+pass));sessionStorage.setItem('tarlam_user',user);err.textContent='';
+    const screen=document.getElementById('login-screen');screen.style.transition='opacity .6s';screen.style.opacity='0';
+    setTimeout(()=>{screen.classList.add('hidden');startGame();},650);
+  }else{
+    err.textContent='❌ Kullanıcı adı veya şifre hatalı.';err.classList.remove('shake');void err.offsetWidth;err.classList.add('shake');
+    document.getElementById('ls-pass').value='';document.getElementById('ls-pass').focus();
+  }
+}
+function checkSession(){
+  const token=sessionStorage.getItem('tarlam_auth');if(!token)return false;
+  try{const[u,p]=atob(token).split(':');return!!(USERS[u]&&USERS[u]===p);}catch{return false;}
+}
+document.getElementById('ls-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('ls-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ls-pass').focus();});
+
+function startGame(){
+  resize();window.addEventListener('resize',resize);initTiles();
+  const loaded=loadGame();if(!loaded)initTiles();
+  initFruitTrees();initQuests();initNeighborRequests();updateHUD();
+
+  // Desktop: click. Mobile: touchstart for instant 1-finger response
+  const isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+  if(isMobile){
+    let touchMoved=false;
+    canvas.addEventListener('touchstart',e=>{touchMoved=false;},{passive:true});
+    canvas.addEventListener('touchmove',()=>{touchMoved=true;},{passive:true});
+    canvas.addEventListener('touchend',e=>{
+      if(touchMoved)return;// ignore swipes
+      if(e.touches.length>0)return;// ignore multi-touch
+      e.preventDefault();handlePointer(e);
+    },{passive:false});
+  }else{
+    canvas.addEventListener('click',handlePointer);
+  }
+
+  document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  const user=sessionStorage.getItem('tarlam_user')||'Çiftçi';
+  showMsg(loaded?'💾 Hoş geldin '+user+'! Gün '+dayCount+' devam ediyor.':'🌾 Hoş geldin '+user+'! Tarlana bakmanın zamanı!',3500);
+  requestAnimationFrame(mainLoop);
+}
+
+if(checkSession()){document.getElementById('login-screen').classList.add('hidden');startGame();}
+else document.getElementById('ls-user').focus();
+
+// ══ GLOBALS ══
+window.doLogin=doLogin;window.setTool=setTool;window.openBarn=openBarn;window.openMarket=openMarket;
+window.openQuests=openQuests;window.openNeighbor=openNeighbor;window.doSleep=doSleep;
+window.startPickup=startPickup;window.endPickup=endPickup;window.closeModal=closeModal;
+window.buyAnimal=buyAnimal;window.feedAnimal=feedAnimal;window.collectProduce=collectProduce;
+window.breedAnimal=breedAnimal;window.confirmSlaughter=confirmSlaughter;window.slaughterAnimal=slaughterAnimal;
+window.sellAnimal=sellAnimal;window.sellAll=sellAll;window.sellAllItems=sellAllItems;
+window.claimQuest=claimQuest;window.giveNeighbor=giveNeighbor;window.refreshNeighborRequests=refreshNeighborRequests;
+</script>
+</body>
+</html>

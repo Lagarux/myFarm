@@ -1,0 +1,17 @@
+{
+  "name": "Tarlam - Çiftlik Oyunu",
+  "short_name": "Tarlam",
+  "description": "2B Hypercasual Android Çiftlik Oyunu - Ekip, büyüt, hasat et!",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1a0a00",
+  "theme_color": "#8B5A2B",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "tr",
+  "screenshots": []
+}
