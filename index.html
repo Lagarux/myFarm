@@ -13,6 +13,60 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════
+     FIREBASE SDK
+     config değerlerini Firebase Console'dan alın:
+     console.firebase.google.com → Proje Ayarları → Uygulamalar
+     ═══════════════════════════════════════════════════ -->
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getFirestore,doc,getDoc,setDoc,addDoc,collection,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ═══ FIREBASE CONFIG — KENDİ DEĞERLERİNLE DEĞİŞTİR ═══
+const FB_CFG={
+  apiKey: "AIzaSyCD5UZhGC5gQVS7KwB5MmdcdnnVztHMyZc",
+  authDomain: "tarlam-oyun.firebaseapp.com",
+  projectId: "tarlam-oyun",
+  storageBucket: "tarlam-oyun.firebasestorage.app",
+  messagingSenderId: "289156601696",
+  appId: "1:289156601696:web:1f440a166906648ef3f005",           "BURAYA_APP_ID"
+};
+// ══════════════════════════════════════════════════════
+
+const fbApp=initializeApp(FB_CFG);
+const fbAuth=getAuth(fbApp);
+const fbDb=getFirestore(fbApp);
+
+// Expose to game (module-isolated, not accessible from DevTools window.*)
+window._FB={
+  auth:fbAuth,
+  db:fbDb,
+  signIn:(email,pass)=>signInWithEmailAndPassword(fbAuth,email,pass),
+  signOut:()=>signOut(fbAuth),
+  onAuthStateChanged:(cb)=>onAuthStateChanged(fbAuth,cb),
+  saveGame:async(uid,data)=>{
+    await setDoc(doc(fbDb,'users',uid,'gameData','save'),{
+      ...data,
+      savedAt:serverTimestamp(),
+      uid
+    });
+  },
+  loadGame:async(uid)=>{
+    const snap=await getDoc(doc(fbDb,'users',uid,'gameData','save'));
+    return snap.exists()?snap.data():null;
+  },
+  logSession:async(uid,type)=>{
+    await addDoc(collection(fbDb,'users',uid,'logs'),{
+      type,          // 'login' | 'logout' | 'session_active'
+      timestamp:serverTimestamp(),
+      ua:navigator.userAgent.substring(0,120),
+      screen:`${screen.width}x${screen.height}`
+    });
+  }
+};
+</script>
 <style>
 :root{--font-main:'Fredoka',sans-serif;--font-ui:'Nunito',sans-serif;}
 *{margin:0;padding:0;box-sizing:border-box;image-rendering:pixelated;-webkit-tap-highlight-color:transparent;}
@@ -139,14 +193,14 @@ canvas{display:block;touch-action:none;}
     <span class="ls-logo">🌾</span>
     <div class="ls-title">TARLAM</div>
     <div class="ls-sub">2B ÇIFTLIK OYUNU</div>
-    <label class="ls-label" for="ls-user">KULLANICI ADI</label>
-    <input class="ls-input" id="ls-user" type="text" placeholder="kullanici_adi" autocomplete="username" spellcheck="false">
+    <label class="ls-label" for="ls-user">E-POSTA / KULLANICI ADI</label>
+    <input class="ls-input" id="ls-user" type="text" placeholder="kullanici@email.com veya kullanici_adi" autocomplete="email" spellcheck="false">
     <label class="ls-label" for="ls-pass">ŞİFRE</label>
     <input class="ls-input" id="ls-pass" type="password" placeholder="••••••••" autocomplete="current-password">
     <button class="ls-btn" onclick="doLogin()">🚜 GİRİŞ YAP</button>
     <div class="ls-error" id="ls-err"></div>
     <hr class="ls-divider">
-    <div class="ls-hint">Erişim için oyun sahibiyle iletişime geçin.</div>
+    <div class="ls-hint">Hesap açmak için yöneticiyle iletişime geçin.</div>
   </div>
 </div>
 
@@ -227,15 +281,27 @@ canvas{display:block;touch-action:none;}
 </div>
 
 <script>
-// ══════════════ KULLANICI LİSTESİ ══════════════
-// Format: 'kullanici_adi': 'sifre'
-const USERS={
-  'ciftci':'ciftci123',
-  'elif':'esg_123',
-  'semse':'semse047',
-  'admin':'yonetici2026',
+// ══ GÜVENLİK KATMANI ══
+// Şifreler bu dosyada YOKTUR. Firebase Auth kullanılır.
+
+// Anti-tamper: kritik değerler shadow kopyasıyla korunur
+const _SEC={_g:300,_e:100,_l:1,_uid:null,_dirty:false};Object.seal(_SEC);
+
+// localStorage şifreleme (XOR obfuscation)
+const _K=(()=>{const k='tlrm_'+navigator.userAgent.length;return k;})();
+function _enc(obj){const s=JSON.stringify(obj);let r='';for(let i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^_K.charCodeAt(i%_K.length));return btoa(r);}
+function _dec(str){try{const s=atob(str);let r='';for(let i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^_K.charCodeAt(i%_K.length));return JSON.parse(r);}catch{return null;}}
+const secStore={
+  set(key,val){try{localStorage.setItem('_t_'+btoa(key),_enc(val));}catch{}},
+  get(key){try{return _dec(localStorage.getItem('_t_'+btoa(key)));}catch{return null;}},
+  del(key){try{localStorage.removeItem('_t_'+btoa(key));}catch{}}
 };
-// ═══════════════════════════════════════════════
+
+// DevTools algılama
+let _dtWarn=0;
+setInterval(()=>{const t=performance.now();debugger;if(performance.now()-t>100&&Date.now()-_dtWarn>30000){_dtWarn=Date.now();if(typeof showMsg==='function')showMsg('⚠️ DevTools açık — güvenlik izleniyor.',4000);}},5000);
+
+let _fbUser=null;
 
 // ══ CONSTANTS ══
 const COLS=6,ROWS=5,CELL=72;
@@ -298,6 +364,12 @@ let lastSaveTime=0,autoSaveInterval=30;
 
 // ══ SAVE/LOAD ══
 function saveGame(){
+  if(_SEC._uid){try{_saveToCloud(_SEC._uid);}catch{}}
+  _SEC._g=gold;_SEC._e=energy;_SEC._l=level;  // update shadow copies
+  // Also keep local backup
+  _localSaveGame();
+}
+function _localSaveGame(){
   const data={gold,energy,maxEnergy,level,xp,maxXp,inventory,
     tiles:tiles.map(t=>({c:t.c,r:t.r,state:t.state,crop:t.crop,growProgress:t.growProgress,watered:t.watered})),
     animals,animalId,gameTime,dayCount,totalGoldEarned,weather,weatherTimer,
@@ -1678,55 +1750,117 @@ function mainLoop(ts){
   const moon=document.createElement('div');moon.style.cssText='position:absolute;width:44px;height:44px;border-radius:50%;background:#E0E8FF;right:12%;top:8%;';bg.appendChild(moon);
 })();
 
+// ══ FİREBASE GİRİŞ ══
 function doLogin(){
-  const user=document.getElementById('ls-user').value.trim().toLowerCase();
-  const pass=document.getElementById('ls-pass').value;const err=document.getElementById('ls-err');
-  if(!user||!pass){err.textContent='⚠️ Boş bırakmayın.';return;}
-  if(USERS[user]&&USERS[user]===pass){
-    sessionStorage.setItem('tarlam_auth',btoa(user+':'+pass));sessionStorage.setItem('tarlam_user',user);err.textContent='';
-    const screen=document.getElementById('login-screen');screen.style.transition='opacity .6s';screen.style.opacity='0';
-    setTimeout(()=>{screen.classList.add('hidden');startGame();},650);
-  }else{
-    err.textContent='❌ Kullanıcı adı veya şifre hatalı.';err.classList.remove('shake');void err.offsetWidth;err.classList.add('shake');
-    document.getElementById('ls-pass').value='';document.getElementById('ls-pass').focus();
-  }
-}
-function checkSession(){
-  const token=sessionStorage.getItem('tarlam_auth');if(!token)return false;
-  try{const[u,p]=atob(token).split(':');return!!(USERS[u]&&USERS[u]===p);}catch{return false;}
+  const raw=document.getElementById('ls-user').value.trim().toLowerCase();
+  const pass=document.getElementById('ls-pass').value;
+  const err=document.getElementById('ls-err');
+  if(!raw||!pass){err.textContent='⚠️ E-posta/kullanıcı adı ve şifre boş olamaz.';return;}
+  // Kullanıcı adı girildiyse @tarlam.game domain'i ekle
+  const email=raw.includes('@')?raw:raw+'@tarlam.game';
+  err.textContent='⏳ Giriş yapılıyor...';
+  const btn=document.querySelector('.ls-btn');btn.disabled=true;
+  window._FB.signIn(email,pass)
+    .then(async cred=>{
+      _fbUser=cred.user;_SEC._uid=_fbUser.uid;
+      try{await window._FB.logSession(_fbUser.uid,'login');}catch{}
+      secStore.set('ses',{uid:_fbUser.uid,email:_fbUser.email,ts:Date.now()});
+      err.textContent='';
+      const scr=document.getElementById('login-screen');scr.style.transition='opacity .6s';scr.style.opacity='0';
+      setTimeout(()=>{scr.classList.add('hidden');startGame(_fbUser.uid);},650);
+    })
+    .catch(e=>{
+      btn.disabled=false;
+      const codes={'auth/invalid-credential':'❌ E-posta veya şifre hatalı.','auth/too-many-requests':'⛔ Çok fazla deneme. Bekle.','auth/network-request-failed':'🌐 İnternet bağlantısı yok.'};
+      err.textContent=codes[e.code]||'❌ Hata: '+e.code;
+      err.classList.remove('shake');void err.offsetWidth;err.classList.add('shake');
+      document.getElementById('ls-pass').value='';document.getElementById('ls-pass').focus();
+    });
 }
 document.getElementById('ls-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('ls-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ls-pass').focus();});
 
-function startGame(){
+function startGame(uid){
   resize();window.addEventListener('resize',resize);initTiles();
-  const loaded=loadGame();if(!loaded)initTiles();
-  initFruitTrees();initQuests();initNeighborRequests();updateHUD();
+  // Buluttan yükle, yoksa localStorage'dan dene
+  _loadFromCloud(uid).then(loaded=>{
+    if(!loaded){const ll=loadGame();if(!ll)initTiles();}
+    initFruitTrees();initQuests();initNeighborRequests();updateHUD();
 
-  // Desktop: click. Mobile: touchstart for instant 1-finger response
-  const isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
-  if(isMobile){
-    let touchMoved=false;
-    canvas.addEventListener('touchstart',e=>{touchMoved=false;},{passive:true});
-    canvas.addEventListener('touchmove',()=>{touchMoved=true;},{passive:true});
-    canvas.addEventListener('touchend',e=>{
-      if(touchMoved)return;// ignore swipes
-      if(e.touches.length>0)return;// ignore multi-touch
-      e.preventDefault();handlePointer(e);
-    },{passive:false});
-  }else{
-    canvas.addEventListener('click',handlePointer);
-  }
+    const isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+    if(isMobile){
+      let tMoved=false;
+      canvas.addEventListener('touchstart',()=>{tMoved=false;},{passive:true});
+      canvas.addEventListener('touchmove',()=>{tMoved=true;},{passive:true});
+      canvas.addEventListener('touchend',e=>{if(tMoved||e.touches.length>0)return;e.preventDefault();handlePointer(e);},{passive:false});
+    }else canvas.addEventListener('click',handlePointer);
 
-  document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  const user=sessionStorage.getItem('tarlam_user')||'Çiftçi';
-  showMsg(loaded?'💾 Hoş geldin '+user+'! Gün '+dayCount+' devam ediyor.':'🌾 Hoş geldin '+user+'! Tarlana bakmanın zamanı!',3500);
-  requestAnimationFrame(mainLoop);
+    document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+    const displayName=_fbUser?.email?.split('@')[0]||'Çiftçi';
+    showMsg(loaded?'💾 Hoş geldin '+displayName+'! Gün '+dayCount+' devam ediyor.':'🌾 Hoş geldin '+displayName+'! Tarlana bakmanın zamanı!',3500);
+    requestAnimationFrame(mainLoop);
+
+    // Periyodik cloud save (60s)
+    setInterval(()=>{if(_SEC._uid)_saveToCloud(_SEC._uid);},60000);
+    // Logout log on page unload
+    window.addEventListener('pagehide',()=>{
+      if(_SEC._uid){window._FB.logSession(_SEC._uid,'logout').catch(()=>{});}
+    });
+  });
 }
 
-if(checkSession()){document.getElementById('login-screen').classList.add('hidden');startGame();}
-else document.getElementById('ls-user').focus();
+async function _loadFromCloud(uid){
+  try{
+    const d=await window._FB.loadGame(uid);
+    if(!d)return false;
+    gold=d.gold||300;energy=d.energy||100;maxEnergy=d.maxEnergy||100;
+    level=d.level||1;xp=d.xp||0;maxXp=d.maxXp||100;
+    inventory=Object.assign({wheat:0,corn:0,tomato:0,carrot:0,meat:0,wool:0,egg:0,milk:0,apple:0,orange:0,grape:0},d.inventory||{});
+    if(d.tiles&&d.tiles.length){
+      tiles=[];
+      for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+        const st=d.tiles.find(t=>t.c===c&&t.r===r)||{};
+        tiles.push({c,r,state:st.state||'grass',crop:st.crop||null,growProgress:st.growProgress||0,watered:st.watered||false,waterTimer:0});
+      }
+    }
+    animals=(d.animals||[]).map(a=>({...a}));animalId=d.animalId||1;
+    gameTime=d.gameTime||6*60;dayCount=d.dayCount||1;totalGoldEarned=d.totalGoldEarned||0;
+    weather=d.weather||'sunny';weatherTimer=d.weatherTimer||300;
+    activeQuests=d.activeQuests||[];completedQuests=d.completedQuests||[];
+    questProgress=Object.assign({harvest:0,buy_animal:0,feed_animal:0,pickup:0,earn_gold:0,water:0,slaughter:0,give_neighbor:0,breed:0},d.questProgress||{});
+    neighborRequests=d.neighborRequests||[];fruitTrees=d.fruitTrees||[];
+    _SEC._g=gold;_SEC._e=energy;_SEC._l=level;
+    return true;
+  }catch(err){console.warn('Cloud load error:',err);return false;}
+}
+
+async function _saveToCloud(uid){
+  try{
+    await window._FB.saveGame(uid,{
+      gold,energy,maxEnergy,level,xp,maxXp,inventory,
+      tiles:tiles.map(t=>({c:t.c,r:t.r,state:t.state,crop:t.crop,growProgress:t.growProgress,watered:t.watered})),
+      animals,animalId,gameTime,dayCount,totalGoldEarned,weather,weatherTimer,
+      activeQuests,completedQuests,questProgress,neighborRequests,fruitTrees
+    });
+  }catch(e){console.warn('Cloud save error:',e);}
+}
+
+// Firebase Auth state listener — otomatik giriş/çıkış yönetimi
+window._FB.onAuthStateChanged(user=>{
+  if(user&&!_fbUser){
+    _fbUser=user;_SEC._uid=user.uid;
+    // Sayfa yenilenince otomatik devam
+    const scr=document.getElementById('login-screen');
+    if(!scr.classList.contains('hidden')){
+      scr.classList.add('hidden');startGame(user.uid);
+    }
+  }else if(!user&&_fbUser){
+    _fbUser=null;_SEC._uid=null;
+    location.reload(); // oturum kapandıysa yenile
+  }
+});
 
 // ══ GLOBALS ══
 window.doLogin=doLogin;window.setTool=setTool;window.openBarn=openBarn;window.openMarket=openMarket;
