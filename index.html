@@ -39,7 +39,6 @@ const fbApp=initializeApp(FB_CFG);
 const fbAuth=getAuth(fbApp);
 const fbDb=getFirestore(fbApp);
 
-// Expose to game (module-isolated, not accessible from DevTools window.*)
 window._FB={
   auth:fbAuth,
   db:fbDb,
@@ -53,9 +52,7 @@ window._FB={
   onAuthStateChanged:(cb)=>onAuthStateChanged(fbAuth,cb),
   saveGame:async(uid,data)=>{
     await setDoc(doc(fbDb,'users',uid,'gameData','save'),{
-      ...data,
-      savedAt:serverTimestamp(),
-      uid
+      ...data,savedAt:serverTimestamp(),uid
     });
   },
   loadGame:async(uid)=>{
@@ -64,13 +61,16 @@ window._FB={
   },
   logSession:async(uid,type)=>{
     await addDoc(collection(fbDb,'users',uid,'logs'),{
-      type,          // 'login' | 'logout' | 'session_active'
-      timestamp:serverTimestamp(),
+      type,timestamp:serverTimestamp(),
       ua:navigator.userAgent.substring(0,120),
       screen:`${screen.width}x${screen.height}`
     });
   }
 };
+
+// ── Firebase hazır olduğunu IIFE'ye bildir ──
+// type="module" asenkron çalışır; IIFE bunu bekler
+window.dispatchEvent(new CustomEvent('fbReady'));
 </script>
 <style>
 :root{--font-main:'Fredoka',sans-serif;--font-ui:'Nunito',sans-serif;}
@@ -1777,11 +1777,15 @@ function mainLoop(ts){
 
 // ══ FİREBASE GİRİŞ ══
 function doLogin(){
+  if(!window._FB){
+    const e=document.getElementById('ls-err');
+    if(e)e.textContent='⏳ Firebase bağlanıyor, bir saniye bekle...';
+    return;
+  }
   const raw=document.getElementById('ls-user').value.trim().toLowerCase();
   const pass=document.getElementById('ls-pass').value;
   const err=document.getElementById('ls-err');
   if(!raw||!pass){err.textContent='⚠️ E-posta/kullanıcı adı ve şifre boş olamaz.';return;}
-  // Kullanıcı adı girildiyse @tarlam.game domain'i ekle
   const email=raw.includes('@')?raw:raw+'@tarlam.game';
   err.textContent='⏳ Giriş yapılıyor...';
   const btn=document.querySelector('.ls-btn');btn.disabled=true;
@@ -1802,8 +1806,12 @@ function doLogin(){
       document.getElementById('ls-pass').value='';document.getElementById('ls-pass').focus();
     });
 }
-document.getElementById('ls-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('ls-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ls-pass').focus();});
+// Keydown listeners — DOMContentLoaded'da güvenli eklenir
+document.addEventListener('DOMContentLoaded',()=>{
+  const p=document.getElementById('ls-pass'),u=document.getElementById('ls-user');
+  if(p)p.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  if(u)u.addEventListener('keydown',e=>{if(e.key==='Enter')p&&p.focus();});
+});
 
 function startGame(uid){
   resize();window.addEventListener('resize',resize);initTiles();
@@ -1876,20 +1884,36 @@ async function _saveToCloud(uid){
   }catch(e){console.warn('Cloud save error:',e);}
 }
 
-// Firebase Auth state listener — otomatik giriş/çıkış yönetimi
-window._FB.onAuthStateChanged(user=>{
-  if(user&&!_fbUser){
-    _fbUser=user;_SEC._uid=user.uid;
-    // Sayfa yenilenince otomatik devam
-    const scr=document.getElementById('login-screen');
-    if(!scr.classList.contains('hidden')){
-      scr.classList.add('hidden');startGame(user.uid);
-    }
-  }else if(!user&&_fbUser){
-    _fbUser=null;_SEC._uid=null;
-    location.reload(); // oturum kapandıysa yenile
+// ── Firebase bağlantısını bekle, sonra auth listener'ı başlat ──
+// type="module" asenkron — fbReady eventi gelene kadar bekle
+function _initWithFirebase(){
+  if(!window._FB){
+    // Nadir durum: olay kaçtıysa tekrar dene
+    setTimeout(_initWithFirebase,50);
+    return;
   }
-});
+  // Auth state listener — sayfa yenilenince oturumu sürdür
+  window._FB.onAuthStateChanged(user=>{
+    if(user&&!_fbUser){
+      _fbUser=user;_SEC._uid=user.uid;
+      const scr=document.getElementById('login-screen');
+      if(!scr.classList.contains('hidden')){
+        scr.classList.add('hidden');startGame(user.uid);
+      }
+    }else if(!user&&_fbUser){
+      _fbUser=null;_SEC._uid=null;
+      location.reload();
+    }
+  });
+  // Giriş ekranı input odağı
+  const lsUser=document.getElementById('ls-user');
+  if(lsUser&&!document.getElementById('login-screen').classList.contains('hidden')){
+    lsUser.focus();
+  }
+}
+// fbReady eventi module script'ten gelir; eğer module zaten bitmişse flag kontrol et
+if(window._FB){_initWithFirebase();}
+else{window.addEventListener('fbReady',_initWithFirebase,{once:true});}
 
 
 // ══ KAYIT SİSTEMİ ══
@@ -1903,6 +1927,7 @@ function closeRegister(){
 }
 
 function doRegister(){
+  if(!window._FB){document.getElementById('reg-err').textContent='⏳ Firebase bağlanıyor...';return;}
   const name=document.getElementById('reg-name').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   const emailInput=document.getElementById('reg-email').value.trim();
   const pass=document.getElementById('reg-pass').value;
@@ -1942,24 +1967,30 @@ let _sfxOn=true,_gameSpeed=1;
 function openSettings(){
   const m=document.getElementById('settings-modal');
   m.style.display='flex';
-  document.getElementById('st-username').textContent=_fbUser?.displayName||(_fbUser?.email?.split('@')[0])||'—';
+  const dispName=_fbUser?.displayName||(_fbUser?.email?.split('@')[0])||'—';
+  document.getElementById('st-username').textContent=dispName;
   document.getElementById('st-email').textContent=_fbUser?.email||'—';
-  document.getElementById('st-sfx').checked=_sfxOn;
+  const sfxEl=document.getElementById('st-sfx');
+  const spdEl=document.getElementById('st-speed');
+  if(sfxEl)sfxEl.checked=_sfxOn;
+  if(spdEl)spdEl.value=String(_gameSpeed);
   document.getElementById('st-sfx-lbl').textContent=_sfxOn?'Açık':'Kapalı';
-  document.getElementById('st-speed').value=String(_gameSpeed);
-  // Son giriş logu
-  if(_SEC._uid){
-    window._FB.db&&import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+  document.getElementById('st-lastlogin').textContent='Firestore loglarından yükleniyor...';
+  // Son giriş — sadece _FB hazırsa yükle
+  if(_SEC._uid&&window._FB&&window._FB.db){
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
       .then(({collection,query,orderBy,limit,getDocs})=>{
         const q=query(collection(window._FB.db,'users',_SEC._uid,'logs'),orderBy('timestamp','desc'),limit(1));
         getDocs(q).then(snap=>{
+          const el=document.getElementById('st-lastlogin');if(!el)return;
           if(!snap.empty){
-            const d=snap.docs[0].data();
-            const ts=d.timestamp?.toDate?.();
-            document.getElementById('st-lastlogin').textContent=ts?ts.toLocaleString('tr-TR'):'—';
-          }
-        }).catch(()=>{});
+            const ts=snap.docs[0].data().timestamp?.toDate?.();
+            el.textContent=ts?ts.toLocaleString('tr-TR'):'—';
+          }else el.textContent='—';
+        }).catch(()=>{document.getElementById('st-lastlogin').textContent='Yüklenemedi';});
       }).catch(()=>{});
+  }else{
+    document.getElementById('st-lastlogin').textContent='—';
   }
 }
 function closeSettings(){document.getElementById('settings-modal').style.display='none';}
@@ -2083,53 +2114,32 @@ function _applyDeleteAccount(){
 // Bu fonksiyon, Firebase module scope'daki createUserWithEmailAndPassword'ı çağırır
 // Not: window._FB._create'i Firebase module script bloğundan set etmeliyiz
 
-// ══ IIFE GLOBALS — yalnızca UI handler fonksiyonları dışa açılıyor ══
-// Durum değişkenleri (gold, energy, level vb.) window scope'da değil
-// Bu sayede DevTools'tan window.gold = 99999 yazmak etkisiz kalır
+// ══ GLOBALS — IIFE içindeki UI fonksiyonlarını dışa aç ══
+// State değişkenleri (gold, energy vb.) buraya eklenmez — dışarıdan erişilemez
+// Fonksiyon referansları atanır, değişken değil
 (()=>{
-  const _expose = (name, fn) => {
-    Object.defineProperty(window, name, {
-      get: () => fn,
-      set: () => { console.warn('[TARLAM] Güvenlik: dış atama engellendi →', name); },
-      configurable: false
-    });
-  };
-  _expose('doLogin', doLogin);
-  _expose('setTool', setTool);
-  _expose('openBarn', openBarn);
-  _expose('openMarket', openMarket);
-  _expose('openQuests', openQuests);
-  _expose('openNeighbor', openNeighbor);
-  _expose('doSleep', doSleep);
-  _expose('startPickup', startPickup);
-  _expose('endPickup', endPickup);
-  _expose('closeModal', closeModal);
-  _expose('startAnimalMiniGame', startAnimalMiniGame);
-  _expose('endMiniGame', endMiniGame);
-  _expose('buyAnimal', buyAnimal);
-  _expose('feedAnimal', feedAnimal);
-  _expose('collectProduce', collectProduce);
-  _expose('breedAnimal', breedAnimal);
-  _expose('confirmSlaughter', confirmSlaughter);
-  _expose('slaughterAnimal', slaughterAnimal);
-  _expose('sellAnimal', sellAnimal);
-  _expose('sellAll', sellAll);
-  _expose('sellAllItems', sellAllItems);
-  _expose('claimQuest', claimQuest);
-  _expose('giveNeighbor', giveNeighbor);
-  _expose('refreshNeighborRequests', refreshNeighborRequests);
-  _expose('openSettings', openSettings);
-  _expose('openRegister', openRegister);
-  _expose('doRegister', doRegister);
-  _expose('closeRegister', closeRegister);
-  _expose('closeSettings', closeSettings);
-  _expose('promptChangeName', promptChangeName);
-  _expose('promptChangeEmail', promptChangeEmail);
-  _expose('promptChangePass', promptChangePass);
-  _expose('doLogout', doLogout);
-  _expose('confirmDeleteAccount', confirmDeleteAccount);
-  _expose('toggleSfx', toggleSfx);
-  _expose('setGameSpeed', setGameSpeed);
+  // Basit atama: fonksiyon referansı global olur, ama state değişmez
+  // Kötü niyetli atama: window.openBarn = ()=>{gold=99999} çalışır ama
+  // gold IIFE içinde kapalı olduğundan etkisi yok
+  const pub=[
+    ['doLogin',doLogin],['setTool',setTool],['openBarn',openBarn],
+    ['openMarket',openMarket],['openQuests',openQuests],['openNeighbor',openNeighbor],
+    ['doSleep',doSleep],['startPickup',startPickup],['endPickup',endPickup],
+    ['closeModal',closeModal],['startAnimalMiniGame',startAnimalMiniGame],
+    ['endMiniGame',endMiniGame],['buyAnimal',buyAnimal],['feedAnimal',feedAnimal],
+    ['collectProduce',collectProduce],['breedAnimal',breedAnimal],
+    ['confirmSlaughter',confirmSlaughter],['slaughterAnimal',slaughterAnimal],
+    ['sellAnimal',sellAnimal],['sellAll',sellAll],['sellAllItems',sellAllItems],
+    ['claimQuest',claimQuest],['giveNeighbor',giveNeighbor],
+    ['refreshNeighborRequests',refreshNeighborRequests],
+    ['openSettings',openSettings],['closeSettings',closeSettings],
+    ['openRegister',openRegister],['closeRegister',closeRegister],['doRegister',doRegister],
+    ['promptChangeName',promptChangeName],['promptChangeEmail',promptChangeEmail],
+    ['promptChangePass',promptChangePass],['doLogout',doLogout],
+    ['confirmDeleteAccount',confirmDeleteAccount],
+    ['toggleSfx',toggleSfx],['setGameSpeed',setGameSpeed],
+  ];
+  pub.forEach(([name,fn])=>{ window[name]=fn; });
 })();
 
 // ══ SANITY CHECK: sunucu kayıt anında değer doğrulama ══
