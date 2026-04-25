@@ -21,17 +21,17 @@
      ═══════════════════════════════════════════════════ -->
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,updateProfile,signOut,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import{getFirestore,doc,getDoc,setDoc,addDoc,collection,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // ═══ FIREBASE CONFIG — KENDİ DEĞERLERİNLE DEĞİŞTİR ═══
 const FB_CFG={
-  apiKey: "AIzaSyCD5UZhGC5gQVS7KwB5MmdcdnnVztHMyZc",
-  authDomain: "tarlam-oyun.firebaseapp.com",
-  projectId: "tarlam-oyun",
-  storageBucket: "tarlam-oyun.firebasestorage.app",
-  messagingSenderId: "289156601696",
-  appId: "1:289156601696:web:1f440a166906648ef3f005",
+  apiKey:            "BURAYA_API_KEY",
+  authDomain:        "BURAYA_AUTH_DOMAIN",
+  projectId:         "BURAYA_PROJECT_ID",
+  storageBucket:     "BURAYA_STORAGE_BUCKET",
+  messagingSenderId: "BURAYA_MESSAGING_SENDER_ID",
+  appId:             "BURAYA_APP_ID"
 };
 // ══════════════════════════════════════════════════════
 
@@ -44,6 +44,11 @@ window._FB={
   auth:fbAuth,
   db:fbDb,
   signIn:(email,pass)=>signInWithEmailAndPassword(fbAuth,email,pass),
+  create:async(email,pass,displayName)=>{
+    const cred=await createUserWithEmailAndPassword(fbAuth,email,pass);
+    if(displayName)await updateProfile(cred.user,{displayName});
+    return cred;
+  },
   signOut:()=>signOut(fbAuth),
   onAuthStateChanged:(cb)=>onAuthStateChanged(fbAuth,cb),
   saveGame:async(uid,data)=>{
@@ -165,7 +170,7 @@ canvas{display:block;touch-action:none;}
 .ls-star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 3s infinite alternate;}
 @keyframes twinkle{0%{opacity:.15}100%{opacity:.95}}
 .ls-hill{position:absolute;bottom:0;border-radius:50% 50% 0 0;}
-.ls-card{position:relative;z-index:2;background:rgba(14,7,0,0.94);border:2px solid #9B6A33;border-radius:18px;padding:34px 30px;width:min(340px,90vw);text-align:center;}
+.ls-card{position:relative;z-index:2;background:rgba(14,7,0,0.94);border:2px solid #9B6A33;border-radius:18px;padding:28px 24px;width:min(340px,92vw);text-align:center;max-height:92vh;overflow-y:auto;}
 .ls-logo{font-size:56px;margin-bottom:4px;display:block;animation:bounce 2.2s ease-in-out infinite;}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 .ls-title{font-family:var(--font-main);font-size:30px;font-weight:700;color:#FFD700;letter-spacing:4px;margin-bottom:3px;}
@@ -200,7 +205,8 @@ canvas{display:block;touch-action:none;}
     <button class="ls-btn" onclick="doLogin()">🚜 GİRİŞ YAP</button>
     <div class="ls-error" id="ls-err"></div>
     <hr class="ls-divider">
-    <div class="ls-hint">Hesap açmak için yöneticiyle iletişime geçin.</div>
+    <button class="ls-btn" onclick="openRegister()" style="background:rgba(0,80,40,0.7);border-color:#20A060;font-size:14px;margin-top:0;padding:9px;">🌱 Hesap Oluştur</button>
+    <div class="ls-hint" style="margin-top:8px;">Zaten hesabın varsa üstten giriş yap.</div>
   </div>
 </div>
 
@@ -241,6 +247,7 @@ canvas{display:block;touch-action:none;}
   <div class="tb" id="btn-quests" onclick="openQuests()"><div class="ti">📋</div>Görev</div>
   <div class="tb" id="btn-neighbor" onclick="openNeighbor()"><div class="ti">🧑‍🌾</div>Komşu</div>
   <div class="tb" id="btn-sleep" onclick="doSleep()"><div class="ti">😴</div>Uyu</div>
+  <div class="tb" id="btn-settings" onclick="openSettings()"><div class="ti">⚙️</div>Ayarlar</div>
   <div class="tb" id="btn-pickup" onclick="startPickup()"><div class="ti">🚛</div>Nakliye</div>
 </div>
 
@@ -281,7 +288,9 @@ canvas{display:block;touch-action:none;}
 </div>
 
 <script>
-// ══ GÜVENLİK KATMANI ══
+(function(){  // ══ GÜVENLİK SARMALAYICI (IIFE) — tüm state değişkenleri gizli ══
+// updateHUD, gold, energy, level vb. window scope'dan erişilemez
+
 // Şifreler bu dosyada YOKTUR. Firebase Auth kullanılır.
 
 // Anti-tamper: kritik değerler shadow kopyasıyla korunur
@@ -854,12 +863,13 @@ function startPickup(){
 
   PU={
     active:true,ctx:pc,w:pw,h:ph,
-    truck:{wx:60,lane:1},
-    cargo:0,maxCargo,score:0,timeLeft:100,animT:0,
+    truck:{wx:0,lane:1},   // ← wx=0: gerçekten baştan başla
+    cargo:0,maxCargo,score:0,timeLeft:110,animT:0,
     gameOver:false,won:false,winAnim,
     cropItems,markets,obstacles,
     ROAD_LEN,camX:0,
-    keys:{},laneCooldown:0
+    keys:{},laneCooldown:0,
+    mkCooldown:{}  // pazar başına 1 kez tetikle
   };
 
   // Touch controls for pickup
@@ -1056,7 +1066,7 @@ function puDrawScene(){
   pc.fillText('🏁 '+Math.round(prog*100)+'%',pw/2,pby-4);pc.textAlign='left';
 
   // ── TRUCK ──
-  const TSX=pw*0.28; // fixed screen position
+  const TSX=Math.round(pw*0.30); // kamyon her zaman ekranın 30%'inde
   const TSY=getLaneY(t.lane,ph)+getLaneH(t.lane,ph)*0.5;
   // Shadow
   pc.fillStyle='rgba(0,0,0,0.2)';pc.beginPath();pc.ellipse(TSX-5,TSY+12,40,8,0,0,Math.PI*2);pc.fill();
@@ -1133,15 +1143,20 @@ function puLoop(){
     document.getElementById('pu-stats').textContent=`⏱${Math.ceil(PU.timeLeft)}s · 💰+${PU.score} · 📦${PU.cargo}/${PU.maxCargo}`;
 
     const t=PU.truck;
-    if((PU.keys['ArrowRight']||PU.keys['d']||PU.keys['D'])&&t.wx<PU.ROAD_LEN-50)t.wx+=4.5;
-    if((PU.keys['ArrowLeft']||PU.keys['a']||PU.keys['A'])&&t.wx>30)t.wx-=2;
+    // Kamyon her zaman yavaşça ilerler, tuşla hızlanır
+    const baseSpeed=1.2;
+    const boost=(PU.keys['ArrowRight']||PU.keys['d']||PU.keys['D'])?3.5:0;
+    const brake=(PU.keys['ArrowLeft']||PU.keys['a']||PU.keys['A'])?-2.5:0;
+    const spd=baseSpeed+boost+brake;
+    if(t.wx<PU.ROAD_LEN-50)t.wx=Math.max(0,t.wx+spd);
 
     PU.laneCooldown=Math.max(0,PU.laneCooldown-1);
     if(PU.laneCooldown===0){
       if((PU.keys['ArrowUp']||PU.keys['w'])&&t.lane>0){t.lane--;PU.laneCooldown=20;}
       if((PU.keys['ArrowDown']||PU.keys['s'])&&t.lane<LANE_COUNT-1){t.lane++;PU.laneCooldown=20;}
     }
-    PU.camX=Math.max(0,t.wx-pw*0.28);
+    // Kamera: kamyon sol 30%'de sabit, world kayar
+    PU.camX=Math.max(0,t.wx-pw*0.30);
 
     const truckWX=t.wx;
     // Collect crops
@@ -1150,13 +1165,19 @@ function puLoop(){
         ci.collected=true;PU.cargo++;PU.score+=10;showPuMsg('📦 +Ürün! ×'+PU.cargo,800);
       }
     });
-    // Market collision
-    PU.markets.forEach(mk=>{
-      if(!mk.reached&&mk.lane===t.lane&&Math.abs(truckWX-mk.wx)<70){
+    // Market collision — geniş tetikleme alanı, cooldown ile tekrar tetikleme önlendi
+    PU.markets.forEach((mk,mi)=>{
+      if(mk.reached)return;
+      const dist=Math.abs(truckWX-mk.wx);
+      if(dist<90&&mk.lane===t.lane){
+        const cd=PU.mkCooldown[mi]||0;
+        if(Date.now()-cd<1500)return; // 1.5s cooldown
+        PU.mkCooldown[mi]=Date.now();
         if(PU.cargo>0){
           const earned=PU.cargo*28;PU.score+=earned;earnGold(earned);PU.cargo=0;mk.reached=true;
           updateHUD();showPuMsg('🛒 +'+earned+'₺ KAZANILDI!',1800);
         }else if(mk.isFinal){mk.reached=true;}
+        else{showPuMsg('📦 Önce ürün topla!',1200);}
       }
     });
     // Obstacle
@@ -1167,7 +1188,11 @@ function puLoop(){
       }
     });
     // End conditions
-    if(PU.markets.every(m=>m.reached)||t.wx>=PU.ROAD_LEN-30){
+    const allMkReached=PU.markets.every(m=>m.reached);
+    const atFinish=t.wx>=PU.ROAD_LEN-80;
+    if((allMkReached||atFinish)&&!PU.winAnim.active){
+      // Force all remaining markets "reached" if at finish line
+      if(atFinish)PU.markets.forEach(m=>{m.reached=true;});
       PU.won=true;PU.winAnim.active=true;addXp(30);updateHUD();saveGame();
     }
     if(PU.timeLeft<=0&&!PU.winAnim.active){PU.gameOver=true;endPickup(true);}
@@ -1706,7 +1731,7 @@ function mainLoop(ts){
   tiles.forEach(tile=>{
     if(tile.state==='planted'){
       const bonus=(weather==='rainy'||weather==='stormy')?1.8:1;
-      tile.growProgress+=(tile.watered?dt*1.8:dt*1.0)*bonus;
+      tile.growProgress+=(tile.watered?dt*1.8:dt*1.0)*bonus*_gameSpeed;
       if(tile.waterTimer>0){tile.waterTimer-=dt*60;if(tile.waterTimer<=0)tile.watered=false;}
       if(tile.growProgress>=CROPS[tile.crop].growTime){
         tile.state='ready';tile.growProgress=CROPS[tile.crop].growTime;
@@ -1837,6 +1862,10 @@ async function _loadFromCloud(uid){
 }
 
 async function _saveToCloud(uid){
+  // Sanity check: şüpheli değerleri kaydetme
+  const snap={gold,energy,maxEnergy,level,xp};
+  if(!_sanitizeBeforeSave(snap)){showMsg('⚠️ Güvenlik: değerler doğrulanamadı, kayıt atlandı.',3000);return;}
+  _SEC._g=gold;_SEC._e=energy;_SEC._l=level;
   try{
     await window._FB.saveGame(uid,{
       gold,energy,maxEnergy,level,xp,maxXp,inventory,
@@ -1862,15 +1891,310 @@ window._FB.onAuthStateChanged(user=>{
   }
 });
 
-// ══ GLOBALS ══
-window.doLogin=doLogin;window.setTool=setTool;window.openBarn=openBarn;window.openMarket=openMarket;
-window.openQuests=openQuests;window.openNeighbor=openNeighbor;window.doSleep=doSleep;
-window.startPickup=startPickup;window.endPickup=endPickup;window.closeModal=closeModal;
-window.startAnimalMiniGame=startAnimalMiniGame;window.endMiniGame=endMiniGame;
-window.buyAnimal=buyAnimal;window.feedAnimal=feedAnimal;window.collectProduce=collectProduce;
-window.breedAnimal=breedAnimal;window.confirmSlaughter=confirmSlaughter;window.slaughterAnimal=slaughterAnimal;
-window.sellAnimal=sellAnimal;window.sellAll=sellAll;window.sellAllItems=sellAllItems;
-window.claimQuest=claimQuest;window.giveNeighbor=giveNeighbor;window.refreshNeighborRequests=refreshNeighborRequests;
+
+// ══ KAYIT SİSTEMİ ══
+function openRegister(){
+  document.getElementById('register-modal').style.display='flex';
+  document.getElementById('reg-err').textContent='';
+  document.getElementById('reg-name').focus();
+}
+function closeRegister(){
+  document.getElementById('register-modal').style.display='none';
+}
+
+function doRegister(){
+  const name=document.getElementById('reg-name').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const emailInput=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  const err=document.getElementById('reg-err');
+  if(!name||name.length<3){err.textContent='⚠️ Kullanıcı adı en az 3 karakter olmalı (harf/rakam/_)';return;}
+  if(pass.length<6){err.textContent='⚠️ Şifre en az 6 karakter olmalı.';return;}
+  if(pass!==pass2){err.textContent='❌ Şifreler eşleşmiyor.';return;}
+  // Eğer email girilmediyse @tarlam.game uzantısı ekle
+  const email=emailInput.includes('@')&&emailInput.includes('.')?emailInput:name+'@tarlam.game';
+  err.textContent='⏳ Hesap oluşturuluyor...';
+  const {createUserWithEmailAndPassword,updateProfile}=window._FB._authFns||{};
+  // Firebase module scope'dan createUser'a erişim için _FB._create kullanıyoruz
+  window._FB.create(email,pass,name)
+    .then(async cred=>{
+      _fbUser=cred.user;_SEC._uid=_fbUser.uid;
+      try{await window._FB.logSession(_fbUser.uid,'register');}catch{}
+      err.textContent='✅ Hesap oluşturuldu! Hoş geldin '+name+'!';
+      setTimeout(()=>{
+        document.getElementById('register-modal').style.display='none';
+        startGame(_fbUser.uid);
+      },1200);
+    })
+    .catch(e=>{
+      const codes={
+        'auth/email-already-in-use':'❌ Bu kullanıcı adı zaten alınmış.',
+        'auth/invalid-email':'❌ Geçersiz e-posta.',
+        'auth/weak-password':'❌ Şifre çok zayıf.'
+      };
+      err.textContent=codes[e.code]||'❌ Hata: '+e.code;
+    });
+}
+
+// ══ AYARLAR ══
+let _sfxOn=true,_gameSpeed=1;
+
+function openSettings(){
+  const m=document.getElementById('settings-modal');
+  m.style.display='flex';
+  document.getElementById('st-username').textContent=_fbUser?.displayName||(_fbUser?.email?.split('@')[0])||'—';
+  document.getElementById('st-email').textContent=_fbUser?.email||'—';
+  document.getElementById('st-sfx').checked=_sfxOn;
+  document.getElementById('st-sfx-lbl').textContent=_sfxOn?'Açık':'Kapalı';
+  document.getElementById('st-speed').value=String(_gameSpeed);
+  // Son giriş logu
+  if(_SEC._uid){
+    window._FB.db&&import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+      .then(({collection,query,orderBy,limit,getDocs})=>{
+        const q=query(collection(window._FB.db,'users',_SEC._uid,'logs'),orderBy('timestamp','desc'),limit(1));
+        getDocs(q).then(snap=>{
+          if(!snap.empty){
+            const d=snap.docs[0].data();
+            const ts=d.timestamp?.toDate?.();
+            document.getElementById('st-lastlogin').textContent=ts?ts.toLocaleString('tr-TR'):'—';
+          }
+        }).catch(()=>{});
+      }).catch(()=>{});
+  }
+}
+function closeSettings(){document.getElementById('settings-modal').style.display='none';}
+
+function toggleSfx(v){_sfxOn=v;document.getElementById('st-sfx-lbl').textContent=v?'Açık':'Kapalı';}
+function setGameSpeed(v){_gameSpeed=parseFloat(v);}
+
+function promptChangeName(){
+  const area=document.getElementById('st-action-area');
+  area.innerHTML=`<div style="margin-top:4px;">
+    <label class="section-label">Yeni Kullanıcı Adı</label>
+    <input class="ls-input" id="st-new-name" type="text" placeholder="yeni_ad" style="margin:6px 0;font-size:14px;">
+    <button class="mbtn gold" onclick="_applyChangeName()">Kaydet</button>
+    <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
+  </div>`;
+}
+function _applyChangeName(){
+  const n=document.getElementById('st-new-name').value.trim();
+  if(!n||n.length<3){document.getElementById('st-feedback').textContent='En az 3 karakter gir.';return;}
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({updateProfile})=>{
+    updateProfile(_fbUser,{displayName:n}).then(()=>{
+      document.getElementById('st-username').textContent=n;
+      document.getElementById('st-feedback').textContent='✅ İsim güncellendi!';
+      document.getElementById('st-feedback').style.color='#80FF80';
+      setTimeout(()=>document.getElementById('st-action-area').innerHTML='',1800);
+    }).catch(e=>document.getElementById('st-feedback').textContent='Hata: '+e.message);
+  });
+}
+
+function promptChangeEmail(){
+  const area=document.getElementById('st-action-area');
+  area.innerHTML=`<div style="margin-top:4px;">
+    <label class="section-label">Yeni E-posta</label>
+    <input class="ls-input" id="st-new-email" type="email" placeholder="yeni@email.com" style="margin:6px 0;font-size:14px;">
+    <label class="section-label">Mevcut Şifre (doğrulama)</label>
+    <input class="ls-input" id="st-cur-pass" type="password" placeholder="mevcut şifren" style="margin:6px 0;font-size:14px;">
+    <button class="mbtn gold" onclick="_applyChangeEmail()">Kaydet</button>
+    <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
+  </div>`;
+}
+function _applyChangeEmail(){
+  const newEmail=document.getElementById('st-new-email').value.trim();
+  const curPass=document.getElementById('st-cur-pass').value;
+  if(!newEmail||!curPass){document.getElementById('st-feedback').textContent='Tüm alanları doldur.';return;}
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({reauthenticateWithCredential,EmailAuthProvider,updateEmail})=>{
+    const cred=EmailAuthProvider.credential(_fbUser.email,curPass);
+    reauthenticateWithCredential(_fbUser,cred).then(()=>updateEmail(_fbUser,newEmail)).then(()=>{
+      document.getElementById('st-email').textContent=newEmail;
+      document.getElementById('st-feedback').textContent='✅ E-posta güncellendi!';
+      document.getElementById('st-feedback').style.color='#80FF80';
+      setTimeout(()=>document.getElementById('st-action-area').innerHTML='',1800);
+    }).catch(e=>document.getElementById('st-feedback').textContent='Hata: '+e.message);
+  });
+}
+
+function promptChangePass(){
+  const area=document.getElementById('st-action-area');
+  area.innerHTML=`<div style="margin-top:4px;">
+    <label class="section-label">Mevcut Şifre</label>
+    <input class="ls-input" id="st-cur-pass2" type="password" placeholder="mevcut şifren" style="margin:6px 0;font-size:14px;">
+    <label class="section-label">Yeni Şifre</label>
+    <input class="ls-input" id="st-new-pass" type="password" placeholder="yeni şifre (min 6)" style="margin:6px 0;font-size:14px;">
+    <button class="mbtn gold" onclick="_applyChangePass()">Kaydet</button>
+    <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
+  </div>`;
+}
+function _applyChangePass(){
+  const cur=document.getElementById('st-cur-pass2').value;
+  const np=document.getElementById('st-new-pass').value;
+  if(!cur||np.length<6){document.getElementById('st-feedback').textContent='Şifre en az 6 karakter olmalı.';return;}
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({reauthenticateWithCredential,EmailAuthProvider,updatePassword})=>{
+    const cred=EmailAuthProvider.credential(_fbUser.email,cur);
+    reauthenticateWithCredential(_fbUser,cred).then(()=>updatePassword(_fbUser,np)).then(()=>{
+      document.getElementById('st-feedback').textContent='✅ Şifre güncellendi!';
+      document.getElementById('st-feedback').style.color='#80FF80';
+      setTimeout(()=>document.getElementById('st-action-area').innerHTML='',1800);
+    }).catch(e=>document.getElementById('st-feedback').textContent='Hata: '+e.message);
+  });
+}
+
+function doLogout(){
+  if(_SEC._uid)_saveToCloud(_SEC._uid).finally(()=>window._FB.signOut().then(()=>location.reload()));
+  else window._FB.signOut().then(()=>location.reload());
+}
+
+function confirmDeleteAccount(){
+  const area=document.getElementById('st-action-area');
+  area.innerHTML=`<div style="margin-top:8px;padding:12px;background:rgba(120,20,20,0.3);border:1px solid #8A2020;border-radius:8px;">
+    <div style="color:#FF8080;font-size:13px;font-weight:700;margin-bottom:8px;">⚠️ Hesabı silerseniz tüm verileriniz kalıcı olarak silinir!</div>
+    <label class="section-label">Şifrenizi girin (onay)</label>
+    <input class="ls-input" id="st-del-pass" type="password" placeholder="şifreniz" style="margin:6px 0;font-size:14px;">
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="mbtn red" onclick="_applyDeleteAccount()">🗑️ Evet, Sil</button>
+      <button class="mbtn" onclick="document.getElementById('st-action-area').innerHTML=''">İptal</button>
+    </div>
+    <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
+  </div>`;
+}
+function _applyDeleteAccount(){
+  const pass=document.getElementById('st-del-pass').value;
+  if(!pass){document.getElementById('st-feedback').textContent='Şifre boş olamaz.';return;}
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({reauthenticateWithCredential,EmailAuthProvider,deleteUser})=>{
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(({deleteDoc,doc:firestoreDoc})=>{
+      const cred=EmailAuthProvider.credential(_fbUser.email,pass);
+      reauthenticateWithCredential(_fbUser,cred).then(async()=>{
+        // Firestore verisini sil
+        try{await deleteDoc(firestoreDoc(window._FB.db,'users',_SEC._uid,'gameData','save'));}catch{}
+        // Auth hesabını sil
+        await deleteUser(_fbUser);
+        document.getElementById('st-feedback').textContent='✅ Hesap silindi. Yönlendiriliyor...';
+        document.getElementById('st-feedback').style.color='#80FF80';
+        setTimeout(()=>location.reload(),1500);
+      }).catch(e=>{
+        document.getElementById('st-feedback').textContent='Hata: '+(e.code==='auth/wrong-password'?'Şifre yanlış.':e.message);
+      });
+    });
+  });
+}
+
+// ══ _FB.create eklentisi (IIFE'den önce erişim gerektiğinden burada tanımlıyoruz) ══
+// Bu fonksiyon, Firebase module scope'daki createUserWithEmailAndPassword'ı çağırır
+// Not: window._FB._create'i Firebase module script bloğundan set etmeliyiz
+
+// ══ IIFE GLOBALS — yalnızca UI handler fonksiyonları dışa açılıyor ══
+// Durum değişkenleri (gold, energy, level vb.) window scope'da değil
+// Bu sayede DevTools'tan window.gold = 99999 yazmak etkisiz kalır
+(()=>{
+  const _expose = (name, fn) => {
+    Object.defineProperty(window, name, {
+      get: () => fn,
+      set: () => { console.warn('[TARLAM] Güvenlik: dış atama engellendi →', name); },
+      configurable: false
+    });
+  };
+  _expose('doLogin', doLogin);
+  _expose('setTool', setTool);
+  _expose('openBarn', openBarn);
+  _expose('openMarket', openMarket);
+  _expose('openQuests', openQuests);
+  _expose('openNeighbor', openNeighbor);
+  _expose('doSleep', doSleep);
+  _expose('startPickup', startPickup);
+  _expose('endPickup', endPickup);
+  _expose('closeModal', closeModal);
+  _expose('startAnimalMiniGame', startAnimalMiniGame);
+  _expose('endMiniGame', endMiniGame);
+  _expose('buyAnimal', buyAnimal);
+  _expose('feedAnimal', feedAnimal);
+  _expose('collectProduce', collectProduce);
+  _expose('breedAnimal', breedAnimal);
+  _expose('confirmSlaughter', confirmSlaughter);
+  _expose('slaughterAnimal', slaughterAnimal);
+  _expose('sellAnimal', sellAnimal);
+  _expose('sellAll', sellAll);
+  _expose('sellAllItems', sellAllItems);
+  _expose('claimQuest', claimQuest);
+  _expose('giveNeighbor', giveNeighbor);
+  _expose('refreshNeighborRequests', refreshNeighborRequests);
+  _expose('openSettings', openSettings);
+  _expose('openRegister', openRegister);
+  _expose('doRegister', doRegister);
+  _expose('closeRegister', closeRegister);
+  _expose('closeSettings', closeSettings);
+  _expose('promptChangeName', promptChangeName);
+  _expose('promptChangeEmail', promptChangeEmail);
+  _expose('promptChangePass', promptChangePass);
+  _expose('doLogout', doLogout);
+  _expose('confirmDeleteAccount', confirmDeleteAccount);
+  _expose('toggleSfx', toggleSfx);
+  _expose('setGameSpeed', setGameSpeed);
+})();
+
+// ══ SANITY CHECK: sunucu kayıt anında değer doğrulama ══
+function _sanitizeBeforeSave(data){
+  const MAX={gold:9999999,energy:9999,level:100,xp:99999};
+  if(data.gold>MAX.gold||data.energy>MAX.energy||data.level>MAX.level){
+    console.warn('[TARLAM] Sanity check: şüpheli değer tespit edildi');
+    return false;
+  }
+  // Gold delta kontrolü: son kayıttan bu yana çok fazla artış var mı?
+  const prev=_SEC._g||0;
+  if(data.gold-prev>50000){
+    console.warn('[TARLAM] Gold delta çok yüksek, kayıt reddedildi');
+    return false;
+  }
+  return true;
+}
+})(); // ══ IIFE SONU ══
 </script>
+
+<!-- ══ KAYIT EKRANI MODAL ══ -->
+<div id="register-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.88);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
+  <div class="ls-card" style="max-width:340px;width:92vw;">
+    <span style="font-size:40px;">🌱</span>
+    <div class="ls-title" style="font-size:22px;">HESAP OLUŞTUR</div>
+    <div class="ls-sub">Ücretsiz, anında oyna</div>
+    <label class="ls-label" for="reg-name">KULLANICI ADI</label>
+    <input class="ls-input" id="reg-name" type="text" placeholder="ahmet_ciftci" autocomplete="off" spellcheck="false">
+    <label class="ls-label" for="reg-email">E-POSTA (İSTEĞE BAĞLI)</label>
+    <input class="ls-input" id="reg-email" type="email" placeholder="ahmet@email.com (boş bırakılabilir)" autocomplete="email">
+    <label class="ls-label" for="reg-pass">ŞİFRE (en az 6 karakter)</label>
+    <input class="ls-input" id="reg-pass" type="password" placeholder="••••••••" autocomplete="new-password">
+    <label class="ls-label" for="reg-pass2">ŞİFRE TEKRAR</label>
+    <input class="ls-input" id="reg-pass2" type="password" placeholder="••••••••" autocomplete="new-password">
+    <button class="ls-btn" onclick="doRegister()" style="background:#1E5A10;border-color:#3A9A20;">✅ Hesap Oluştur</button>
+    <div class="ls-error" id="reg-err" style="min-height:18px;"></div>
+    <hr class="ls-divider">
+    <button onclick="closeRegister()" style="background:none;border:1px solid #8B5A2B;color:#C8A060;font-family:var(--font-ui);font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;width:100%;">← Girişe Dön</button>
+  </div>
+</div>
+
+<!-- ══ AYARLAR MODAL ══ -->
+<div id="settings-modal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.85);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
+  <div class="mbox" style="max-width:400px;">
+    <button class="mclose" onclick="closeSettings()">✖ Kapat</button>
+    <h2>⚙️ Oyun Ayarları</h2>
+    <div class="section-label">Hesap Bilgileri</div>
+    <div class="mrow"><div><div class="mrow-label">👤 Kullanıcı Adı</div><div class="mrow-sub" id="st-username">—</div></div><button class="mbtn" onclick="promptChangeName()">Değiştir</button></div>
+    <div class="mrow"><div><div class="mrow-label">📧 E-posta</div><div class="mrow-sub" id="st-email">—</div></div><button class="mbtn" onclick="promptChangeEmail()">Değiştir</button></div>
+    <div class="mrow"><div><div class="mrow-label">🔑 Şifre</div><div class="mrow-sub">••••••••</div></div><button class="mbtn" onclick="promptChangePass()">Değiştir</button></div>
+    <div class="section-label" style="margin-top:14px;">Oyun Tercihleri</div>
+    <div class="mrow"><div class="mrow-label">🔊 Ses Efektleri</div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="st-sfx" onchange="toggleSfx(this.checked)" style="width:18px;height:18px;accent-color:#00FF88;"><span style="font-size:13px;color:#FFD700;" id="st-sfx-lbl">Açık</span></label></div>
+    <div class="mrow"><div class="mrow-label">⏩ Oyun Hızı</div>
+      <select id="st-speed" onchange="setGameSpeed(this.value)" style="background:#1A0A00;color:#FFD700;border:1.5px solid #8B5A2B;border-radius:6px;padding:5px 10px;font-family:var(--font-ui);font-size:13px;">
+        <option value="0.5">Yavaş</option><option value="1" selected>Normal</option><option value="1.5">Hızlı</option><option value="2">Çok Hızlı</option>
+      </select>
+    </div>
+    <div class="section-label" style="margin-top:14px;">Oturum</div>
+    <div class="mrow"><div class="mrow-label">📊 Son Giriş</div><div class="mrow-sub" id="st-lastlogin">—</div></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="mbtn gold" onclick="doLogout()">🚪 Çıkış Yap</button>
+      <button class="mbtn red" onclick="confirmDeleteAccount()">🗑️ Hesabı Sil</button>
+    </div>
+    <div id="st-action-area" style="margin-top:12px;"></div>
+  </div>
+</div>
 </body>
 </html>
