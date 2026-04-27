@@ -871,7 +871,13 @@
       <div class="ti">💧</div>Sula
     </div>
     <div class="tb" id="btn-harvest" onclick="setTool('harvest')">
-      <div class="ti">✂️</div>Hasat
+      <div class="ti" style="line-height:1">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 18 Q2 10 10 6 Q16 3 18 7 Q20 11 14 13 L8 15 Z" fill="#D4AC2A" stroke="#9B7A10" stroke-width="1" />
+          <path d="M13 13 L19 20" stroke="#8B5A2B" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="4.5" cy="17.5" r="2" fill="#C8921A" />
+        </svg>
+      </div>Hasat
     </div>
     <div class="tb" id="btn-barn" onclick="openBarn()">
       <div class="ti">🐄</div>Ahır
@@ -1016,7 +1022,18 @@
       let player = { x: 2, y: 2 };
       let gold = 300, energy = 100, maxEnergy = 100, level = 1, xp = 0, maxXp = 100;
       let inventory = { wheat: 0, corn: 0, tomato: 0, carrot: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0 };
-      let fruitTrees = [];// {type,x,y,stage(0-3),timer,ready}
+      // Meyve bahçesi: tarla çevresinde 4 interaktif ağaç yuvası
+      let orchardSlots = [];
+      function _defaultOrchard() {
+        return [
+          { side: 'left', idx: 0, type: 'apple', stage: 0, growTimer: 0, fruitsReady: 0, watered: false },
+          { side: 'left', idx: 1, type: 'orange', stage: 0, growTimer: 0, fruitsReady: 0, watered: false },
+          { side: 'right', idx: 0, type: 'grape', stage: 0, growTimer: 0, fruitsReady: 0, watered: false },
+          { side: 'right', idx: 1, type: 'apple', stage: 0, growTimer: 0, fruitsReady: 0, watered: false },
+        ];
+      }
+      // legacy fruitTrees for save compat
+      let fruitTrees = [];
       let currentTool = 'hoe';
       let gameTime = 6 * 60, dayCount = 1, animT = 0, totalGoldEarned = 0;
       let clouds = [], particles = [];
@@ -1040,7 +1057,7 @@
           tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
           animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
           activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown,
-          fruitTrees, currentTool, savedAt: Date.now()
+          orchardSlots, currentTool, savedAt: Date.now()
         };
         try {
           localStorage.setItem('tarlam_save', JSON.stringify(data));
@@ -1067,7 +1084,7 @@
           activeQuests = d.activeQuests || []; completedQuests = d.completedQuests || [];
           questProgress = Object.assign({ harvest: 0, buy_animal: 0, feed_animal: 0, pickup: 0, earn_gold: 0, water: 0, slaughter: 0, give_neighbor: 0, breed: 0 }, d.questProgress || {});
           neighborRequests = d.neighborRequests || []; neighborCooldown = d.neighborCooldown || 0;
-          fruitTrees = d.fruitTrees || [];
+          orchardSlots = d.orchardSlots && d.orchardSlots.length > 0 ? d.orchardSlots : _defaultOrchard();
           currentTool = d.currentTool || 'hoe';
           return true;
         } catch (e) { console.warn('Yükleme hatası:', e); return false; }
@@ -1080,13 +1097,8 @@
           tiles.push({ c, r, state: 'grass', crop: null, growProgress: 0, watered: false, waterTimer: 0 });
       }
       function initFruitTrees() {
-        if (fruitTrees.length > 0) return;
-        // Place fruit trees at fixed positions in the background (screen-relative, set during resize)
-        fruitTrees = [
-          { type: 'apple', stage: 2, timer: 60, ready: false },
-          { type: 'orange', stage: 1, timer: 90, ready: false },
-          { type: 'grape', stage: 3, timer: 0, ready: true }
-        ];
+        // orchardSlots varsa zaten init edilmiş
+        if (!orchardSlots || orchardSlots.length === 0) orchardSlots = _defaultOrchard();
       }
       function initQuests() {
         if (activeQuests.length === 0) activeQuests = QUESTS_DEF.slice(0, 3).map(q => ({ ...q, progress: 0, done: false }));
@@ -1097,6 +1109,182 @@
           for (let i = 0; i < 3; i++) { const r = NEIGHBOR_REQUESTS[Math.floor(Math.random() * NEIGHBOR_REQUESTS.length)]; neighborRequests.push({ ...r, id: i, fulfilled: false }); }
         }
       }
+
+      // ══ MEYVE BAHÇESİ (ORCHARD) SİSTEMİ ══
+      const ORCHARD_DEF = {
+        apple: { name: 'Elma', icon: '🍎', color: '#CC2200', leafColor: '#2D7A1E', growTime: 45, produceTime: 30, price: 20 },
+        orange: { name: 'Portakal', icon: '🍊', color: '#FF8800', leafColor: '#3A8A15', growTime: 55, produceTime: 35, price: 24 },
+        grape: { name: 'Üzüm', icon: '🍇', color: '#7B2FBE', leafColor: '#1E6B10', growTime: 65, produceTime: 40, price: 28 },
+      };
+      const ORCHARD_SEED_COST = { apple: 30, orange: 40, grape: 50 };
+
+      function getOrchardSlotPos(slot) {
+        // Left side slots: left of farm fence
+        const slotH = CELL * SCALE * 1.3;
+        if (slot.side === 'left') {
+          const x = OX - 62 * SCALE;
+          const y = OY + slot.idx * slotH + slotH * 0.4;
+          return { x, y };
+        } else {
+          const x = OX + COLS * CELL * SCALE + 62 * SCALE;
+          const y = OY + slot.idx * slotH + slotH * 0.4;
+          return { x, y };
+        }
+      }
+
+      function drawOrchard() {
+        // Draw orchard zones (background areas)
+        // Left zone
+        ctx.fillStyle = 'rgba(30,80,10,0.18)';
+        ctx.strokeStyle = '#5A8A2B'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(OX - 90 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75, 8) : ctx.rect(OX - 90 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75); ctx.fill(); ctx.stroke();
+        // Right zone
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(OX + COLS * CELL * SCALE + 16 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75, 8) : ctx.rect(OX + COLS * CELL * SCALE + 16 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75); ctx.fill(); ctx.stroke();
+        ctx.setLineDash([]);
+        // Zone labels
+        ctx.fillStyle = 'rgba(180,220,100,0.7)'; ctx.font = (9 * SCALE) + 'px Nunito,sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('🌳 Bahçe', OX - 53 * SCALE, OY - 14 * SCALE);
+        ctx.fillText('🌳 Bahçe', OX + COLS * CELL * SCALE + 53 * SCALE, OY - 14 * SCALE);
+        ctx.textAlign = 'left';
+
+        // Draw each slot
+        orchardSlots.forEach(slot => {
+          const { x, y } = getOrchardSlotPos(slot);
+          drawOrchardSlot(slot, x, y);
+        });
+      }
+
+      function drawOrchardSlot(slot, x, y) {
+        const sc = SCALE;
+        if (slot.stage === 0) {
+          // Empty slot: show buy prompt
+          ctx.fillStyle = 'rgba(80,50,20,0.35)';
+          ctx.beginPath(); ctx.arc(x, y, 18 * sc, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(160,120,60,0.6)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.arc(x, y, 18 * sc, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(255,200,100,0.7)'; ctx.font = (11 * sc) + 'px Nunito,sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('+', x, y + 4 * sc); ctx.textAlign = 'left';
+          return;
+        }
+        const def = ORCHARD_DEF[slot.type]; if (!def) return;
+
+        // Ground circle
+        ctx.fillStyle = 'rgba(40,80,15,0.4)';
+        ctx.beginPath(); ctx.ellipse(x, y + 4 * sc, 16 * sc, 6 * sc, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Trunk
+        const trunkH = [0, 20, 30, 38][slot.stage] * sc;
+        ctx.fillStyle = '#7A4A22';
+        ctx.fillRect(x - 3 * sc, y - trunkH, 6 * sc, trunkH);
+
+        if (slot.stage >= 2) {
+          // Foliage
+          ctx.fillStyle = def.leafColor;
+          ctx.beginPath(); ctx.arc(x, y - trunkH - 10 * sc, 16 * sc, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = def.leafColor + 'CC';
+          ctx.beginPath(); ctx.arc(x - 10 * sc, y - trunkH - 2 * sc, 11 * sc, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 10 * sc, y - trunkH - 5 * sc, 12 * sc, 0, Math.PI * 2); ctx.fill();
+        }
+
+        if (slot.stage === 3 && slot.fruitsReady > 0) {
+          // Ripe fruit dots
+          const fpos = [[-7, -trunkH - 18], [4, -trunkH - 22], [11, -trunkH - 12], [-4, -trunkH - 8]];
+          ctx.fillStyle = def.color;
+          fpos.slice(0, Math.min(slot.fruitsReady, 4)).forEach(([fx, fy]) => {
+            ctx.beginPath(); ctx.arc(x + fx * sc, y + fy * sc, 5 * sc, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 0.5; ctx.stroke();
+          });
+          // Glow + harvest hint
+          ctx.fillStyle = `rgba(255,255,120,${0.15 + 0.08 * Math.sin(animT * 0.08)})`;
+          ctx.beginPath(); ctx.arc(x, y - trunkH - 12 * sc, 22 * sc, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#FFD700'; ctx.font = 'bold ' + (9 * sc) + 'px Nunito,sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(def.icon + ' x' + slot.fruitsReady, x, y - trunkH - 34 * sc);
+          ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = (8 * sc) + 'px Nunito,sans-serif';
+          ctx.fillText('Hasat et', x, y - trunkH - 24 * sc);
+          ctx.textAlign = 'left';
+        } else if (slot.stage >= 1 && slot.stage < 3) {
+          // Growth progress
+          const def2 = ORCHARD_DEF[slot.type];
+          const prog = Math.min(1, slot.growTimer / (def2 ? def2.growTime : 45));
+          const bw = 30 * sc, bh = 4 * sc, bx = x - 15 * sc, by = y + 8 * sc;
+          ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(bx, by, bw, bh);
+          ctx.fillStyle = '#80D020'; ctx.fillRect(bx, by, bw * prog, bh);
+        }
+      }
+
+      function handleOrchardClick(sx, sy) {
+        let handled = false;
+        orchardSlots.forEach(slot => {
+          const { x, y } = getOrchardSlotPos(slot);
+          const dx = sx - x, dy = sy - y;
+          if (dx * dx + dy * dy > (28 * SCALE) * (28 * SCALE)) return;
+          handled = true;
+          if (slot.stage === 0) {
+            // Show buy dialog
+            _openOrchardBuy(slot);
+          } else if (currentTool === 'harvest' && slot.stage === 3 && slot.fruitsReady > 0) {
+            if (!useEnergy(3)) return;
+            inventory[slot.type] = (inventory[slot.type] || 0) + slot.fruitsReady;
+            const n = slot.fruitsReady, def = ORCHARD_DEF[slot.type];
+            addParticle(x, y - 40 * SCALE, def.icon + ' +' + n, def.color);
+            addXp(n * 8); slot.fruitsReady = 0; slot.growTimer = 0;
+            updateHUD(); showMsg(def.icon + ' ' + n + ' ' + def.name + ' hasat edildi!');
+          } else if (currentTool === 'water' && slot.stage >= 1) {
+            if (!useEnergy(2)) return;
+            slot.watered = true; addParticle(x, y - 20 * SCALE, '💧', '#5BB8F5');
+            showMsg('🌳 Ağaç sulandı!');
+          } else if (slot.stage === 3 && slot.fruitsReady === 0) {
+            showMsg('🌳 Meyveler olgunlaşıyor...');
+          }
+        });
+        return handled;
+      }
+
+      function _openOrchardBuy(slot) {
+        const mc = document.getElementById('modal-content');
+        let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🌳 Ağaç Dik</h2>';
+        html += '<div class="section-label">Bu bahçe yuvasına hangi ağacı dikmek istersin?</div>';
+        Object.entries(ORCHARD_DEF).forEach(([type, def]) => {
+          const cost = ORCHARD_SEED_COST[type];
+          html += `<div class="mrow">
+      <div><div class="mrow-label">${def.icon} ${def.name}</div><div class="mrow-sub">Büyüme: ${def.growTime} sn · Ürün değeri: ${def.price}₺</div></div>
+      <button class="mbtn" onclick="buyOrchardTree('${slot.side}',${slot.idx},'${type}')">${cost}₺ Dik</button>
+    </div>`;
+        });
+        mc.innerHTML = html; document.getElementById('modal').classList.add('show');
+      }
+
+      function buyOrchardTree(side, idx, type) {
+        const cost = ORCHARD_SEED_COST[type];
+        if (gold < cost) { showMsg('💰 Yeterli altın yok!'); return; }
+        const slot = orchardSlots.find(s => s.side === side && s.idx === idx);
+        if (!slot) return;
+        gold -= cost; slot.type = type; slot.stage = 1; slot.growTimer = 0; slot.fruitsReady = 0; slot.watered = false;
+        addXp(5); updateHUD(); closeModal();
+        showMsg(ORCHARD_DEF[type].icon + ' ' + ORCHARD_DEF[type].name + ' fidanı dikildi!');
+      }
+
+      function updateOrchard(dt) {
+        const speedMult = _gameSpeed * (weather === 'rainy' || weather === 'stormy' ? 1.6 : 1);
+        orchardSlots.forEach(slot => {
+          if (slot.stage === 0) return;
+          const def = ORCHARD_DEF[slot.type]; if (!def) return;
+          const growRate = dt * (slot.watered ? 1.5 : 1) * speedMult;
+          if (slot.stage < 3) {
+            slot.growTimer += growRate;
+            if (slot.growTimer >= def.growTime) { slot.stage++; slot.growTimer = 0; }
+          } else {
+            // Stage 3: produce fruits
+            slot.growTimer += growRate;
+            if (slot.growTimer >= def.produceTime) {
+              slot.fruitsReady = Math.min(6, slot.fruitsReady + 1); slot.growTimer = 0;
+              addParticle(...Object.values(getOrchardSlotPos(slot)).slice(0, 2), def.icon + ' Hazır!', def.color);
+            }
+          }
+          slot.watered = false;// reset each tick
+        });
+      }
+
 
       function resize() {
         W = window.innerWidth; H = window.innerHeight;
@@ -1166,6 +1354,8 @@
         } else { clientX = e.clientX; clientY = e.clientY; }
         const rect = canvas.getBoundingClientRect();
         const sx = clientX - rect.left, sy = clientY - rect.top;
+        // Önce bahçe (orchard) alanını kontrol et
+        if (handleOrchardClick(sx, sy)) return;
         const c = Math.floor((sx - OX) / (CELL * SCALE)), r = Math.floor((sy - OY) / (CELL * SCALE));
         if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
         const tile = tiles.find(t => t.c === c && t.r === r); if (!tile) return;
@@ -1449,10 +1639,7 @@
             }
           }
         });
-        // Fruit trees grow slowly
-        fruitTrees.forEach(ft => {
-          if (!ft.ready) { ft.timer -= dt * 0.2; if (ft.timer <= 0) { ft.stage = Math.min(3, ft.stage + 1); ft.timer = ft.stage < 3 ? 90 : 0; if (ft.stage === 3) ft.ready = true; } }
-        });
+        // Orchard güncelleme: updateOrchard(dt) ile yapılıyor
       }
 
       // ══════════════════════════════════════════════
@@ -2128,7 +2315,7 @@
         const h = (gameTime / 60) % 24;
         if (h < 5) return '#0D1B4B'; if (h < 7) return lerpC('#0D1B4B', '#FF9B7A', (h - 5) / 2);
         if (h < 9) return lerpC('#FF9B7A', '#87CEEB', (h - 7) / 2);
-        if (h < 18) { if (weather === 'stormy') return '#445566'; if (weather === 'rainy') return '#7799AA'; return '#87CEEB'; }
+        if (h < 18) { if (weather === 'stormy') return '#3A5060'; if (weather === 'rainy') return '#6688A0'; if (weather === 'cloudy') return '#8ECBE8'; return '#5BB8E8'; }
         if (h < 20) return lerpC('#87CEEB', '#FF6B35', (h - 18) / 2); if (h < 22) return lerpC('#FF6B35', '#0D1B4B', (h - 20) / 2); return '#0D1B4B';
       }
 
@@ -2203,15 +2390,7 @@
         drawTree(tx2, ty2, SCALE * .82);
         drawTree(tx3, ty3, SCALE * .72);
 
-        // ── FRUIT TREES (right side, anchored to groundY) ──
-        const ftPositions = [
-          { sx: W - OX + 110 * SCALE }, { sx: W - OX + 148 * SCALE }, { sx: W - OX + 90 * SCALE }
-        ];
-        fruitTrees.forEach((ft, i) => {
-          const pos = ftPositions[i] || { sx: W - OX + (80 + i * 40) * SCALE };
-          const fsx = pos.sx, fsy = groundY(pos.sx);
-          drawFruitTree(ft, fsx, fsy, SCALE * .85);
-        });
+        // Meyve ağaçları artık tarla çevresinde (drawOrchard fonksiyonu)
 
         // House
         const hx = W - OX - 15, hy = groundY(W - OX - 15) - 8;
@@ -2292,7 +2471,7 @@
         ctx.restore(); ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(x, y - 66 * sc, 4 * sc, 0, Math.PI * 2); ctx.fill();
       }
       function drawFence() {
-        ctx.strokeStyle = '#8B5A2B'; ctx.lineWidth = 3 * SCALE;
+        ctx.strokeStyle = '#7A4A1A'; ctx.lineWidth = 3 * SCALE;
         const x0 = OX - 8 * SCALE, y0 = OY - 8 * SCALE, x1 = OX + COLS * CELL * SCALE + 8 * SCALE, y1 = OY + ROWS * CELL * SCALE + 8 * SCALE;
         ctx.strokeRect(x0, y0, x1 - x0, y1 - y0); ctx.fillStyle = '#8B5A2B';
         for (let i = 0; i <= COLS; i++) { const px = OX + i * CELL * SCALE; ctx.fillRect(px - 4 * SCALE, y0 - 8 * SCALE, 8 * SCALE, 16 * SCALE); ctx.fillRect(px - 4 * SCALE, y1 - 4 * SCALE, 8 * SCALE, 16 * SCALE); }
@@ -2301,11 +2480,24 @@
       function drawTile(tile) {
         const x = OX + tile.c * CELL * SCALE, y = OY + tile.r * CELL * SCALE, cs = CELL * SCALE;
         if (tile.state === 'grass') {
-          ctx.fillStyle = '#4FA028'; ctx.fillRect(x, y, cs, cs);
-          ctx.fillStyle = '#2A5A12'; for (let g = 0; g < 4; g++)ctx.fillRect(x + (tile.c * 17 + g * 13) % (cs - 6), y + (tile.r * 11 + g * 19) % (cs - 6), 2, 3 * SCALE);
+          // Grass tile with checkerboard variation
+          const gv = (tile.c + tile.r) % 2 === 0 ? '#52AA2C' : '#48981F';
+          ctx.fillStyle = gv; ctx.fillRect(x, y, cs, cs);
+          // Grass tufts
+          ctx.fillStyle = '#2D6A12';
+          for (let g = 0; g < 5; g++) {
+            const gx = x + (tile.c * 19 + g * 11 + 7) % (cs - 8);
+            const gy = y + (tile.r * 13 + g * 17 + 5) % (cs - 8);
+            ctx.fillRect(gx, gy, 2 * SCALE, 4 * SCALE);
+          }
         } else {
-          ctx.fillStyle = tile.watered ? '#3B2A0E' : '#7A4A22'; ctx.fillRect(x, y, cs, cs);
-          ctx.fillStyle = tile.watered ? '#2A1C08' : '#6B3D11'; for (let rw = 0; rw < 4; rw++)ctx.fillRect(x + 4 * SCALE, y + (rw * cs / 4) + 4 * SCALE, cs - 8 * SCALE, 3 * SCALE);
+          // Soil — richer browns
+          ctx.fillStyle = tile.watered ? '#2E1D08' : '#6A3C18'; ctx.fillRect(x, y, cs, cs);
+          // Furrow rows
+          ctx.fillStyle = tile.watered ? '#1E1005' : '#5A2E0E';
+          for (let rw = 0; rw < 5; rw++)ctx.fillRect(x + 3 * SCALE, y + (rw * cs / 5) + 3 * SCALE, cs - 6 * SCALE, 3 * SCALE);
+          // Moisture sheen if watered
+          if (tile.watered) { ctx.fillStyle = 'rgba(80,140,220,0.1)'; ctx.fillRect(x, y, cs, cs); }
         }
         if (tile.state === 'planted' || tile.state === 'ready') drawCrop(tile, x, y, cs);
         ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth = 1; ctx.strokeRect(x, y, cs, cs);
@@ -2346,8 +2538,10 @@
         }
 
         // Progress bar
-        ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(x + 4 * SCALE, y + cs - 8 * SCALE, cs - 8 * SCALE, 5 * SCALE);
-        ctx.fillStyle = stage === 3 ? '#00FF88' : '#80D020'; ctx.fillRect(x + 4 * SCALE, y + cs - 8 * SCALE, (cs - 8 * SCALE) * prog, 5 * SCALE);
+        // Progress bar with rounded feel
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x + 5 * SCALE, y + cs - 7 * SCALE, cs - 10 * SCALE, 5 * SCALE);
+        const barColor = stage === 3 ? '#00FF88' : stage === 2 ? '#AAD020' : '#80B010';
+        ctx.fillStyle = barColor; ctx.fillRect(x + 5 * SCALE, y + cs - 7 * SCALE, (cs - 10 * SCALE) * prog, 5 * SCALE);
       }
 
       function drawPlayer() {
@@ -2405,7 +2599,7 @@
           }
         });
 
-        updateAnimals(dt); updateWeather(dt);
+        updateAnimals(dt); updateOrchard(dt); updateWeather(dt);
         clouds.forEach(cl => { cl.x += cl.speed * dt * 60 * (weather === 'windy' ? 2.5 : .3); if (cl.x > W + 120) cl.x = -160; });
         particles.forEach(p => { p.y += p.vy; p.life -= dt * .6; }); particles = particles.filter(p => p.life > 0);
 
@@ -2425,9 +2619,9 @@
         lastSaveTime += dt; if (lastSaveTime >= autoSaveInterval) { lastSaveTime = 0; saveGame(); }
 
         ctx.clearRect(0, 0, W, H);
-        drawBg(); drawFence(); tiles.forEach(drawTile); drawPlayer(); drawDarkOverlay();
+        drawBg(); drawOrchard(); drawFence(); tiles.forEach(drawTile); drawPlayer(); drawDarkOverlay();
         ctx.globalAlpha = 1;
-        particles.forEach(p => { ctx.globalAlpha = p.life; ctx.font = (12 * SCALE) + 'px sans-serif'; ctx.fillStyle = p.color; ctx.textAlign = 'center'; ctx.fillText(p.text, p.x, p.y); });
+        particles.forEach(p => { ctx.globalAlpha = p.life; ctx.font = 'bold ' + (13 * SCALE) + 'px Nunito,sans-serif'; ctx.fillStyle = p.color; ctx.textAlign = 'center'; ctx.fillText(p.text, p.x, p.y); });
         ctx.globalAlpha = 1; ctx.textAlign = 'left';
         requestAnimationFrame(mainLoop);
       }
@@ -2478,13 +2672,10 @@
         if (u) u.addEventListener('keydown', e => { if (e.key === 'Enter') p && p.focus(); });
       });
 
-      function startGame(uid) {
-        resize(); window.addEventListener('resize', resize); initTiles();
-        // Buluttan yükle, yoksa localStorage'dan dene
-        _loadFromCloud(uid).then(loaded => {
-          if (!loaded) { const ll = loadGame(); if (!ll) initTiles(); }
+      function startGame(uid, isNewUser = false) {
+        resize(); window.addEventListener('resize', resize);
+        const _boot = () => {
           initFruitTrees(); initQuests(); initNeighborRequests(); updateHUD();
-
           const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
           if (isMobile) {
             let tMoved = false;
@@ -2492,20 +2683,30 @@
             canvas.addEventListener('touchmove', () => { tMoved = true; }, { passive: true });
             canvas.addEventListener('touchend', e => { if (tMoved || e.touches.length > 0) return; e.preventDefault(); handlePointer(e); }, { passive: false });
           } else canvas.addEventListener('click', handlePointer);
-
           document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
           if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => { });
-
-          const displayName = _fbUser?.email?.split('@')[0] || 'Çiftçi';
-          showMsg(loaded ? '💾 Hoş geldin ' + displayName + '! Gün ' + dayCount + ' devam ediyor.' : '🌾 Hoş geldin ' + displayName + '! Tarlana bakmanın zamanı!', 3500);
+          const displayName = _fbUser?.displayName || (_fbUser?.email?.split('@')[0]) || 'Çiftçi';
+          showMsg(isNewUser ? '🌾 Hoş geldin ' + displayName + '! İlk tarlanı kurmanın vakti!' : '💾 Hoş geldin ' + displayName + '! Gün ' + dayCount + ' devam ediyor.', 3500);
           requestAnimationFrame(mainLoop);
-
-          // Periyodik cloud save (60s)
           setInterval(() => { if (_SEC._uid) _saveToCloud(_SEC._uid); }, 60000);
-          // Logout log on page unload
-          window.addEventListener('pagehide', () => {
-            if (_SEC._uid) { window._FB.logSession(_SEC._uid, 'logout').catch(() => { }); }
-          });
+          window.addEventListener('pagehide', () => { if (_SEC._uid) { window._FB.logSession(_SEC._uid, 'logout').catch(() => { }); } });
+        };
+
+        if (isNewUser) {
+          // Yeni kullanıcı: state zaten sıfırlanmış, doğrudan başlat
+          initTiles(); _boot(); return;
+        }
+
+        // Mevcut kullanıcı: önce cloud'dan yükle
+        initTiles();
+        _loadFromCloud(uid).then(loaded => {
+          if (!loaded) {
+            // Cloud'da kayıt yok: localStorage'dan dene
+            // Ama önce bu UID'e ait mi kontrol et — farklı kullanıcı verisi yükleme
+            const ll = loadGame();
+            if (!ll) initTiles(); // localStorage'da da yok → sıfırdan başla
+          }
+          _boot();
         });
       }
 
@@ -2528,7 +2729,8 @@
           weather = d.weather || 'sunny'; weatherTimer = d.weatherTimer || 300;
           activeQuests = d.activeQuests || []; completedQuests = d.completedQuests || [];
           questProgress = Object.assign({ harvest: 0, buy_animal: 0, feed_animal: 0, pickup: 0, earn_gold: 0, water: 0, slaughter: 0, give_neighbor: 0, breed: 0 }, d.questProgress || {});
-          neighborRequests = d.neighborRequests || []; fruitTrees = d.fruitTrees || [];
+          neighborRequests = d.neighborRequests || [];
+          orchardSlots = d.orchardSlots && d.orchardSlots.length > 0 ? d.orchardSlots : _defaultOrchard();
           _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
           return true;
         } catch (err) { console.warn('Cloud load error:', err); return false; }
@@ -2544,7 +2746,7 @@
             gold, energy, maxEnergy, level, xp, maxXp, inventory,
             tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
             animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
-            activeQuests, completedQuests, questProgress, neighborRequests, fruitTrees
+            activeQuests, completedQuests, questProgress, neighborRequests, orchardSlots
           });
         } catch (e) { console.warn('Cloud save error:', e); }
       }
@@ -2591,6 +2793,27 @@
         document.getElementById('register-modal').style.display = 'none';
       }
 
+      // ══ YENİ KULLANICI BAŞLANGIÇ DURUMU ══
+      // Yeni kayıt veya farklı kullanıcı girişinde tüm state'i sıfırla
+      function resetGameState() {
+        gold = 300; energy = 100; maxEnergy = 100; level = 1; xp = 0; maxXp = 100;
+        totalGoldEarned = 0; dayCount = 1; gameTime = 6 * 60;
+        weather = 'sunny'; weatherTimer = 300;
+        inventory = { wheat: 0, corn: 0, tomato: 0, carrot: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0 };
+        animals = []; animalId = 1;
+        tiles = []; initTiles();
+        fruitTrees = []; orchardSlots = _defaultOrchard();
+        activeQuests = []; completedQuests = [];
+        questProgress = { harvest: 0, buy_animal: 0, feed_animal: 0, pickup: 0, earn_gold: 0, water: 0, slaughter: 0, give_neighbor: 0, breed: 0 };
+        neighborRequests = [];
+        particles = [];
+        _SEC._g = 300; _SEC._e = 100; _SEC._l = 1;
+        // localStorage temizle — önceki kullanıcı verisinin kalıntısını önle
+        try {
+          Object.keys(localStorage).filter(k => k.startsWith('_t_')).forEach(k => localStorage.removeItem(k));
+        } catch { }
+      }
+
       function doRegister() {
         if (!window._FB) { document.getElementById('reg-err').textContent = '⏳ Firebase bağlanıyor...'; return; }
         const name = document.getElementById('reg-name').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -2601,19 +2824,20 @@
         if (!name || name.length < 3) { err.textContent = '⚠️ Kullanıcı adı en az 3 karakter olmalı (harf/rakam/_)'; return; }
         if (pass.length < 6) { err.textContent = '⚠️ Şifre en az 6 karakter olmalı.'; return; }
         if (pass !== pass2) { err.textContent = '❌ Şifreler eşleşmiyor.'; return; }
-        // Eğer email girilmediyse @tarlam.game uzantısı ekle
         const email = emailInput.includes('@') && emailInput.includes('.') ? emailInput : name + '@tarlam.game';
         err.textContent = '⏳ Hesap oluşturuluyor...';
-        const { createUserWithEmailAndPassword, updateProfile } = window._FB._authFns || {};
-        // Firebase module scope'dan createUser'a erişim için _FB._create kullanıyoruz
         window._FB.create(email, pass, name)
           .then(async cred => {
             _fbUser = cred.user; _SEC._uid = _fbUser.uid;
             try { await window._FB.logSession(_fbUser.uid, 'register'); } catch { }
+            // ── YENİ KULLANICI: state'i tamamen sıfırla ──
+            resetGameState();
+            initQuests(); initNeighborRequests();
             err.textContent = '✅ Hesap oluşturuldu! Hoş geldin ' + name + '!';
             setTimeout(() => {
               document.getElementById('register-modal').style.display = 'none';
-              startGame(_fbUser.uid);
+              // Sıfırlanmış state ile oyunu başlat, cloud save hiç yok
+              startGame(_fbUser.uid, true/*isNewUser*/);
             }, 1200);
           })
           .catch(e => {
@@ -2798,6 +3022,7 @@
           ['claimQuest', claimQuest], ['giveNeighbor', giveNeighbor],
           ['refreshNeighborRequests', refreshNeighborRequests],
           ['openSettings', openSettings], ['closeSettings', closeSettings],
+          ['buyOrchardTree', buyOrchardTree],
           ['openRegister', openRegister], ['closeRegister', closeRegister], ['doRegister', doRegister],
           ['promptChangeName', promptChangeName], ['promptChangeEmail', promptChangeEmail],
           ['promptChangePass', promptChangePass], ['doLogout', doLogout],
@@ -2823,7 +3048,6 @@
         return true;
       }
     })(); // ══ IIFE SONU ══
-
   </script>
 
   <!-- ══ KAYIT EKRANI MODAL ══ -->
