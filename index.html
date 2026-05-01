@@ -1674,24 +1674,27 @@
 
         const cropKeys = Object.keys(inventory).filter(k => inventory[k] > 0);
 
-        // Build obstacles first (6 obstacles, spread evenly, random lanes)
-        const obstacles = [];
-        for (let i = 0; i < 6; i++) {
-          const baseX = 700 + i * 480;
-          const lane = Math.floor(Math.random() * LANE_COUNT);
-          obstacles.push({ wx: baseX + Math.random() * 80, lane, type: ['rock', 'barrel', 'hay'][i % 3] });
-        }
-
-        // Place crops: ensure at least 120 units away from any obstacle
+        // ── Ürün ve engel konumları — tam deterministik, kesinlikle spawn olur ──
+        // Yolu eşit bölümlere böl, her bölüme 1 ürün + 1 engel
+        // Engeller: ürünlerden ~200 birim önce veya sonra, farklı şerit
+        const SEGMENT = Math.floor((ROAD_LEN - 400) / 10); // 10 ürün için
         const cropItems = [];
-        let attempts = 0;
-        while (cropItems.length < 10 && attempts < 200) {
-          attempts++;
-          const wx = 250 + (cropItems.length * 340) + Math.random() * 120;
-          const lane = cropItems.length % LANE_COUNT;
-          // Check not near obstacle
-          const nearOb = obstacles.some(ob => ob.lane === lane && Math.abs(ob.wx - wx) < 150);
-          if (!nearOb) cropItems.push({ wx, lane, collected: false, type: cropKeys[cropItems.length % cropKeys.length] });
+        const obstacles = [];
+
+        for (let i = 0; i < 10; i++) {
+          const segStart = 200 + i * SEGMENT;
+          // Ürün: segment ortasında, sabit şerit rotasyonu
+          const cLane = i % LANE_COUNT;
+          const cWx = segStart + Math.floor(SEGMENT * 0.35) + Math.floor(Math.random() * (SEGMENT * 0.2));
+          cropItems.push({ wx: cWx, lane: cLane, collected: false, type: cropKeys[i % cropKeys.length] });
+
+          // Engel: ürünün 180-250 birim ötesinde, farklı şerit
+          if (i < 6) { // 6 engel yeterli
+            const oLane = (cLane + 1 + Math.floor(Math.random() * 2)) % LANE_COUNT;
+            const oWx = cWx + 180 + Math.floor(Math.random() * 70);
+            if (oWx < ROAD_LEN - 300)
+              obstacles.push({ wx: oWx, lane: oLane, type: ['rock', 'barrel', 'hay'][i % 3] });
+          }
         }
 
         // Markets at 3 positions, different lanes, spread across road
@@ -1714,7 +1717,7 @@
 
         PU = {
           active: true, ctx: pc, w: pw, h: ph,
-          truck: { wx: 0, lane: 1 },   // ← wx=0: gerçekten baştan başla
+          truck: { wx: 0, lane: 1 },   // wx=0, camX=0 → başlangıç noktası
           cargo: 0, maxCargo, score: 0, timeLeft: 110, animT: 0,
           gameOver: false, won: false, winAnim,
           cropItems, markets, obstacles,
@@ -2006,7 +2009,7 @@
             if ((PU.keys['ArrowUp'] || PU.keys['w']) && t.lane > 0) { t.lane--; PU.laneCooldown = 20; }
             if ((PU.keys['ArrowDown'] || PU.keys['s']) && t.lane < LANE_COUNT - 1) { t.lane++; PU.laneCooldown = 20; }
           }
-          // Kamera: kamyon sol 30%'de sabit, world kayar
+          // Kamera: wx<pw*0.30 iken 0, sonra kamyon ekranın %30'unda sabit
           PU.camX = Math.max(0, t.wx - pw * 0.30);
 
           const truckWX = t.wx;
@@ -2760,16 +2763,40 @@
           return;
         }
         // Auth state listener — sayfa yenilenince oturumu sürdür
-        window._FB.onAuthStateChanged(user => {
-          if (user && !_fbUser) {
-            _fbUser = user; _SEC._uid = user.uid;
-            const scr = document.getElementById('login-screen');
-            if (!scr.classList.contains('hidden')) {
-              scr.classList.add('hidden'); startGame(user.uid);
+        window._FB.onAuthStateChanged(async user => {
+          if (user) {
+            // Token'ı zorla yenile — kullanıcı silinmişse burada hata verir
+            try {
+              await user.getIdToken(true);
+            } catch (e) {
+              // Token yenilenemedi — kullanıcı silinmiş veya devre dışı
+              console.warn('[TARLAM] Geçersiz oturum:', e.code);
+              _fbUser = null; _SEC._uid = null;
+              // localStorage + sessionStorage temizle
+              try { Object.keys(localStorage).filter(k => k.startsWith('_t_')).forEach(k => localStorage.removeItem(k)); } catch { }
+              try { sessionStorage.clear(); } catch { }
+              // Firebase cache temizle
+              try { await window._FB.signOut(); } catch { }
+              // Giriş ekranını göster (reload yerine soft reset)
+              const scr = document.getElementById('login-screen');
+              if (scr) { scr.style.opacity = '1'; scr.classList.remove('hidden'); }
+              const err = document.getElementById('ls-err');
+              if (err) err.textContent = '⚠️ Hesabınız bulunamadı. Lütfen tekrar giriş yapın.';
+              return;
+            }
+            if (!_fbUser) {
+              _fbUser = user; _SEC._uid = user.uid;
+              const scr = document.getElementById('login-screen');
+              if (!scr.classList.contains('hidden')) {
+                scr.classList.add('hidden'); startGame(user.uid);
+              }
             }
           } else if (!user && _fbUser) {
+            // Normal çıkış
             _fbUser = null; _SEC._uid = null;
             location.reload();
+          } else if (!user && !_fbUser) {
+            // Oturum yok, giriş ekranı açık — normal durum
           }
         });
         // Giriş ekranı input odağı
@@ -3028,6 +3055,11 @@
           ['promptChangePass', promptChangePass], ['doLogout', doLogout],
           ['confirmDeleteAccount', confirmDeleteAccount],
           ['toggleSfx', toggleSfx], ['setGameSpeed', setGameSpeed],
+          // _apply fonksiyonları: ayarlar ekranının dinamik HTML'inden çağrılır
+          ['_applyChangeName', _applyChangeName],
+          ['_applyChangeEmail', _applyChangeEmail],
+          ['_applyChangePass', _applyChangePass],
+          ['_applyDeleteAccount', _applyDeleteAccount],
         ];
         pub.forEach(([name, fn]) => { window[name] = fn; });
       })();
