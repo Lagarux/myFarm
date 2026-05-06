@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── OYUN VERİSİ ──
+    // Client okuyabilir (HUD'u güncellemek için)
+    // Yazma YALNIZCA admin SDK (Functions) üzerinden → allow write: false
+    match /users/{userId}/gameData/{doc} {
+      allow read:  if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // ── OTURUM LOGLARI ──
+    // Client yeni log ekleyebilir ama silemez/değiştiremez
+    match /users/{userId}/logs/{logId} {
+      allow read:   if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update, delete: if false;
+    }
+
+    // ── RATE LIMIT ──
+    // Yalnızca Functions (admin) yönetir
+    match /ratelimit/{uid} {
+      allow read, write: if false;
+    }
+
+    // ── HİÇBİR ŞEY ELSE ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

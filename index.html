@@ -75,6 +75,41 @@
     // type="module" asenkron çalışır; IIFE bunu bekler
     window.dispatchEvent(new CustomEvent('fbReady'));
   </script>
+
+  <script>
+    // ══════════════════════════════════════════════════════════════
+    // API KATMANI — Tüm aksiyonlar Firebase Functions üzerinden
+    // FUNCTIONS_BASE_URL → deploy sonrası kendi URL'inizi yazın
+    // Yerel test için: http://localhost:5001/PROJE_ID/us-central1
+    // ══════════════════════════════════════════════════════════════
+    const FUNCTIONS_BASE = "https://REGION-PROJE_ID.cloudfunctions.net";
+
+    async function callAPI(endpoint, body = {}) {
+      if (!window._FB || !window._fbUser) {
+        throw new Error("Oturum yok");
+      }
+      // Her istekte taze JWT token al
+      const token = await window._fbUser.getIdToken();
+
+      const res = await fetch(FUNCTIONS_BASE + "/" + endpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sunucu hatası (" + res.status + ")");
+      return data;
+    }
+
+    // Aktif kullanıcı referansı (module script'ten gelir, güvenli)
+    window._fbUser = null;
+    // _FB.onAuthStateChanged ile set edilir (init bloğunda)
+  </script>
+
   <style>
     :root {
       --font-main: 'Fredoka', sans-serif;
@@ -953,6 +988,31 @@
     (function () {  // ══ GÜVENLİK SARMALAYICI (IIFE) — tüm state değişkenleri gizli ══
       // updateHUD, gold, energy, level vb. window scope'dan erişilemez
 
+      // ── Sunucudan gelen XP/level cevabını uygula ──
+      function _applyLvl(d) {
+        if (d === undefined || d === null) return;
+        if (typeof d.level === 'number') level = d.level;
+        if (typeof d.xp === 'number') xp = d.xp;
+        if (typeof d.maxXp === 'number') maxXp = d.maxXp;
+        if (typeof d.maxEnergy === 'number') { maxEnergy = d.maxEnergy; energy = Math.min(energy, maxEnergy); }
+        _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
+      }
+
+      // ── Periyodik oyun state sync (büyüme, hava, zaman) ──
+      let _syncTimer = 0;
+      function _periodicSync(dt) {
+        _syncTimer += dt;
+        if (_syncTimer < 45) return; // 45 saniyede bir
+        _syncTimer = 0;
+        if (!_SEC._uid || !window._fbUser) return;
+        callAPI('syncGameState', {
+          tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
+          orchardSlots,
+          animals,
+          gameTime, dayCount, weather, weatherTimer
+        }).catch(() => { }); // Sessizce başarısız olabilir
+      }
+
       // Şifreler bu dosyada YOKTUR. Firebase Auth kullanılır.
 
       // Anti-tamper: kritik değerler shadow kopyasıyla korunur
@@ -1046,9 +1106,9 @@
 
       // ══ SAVE/LOAD ══
       function saveGame() {
-        if (_SEC._uid) { try { _saveToCloud(_SEC._uid); } catch { } }
-        _SEC._g = gold; _SEC._e = energy; _SEC._l = level;  // update shadow copies
-        // Also keep local backup
+        // Artık yalnızca simülasyon state'ini yerel olarak yedekle
+        // Altın, enerji, envanter sunucu tarafından yönetilir
+        _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
         _localSaveGame();
       }
       function _localSaveGame() {
@@ -1223,16 +1283,18 @@
             // Show buy dialog
             _openOrchardBuy(slot);
           } else if (currentTool === 'harvest' && slot.stage === 3 && slot.fruitsReady > 0) {
-            if (!useEnergy(3)) return;
-            inventory[slot.type] = (inventory[slot.type] || 0) + slot.fruitsReady;
-            const n = slot.fruitsReady, def = ORCHARD_DEF[slot.type];
-            addParticle(x, y - 40 * SCALE, def.icon + ' +' + n, def.color);
-            addXp(n * 8); slot.fruitsReady = 0; slot.growTimer = 0;
-            updateHUD(); showMsg(def.icon + ' ' + n + ' ' + def.name + ' hasat edildi!');
+            callAPI('harvestOrchard', { side: slot.side, idx: slot.idx }).then(d => {
+              const def = ORCHARD_DEF[slot.type];
+              inventory = d.inventory; energy = d.newEnergy;
+              addParticle(x, y - 40 * SCALE, def.icon + ' +' + d.count, def.color);
+              slot.fruitsReady = 0; slot.growTimer = 0;
+              _applyLvl(d); updateHUD(); showMsg(def.icon + ' ' + d.count + ' ' + def.name + ' hasat edildi!');
+            }).catch(e => showMsg('❌ ' + e.message));
           } else if (currentTool === 'water' && slot.stage >= 1) {
-            if (!useEnergy(2)) return;
-            slot.watered = true; addParticle(x, y - 20 * SCALE, '💧', '#5BB8F5');
-            showMsg('🌳 Ağaç sulandı!');
+            callAPI('waterOrchard', { side: slot.side, idx: slot.idx }).then(d => {
+              slot.watered = true; energy = d.newEnergy; updateHUD();
+              addParticle(x, y - 20 * SCALE, '💧', '#5BB8F5'); showMsg('🌳 Ağaç sulandı!');
+            }).catch(e => showMsg('❌ ' + e.message));
           } else if (slot.stage === 3 && slot.fruitsReady === 0) {
             showMsg('🌳 Meyveler olgunlaşıyor...');
           }
@@ -1255,13 +1317,12 @@
       }
 
       function buyOrchardTree(side, idx, type) {
-        const cost = ORCHARD_SEED_COST[type];
-        if (gold < cost) { showMsg('💰 Yeterli altın yok!'); return; }
-        const slot = orchardSlots.find(s => s.side === side && s.idx === idx);
-        if (!slot) return;
-        gold -= cost; slot.type = type; slot.stage = 1; slot.growTimer = 0; slot.fruitsReady = 0; slot.watered = false;
-        addXp(5); updateHUD(); closeModal();
-        showMsg(ORCHARD_DEF[type].icon + ' ' + ORCHARD_DEF[type].name + ' fidanı dikildi!');
+        callAPI('plantOrchardTree', { side, idx, treeType: type }).then(d => {
+          const slot = orchardSlots.find(s => s.side === side && s.idx === idx);
+          if (slot) { slot.type = type; slot.stage = 1; slot.growTimer = 0; slot.fruitsReady = 0; }
+          gold = d.newGold; _applyLvl(d); updateHUD(); closeModal();
+          showMsg(ORCHARD_DEF[type].icon + ' ' + ORCHARD_DEF[type].name + ' fidanı dikildi!');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
 
       function updateOrchard(dt) {
@@ -1340,7 +1401,7 @@
         }
         updateHUD();
       }
-      function earnGold(amount) { gold += amount; totalGoldEarned += amount; checkQuestProgress('earn_gold', totalGoldEarned); updateHUD(); }
+      // earnGold artık kullanılmıyor — tüm gold değişiklikleri sunucu üzerinden
 
       // ══ CLICK / TOUCH ══
       // Mobile: touchstart fires immediately on first tap (no delay, no 2-finger issues)
@@ -1363,27 +1424,43 @@
         const cx = OX + (c + .5) * CELL * SCALE, cy = OY + (r + .5) * CELL * SCALE;
         const rainBonus = (weather === 'rainy' || weather === 'stormy');
         if (currentTool === 'hoe') {
-          if (tile.state === 'grass') { if (!useEnergy(5)) return; tile.state = 'tilled'; addParticle(cx, cy - 20, '⛏️+2xp', '#A0522D'); addXp(2); showMsg('Toprak sürüldü!'); }
-          else showMsg('Bu arazi zaten hazır.');
+          if (tile.state !== 'grass') { showMsg('Bu arazi zaten hazır.'); return; }
+          showMsg('⏳ İşleniyor...');
+          callAPI('tillTile', { c, r }).then(d => {
+            tile.state = 'tilled';
+            energy = d.newEnergy; _applyLvl(d);
+            addParticle(cx, cy - 20, '⛏️+2xp', '#A0522D'); showMsg('Toprak sürüldü!'); updateHUD();
+          }).catch(e => showMsg('❌ ' + e.message));
+
         } else if (currentTool === 'water') {
-          if (tile.state === 'tilled' || (tile.state === 'planted' && !tile.watered)) {
-            if (!useEnergy(3)) return; tile.watered = true; tile.waterTimer = rainBonus ? 200 : 120;
-            addParticle(cx, cy - 20, '💧', '#5BB8F5'); checkQuestProgress('water', 1, true); showMsg('Sulandı!' + (rainBonus ? ' (Yağmur bonusu!)' : ''));
-          } else showMsg('Sulanacak alan yok.');
+          if (tile.state !== 'tilled' && !(tile.state === 'planted' && !tile.watered)) { showMsg('Sulanacak alan yok.'); return; }
+          callAPI('waterTile', { c, r }).then(d => {
+            tile.watered = true; tile.waterTimer = d.rainBonus ? 200 : 120;
+            energy = d.newEnergy; updateHUD();
+            addParticle(cx, cy - 20, '💧', '#5BB8F5');
+            checkQuestProgress('water', 1, true);
+            showMsg('Sulandı!' + (d.rainBonus ? ' (Yağmur bonusu!)' : ''));
+          }).catch(e => showMsg('❌ ' + e.message));
+
         } else if (currentTool === 'harvest') {
-          if (tile.state === 'ready') {
-            if (!useEnergy(4)) return; const cn = tile.crop; inventory[cn]++;
-            addParticle(cx, cy - 20, CROPS[cn].icon + ' +1', CROPS[cn]?.color || '#FFD700');
+          if (tile.state !== 'ready') { showMsg('Henüz hasat zamanı değil.'); return; }
+          callAPI('harvestCrop', { c, r }).then(d => {
+            const cn = tile.crop;
             tile.state = 'tilled'; tile.crop = null; tile.growProgress = 0; tile.watered = false;
-            addXp(CROPS[cn].xp); checkQuestProgress('harvest', 1, true); updateHUD(); showMsg('Hasat yapıldı!');
-          } else showMsg('Henüz hasat zamanı değil.');
+            inventory = d.inventory; energy = d.newEnergy;
+            _applyLvl(d); checkQuestProgress('harvest', 1, true);
+            addParticle(cx, cy - 20, CROPS[cn]?.icon + ' +1', CROPS[cn]?.color || '#FFD700');
+            showMsg('Hasat yapıldı!'); updateHUD();
+          }).catch(e => showMsg('❌ ' + e.message));
+
         } else if (CROPS[currentTool]) {
-          if (tile.state === 'tilled') {
-            const cost = CROPS[currentTool].seedCost;
-            if (gold < cost) { showMsg('💰 Yeterli altın yok! Gereken: ' + cost + '₺'); return; }
-            if (!useEnergy(4)) return; gold -= cost; tile.state = 'planted'; tile.crop = currentTool; tile.growProgress = 0;
-            addParticle(cx, cy - 20, '🌱 Ekildi!', '#4FA028'); updateHUD(); showMsg(CROPS[currentTool].icon + ' ekildi! -' + cost + '₺');
-          } else showMsg('Önce toprağı çapalayın!');
+          if (tile.state !== 'tilled') { showMsg('Önce toprağı çapalayın!'); return; }
+          callAPI('plantCrop', { c, r, cropType: currentTool }).then(d => {
+            tile.state = 'planted'; tile.crop = currentTool; tile.growProgress = 0;
+            gold = d.newGold; energy = d.newEnergy; updateHUD();
+            addParticle(cx, cy - 20, '🌱 Ekildi!', '#4FA028');
+            showMsg(CROPS[currentTool].icon + ' ekildi! -' + d.seedCost + '₺');
+          }).catch(e => showMsg('❌ ' + e.message));
         }
       }
       // Keep handleClick as alias for keyboard use
@@ -1432,26 +1509,35 @@
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
       }
       function buyAnimal(type) {
-        const d = ADEF[type]; if (gold < d.buy) { showMsg('💰 Yeterli altın yok!'); return; }
-        gold -= d.buy; animals.push({ id: animalId++, type, name: d.name + ' #' + animalId, hunger: 100, happy: 100, age: 0, pregnant: false, pregnancyDays: 0, readyProduce: false, produceTimer: 0 });
-        addXp(15); checkQuestProgress('buy_animal', 1, true); updateHUD(); openBarn(); showMsg(d.emoji + ' ' + d.name + ' satın alındı!'); saveGame();
+        callAPI('buyAnimal', { animalType: type }).then(d => {
+          gold = d.newGold; animals.push(d.animal); _applyLvl(d);
+          checkQuestProgress('buy_animal', 1, true); updateHUD(); openBarn();
+          showMsg(ADEF[type].emoji + ' ' + ADEF[type].name + ' satın alındı!');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
       function feedAnimal(id) {
-        const a = animals.find(x => x.id === id); if (!a) return; const d = ADEF[a.type];
-        if (inventory[d.food] < 1) { showMsg('🍽️ Yem yok! Gereken: ' + (FOOD_NAMES[d.food] || d.food)); return; }
-        inventory[d.food]--; a.hunger = Math.min(100, a.hunger + 40); a.happy = Math.min(100, a.happy + 25);
-        checkQuestProgress('feed_animal', 1, true); updateHUD(); openBarn(); showMsg(d.emoji + ' beslendi!');
+        callAPI('feedAnimal', { animalId: id }).then(d => {
+          const a = animals.find(x => x.id === id);
+          if (a) { a.hunger = d.newHunger; a.happy = Math.min(100, a.happy + 25); }
+          inventory = d.inventory;
+          checkQuestProgress('feed_animal', 1, true); updateHUD(); openBarn();
+          showMsg(ADEF[animals.find(x => x.id === id)?.type]?.emoji + ' beslendi!');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
       function collectProduce(id) {
-        const a = animals.find(x => x.id === id); if (!a || !a.readyProduce) return; const d = ADEF[a.type];
-        inventory[d.produceItem] = (inventory[d.produceItem] || 0) + 1; a.readyProduce = false; a.produceTimer = 0;
-        addXp(8); updateHUD(); openBarn(); showMsg(d.emoji + ' → +1 ' + d.produceItem + '!');
+        callAPI('collectProduce', { animalId: id }).then(d => {
+          const a = animals.find(x => x.id === id);
+          if (a) { a.readyProduce = false; a.produceTimer = 0; }
+          inventory = d.inventory; _applyLvl(d); updateHUD(); openBarn();
+          showMsg(ADEF[a?.type]?.emoji + ' → +1 ' + d.produceItem + '!');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
       function breedAnimal(id) {
-        const a = animals.find(x => x.id === id); if (!a) return;
-        if (animals.filter(x => x.type === a.type).length < 2) { showMsg('Çiftleşmek için aynı türden 2. hayvan gerekli!'); return; }
-        if (a.pregnant) { showMsg('Bu hayvan zaten gebe!'); return; }
-        a.pregnant = true; a.pregnancyDays = 0; openBarn(); showMsg('🍀 Gebe! ' + ADEF[a.type].gestationDays + ' gün sonra doğum.');
+        callAPI('breedAnimal', { animalId: id }).then(d => {
+          const a = animals.find(x => x.id === id);
+          if (a) { a.pregnant = true; a.pregnancyDays = 0; }
+          openBarn(); showMsg('🍀 Gebe! ' + d.gestationDays + ' gün sonra doğum.');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
       function confirmSlaughter(id) {
         const a = animals.find(x => x.id === id); if (!a) return; const d = ADEF[a.type];
@@ -1465,14 +1551,20 @@
   </div>`;
       }
       function slaughterAnimal(id) {
-        const a = animals.find(x => x.id === id); if (!a) return; const d = ADEF[a.type];
-        inventory.meat += d.slaughterMeat; animals = animals.filter(x => x.id !== id);
-        checkQuestProgress('slaughter', d.slaughterMeat, true); addXp(10); updateHUD(); closeModal();
-        showMsg('🔪 ' + a.name + ' kesildi! +' + d.slaughterMeat + ' 🥩'); saveGame();
+        callAPI('slaughterAnimal', { animalId: id }).then(d => {
+          animals = animals.filter(x => x.id !== id);
+          inventory = d.inventory; _applyLvl(d);
+          checkQuestProgress('slaughter', d.meatGained, true);
+          updateHUD(); closeModal(); showMsg('🔪 Hayvan kesildi! +' + d.meatGained + ' 🥩');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
       function sellAnimal(id) {
-        const a = animals.find(x => x.id === id); if (!a) return; const d = ADEF[a.type];
-        earnGold(d.sellPrice); animals = animals.filter(x => x.id !== id); addXp(5); updateHUD(); openBarn(); showMsg('💰 ' + a.name + ' ' + d.sellPrice + '₺\'ye satıldı!'); saveGame();
+        const a = animals.find(x => x.id === id); if (!a) return;
+        callAPI('sellAnimal', { animalId: id }).then(d => {
+          animals = animals.filter(x => x.id !== id);
+          gold = d.newGold; _applyLvl(d); updateHUD(); openBarn();
+          showMsg('💰 ' + a.name + ' ' + d.earned + "₺'ye satıldı!");
+        }).catch(e => showMsg('❌ ' + e.message));
       }
 
       // ══ MARKET ══
@@ -1504,13 +1596,17 @@
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
       }
       function sellAll(key) {
-        const qty = inventory[key] || 0; if (qty <= 0) { showMsg('Satacak yok!'); openMarket(); return; }
-        earnGold(qty * (MARKET_PRICES[key] || 0)); inventory[key] = 0; addXp(5); updateHUD(); openMarket(); showMsg('✅ +' + (qty * (MARKET_PRICES[key] || 0)) + '₺ kazanıldı!'); saveGame();
+        if ((inventory[key] || 0) <= 0) { showMsg('Satacak yok!'); openMarket(); return; }
+        callAPI('sellItem', { itemKey: key }).then(d => {
+          gold = d.newGold; inventory = Object.assign({}, inventory, { [key]: 0 });
+          _applyLvl(d); updateHUD(); openMarket(); showMsg('✅ +' + d.earned + '₺ kazanıldı!');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
       function sellAllItems() {
-        let total = 0; Object.keys(MARKET_PRICES).forEach(k => { total += (inventory[k] || 0) * (MARKET_PRICES[k] || 0); inventory[k] = 0; });
-        if (total === 0) { showMsg('Satacak ürün yok!'); openMarket(); return; }
-        earnGold(total); addXp(15); updateHUD(); closeModal(); showMsg('🎉 +' + total + '₺ kazanıldı!'); saveGame();
+        callAPI('sellAllItems').then(d => {
+          gold = d.newGold; inventory = d.inventory; _applyLvl(d); updateHUD(); closeModal();
+          showMsg('🎉 +' + d.total + '₺ kazanıldı!');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
 
       // ══ QUESTS ══
@@ -1542,12 +1638,13 @@
         });
       }
       function claimQuest(id) {
-        const q = activeQuests.find(x => x.id === id); if (!q || !q.done) return;
-        earnGold(q.reward); addXp(q.xpReward); completedQuests.push(id);
-        activeQuests = activeQuests.filter(x => x.id !== id);
-        const nextQ = QUESTS_DEF.find(qd => !completedQuests.includes(qd.id) && !activeQuests.find(a => a.id === qd.id));
-        if (nextQ) activeQuests.push({ ...nextQ, progress: 0, done: false });
-        updateHUD(); openQuests(); showMsg('🎁 Ödül alındı! +' + q.reward + '₺ +' + q.xpReward + 'xp'); saveGame();
+        callAPI('claimQuest', { questId: id }).then(d => {
+          gold = d.newGold; completedQuests = d.completedQuests;
+          activeQuests = activeQuests.filter(x => x.id !== id);
+          const nextQ = QUESTS_DEF.find(qd => !completedQuests.includes(qd.id) && !activeQuests.find(a => a.id === qd.id));
+          if (nextQ) activeQuests.push({ ...nextQ, progress: 0, done: false });
+          _applyLvl(d); updateHUD(); openQuests(); showMsg('🎁 Ödül alındı! +' + d.reward + '₺');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
 
       // ══ NEIGHBOR ══
@@ -1577,10 +1674,12 @@
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
       }
       function giveNeighbor(i) {
-        const req = neighborRequests[i]; if (!req || req.fulfilled) return;
-        if ((inventory[req.type] || 0) < req.qty) { showMsg('Yeterli ürün yok!'); return; }
-        inventory[req.type] -= req.qty; earnGold(req.reward); req.fulfilled = true;
-        addXp(20); checkQuestProgress('give_neighbor', 1, true); updateHUD(); openNeighbor(); showMsg('🧑‍🌾 ' + req.name + '\'e verildi! +' + req.reward + '₺'); saveGame();
+        callAPI('giveNeighbor', { requestIndex: i }).then(d => {
+          neighborRequests[i].fulfilled = true;
+          gold = d.newGold; inventory = d.inventory; _applyLvl(d);
+          checkQuestProgress('give_neighbor', 1, true); updateHUD(); openNeighbor();
+          showMsg('🧑‍🌾 ' + neighborRequests[i].name + "'e verildi! " + +d.reward + '₺');
+        }).catch(e => showMsg('❌ ' + e.message));
       }
       function refreshNeighborRequests() {
         neighborRequests = [];
@@ -1595,15 +1694,18 @@
         document.getElementById('sleep-sub').textContent = 'Sabaha kadar uyuyor... (+enerji)';
         overlay.style.display = 'flex'; overlay.style.background = 'rgba(0,0,20,0)'; txt.style.opacity = '0';
         setTimeout(() => { overlay.style.background = 'rgba(0,0,20,0.97)'; txt.style.opacity = '1'; }, 100);
-        setTimeout(() => {
-          gameTime = 6 * 60; dayCount++; energy = maxEnergy;
-          animals.forEach(a => { a.hunger = Math.max(0, a.hunger - 15); }); updateHUD(); saveGame();
-        }, 1200);
-        setTimeout(() => txt.style.opacity = '0', 2200);
-        setTimeout(() => {
-          overlay.style.background = 'rgba(0,0,20,0)';
-          setTimeout(() => overlay.style.display = 'none', 1000); showMsg('☀️ Günaydın! Gün ' + dayCount + '.', 2500);
-        }, 2800);
+        callAPI('sleep').then(d => {
+          gameTime = d.newGameTime; dayCount = d.newDay; energy = d.newEnergy; maxEnergy = maxEnergy;
+          animals.forEach(a => { a.hunger = Math.max(0, (a.hunger || 0) - 15); });
+          updateHUD();
+          setTimeout(() => txt.style.opacity = '0', 1200);
+          setTimeout(() => {
+            overlay.style.background = 'rgba(0,0,20,0)';
+            setTimeout(() => overlay.style.display = 'none', 1000); showMsg('☀️ Günaydın! Gün ' + dayCount + '.', 2500);
+          }, 1800);
+        }).catch(e => {
+          overlay.style.display = 'none'; showMsg('❌ ' + e.message);
+        });
       }
 
       // ══ WEATHER ══
@@ -2064,9 +2166,13 @@
         PU.active = false; cancelAnimationFrame(puRAF);
         const ov = document.getElementById('pickup-overlay');
         if (!auto) { ov.style.display = 'none'; return; }
+        if (PU.score > 0 || PU.won) {
+          callAPI('completePickup', { score: PU.score, won: PU.won }).then(d => {
+            gold = d.newGold; _applyLvl(d); updateHUD();
+          }).catch(() => { });
+        }
         if (!PU.won) {
           showMsg('⏱ Süre doldu! +' + PU.score + '₺ kazandın.', 2800);
-          addXp(10); updateHUD(); saveGame();
         }
         setTimeout(() => { ov.style.display = 'none'; }, PU.won ? 200 : 2400);
       }
@@ -2297,12 +2403,15 @@
         MG.active = false; cancelAnimationFrame(mgRAF);
         const ov = document.getElementById('minigame-overlay');
         if (auto && MG.score > 0) {
-          inventory[MG.cfg.reward] = (inventory[MG.cfg.reward] || 0) + MG.score;
-          const a = animals.find(x => x.id === MG.animalId);
-          if (a) { a.happy = Math.min(100, a.happy + 15); a.readyProduce = false; }
-          addXp(MG.score * 5); updateHUD();
-          showMsg('🎉 +' + MG.score + ' ' + MG.cfg.icon + ' ' + MG.cfg.rewardName + ' kazandın!', 3000);
-          saveGame();
+          callAPI('completeMiniGame', { animalId: MG.animalId, produceType: MG.cfg.reward, count: MG.score }).then(d => {
+            inventory = d.inventory; _applyLvl(d);
+            const a = animals.find(x => x.id === MG.animalId);
+            if (a) { a.happy = Math.min(100, a.happy + 15); a.readyProduce = false; }
+            updateHUD(); showMsg('🎉 +' + MG.score + ' ' + MG.cfg.icon + ' ' + MG.cfg.rewardName + ' kazandın!', 3000);
+          }).catch(() => {
+            // Fallback: yerel kayıt
+            inventory[MG.cfg.reward] = (inventory[MG.cfg.reward] || 0) + MG.score; updateHUD();
+          });
         }
         setTimeout(() => { ov.style.display = 'none'; }, auto ? 1800 : 0);
       }
@@ -2603,6 +2712,7 @@
         });
 
         updateAnimals(dt); updateOrchard(dt); updateWeather(dt);
+        _periodicSync(dt);
         clouds.forEach(cl => { cl.x += cl.speed * dt * 60 * (weather === 'windy' ? 2.5 : .3); if (cl.x > W + 120) cl.x = -160; });
         particles.forEach(p => { p.y += p.vy; p.life -= dt * .6; }); particles = particles.filter(p => p.life > 0);
 
@@ -2860,12 +2970,17 @@
             // ── YENİ KULLANICI: state'i tamamen sıfırla ──
             resetGameState();
             initQuests(); initNeighborRequests();
-            err.textContent = '✅ Hesap oluşturuldu! Hoş geldin ' + name + '!';
-            setTimeout(() => {
-              document.getElementById('register-modal').style.display = 'none';
-              // Sıfırlanmış state ile oyunu başlat, cloud save hiç yok
-              startGame(_fbUser.uid, true/*isNewUser*/);
-            }, 1200);
+            // Sunucuda oyuncu kaydı oluştur (başlangıç değerleri Functions'tan gelir)
+            callAPI('createPlayer').then(() => {
+              err.textContent = '✅ Hesap oluşturuldu! Hoş geldin ' + name + '!';
+              setTimeout(() => {
+                document.getElementById('register-modal').style.display = 'none';
+                resetGameState();
+                startGame(_fbUser.uid, true/*isNewUser*/);
+              }, 1200);
+            }).catch(e => {
+              err.textContent = '❌ Kayıt hatası: ' + e.message;
+            });
           })
           .catch(e => {
             const codes = {
