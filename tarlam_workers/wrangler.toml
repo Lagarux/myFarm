@@ -1,0 +1,9 @@
+name            = "tarlam-oyun"
+main            = "src/index.js"
+compatibility_date = "2024-09-02"
+
+# Workers ücretsiz planı: günlük 100.000 istek, 10ms CPU/istek
+# Mevcut oyun için yeterli. Detay: https://developers.cloudflare.com/workers/platform/limits/
+
+[vars]
+PROJECT_ID = "tarlam-oyun"
