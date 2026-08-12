@@ -2763,7 +2763,7 @@
         const btn = document.querySelector('.ls-btn'); btn.disabled = true;
         window._FB.signIn(email, pass)
           .then(async cred => {
-            _fbUser = cred.user; _SEC._uid = _fbUser.uid;
+            _fbUser = cred.user; window._fbUser = cred.user; _SEC._uid = _fbUser.uid;
             try { await window._FB.logSession(_fbUser.uid, 'login'); } catch { }
             secStore.set('ses', { uid: _fbUser.uid, email: _fbUser.email, ts: Date.now() });
             err.textContent = '';
@@ -2881,7 +2881,7 @@
             } catch (e) {
               // Token yenilenemedi — kullanıcı silinmiş veya devre dışı
               console.warn('[TARLAM] Geçersiz oturum:', e.code);
-              _fbUser = null; _SEC._uid = null;
+              _fbUser = null; window._fbUser = null; _SEC._uid = null;
               // localStorage + sessionStorage temizle
               try { Object.keys(localStorage).filter(k => k.startsWith('_t_')).forEach(k => localStorage.removeItem(k)); } catch { }
               try { sessionStorage.clear(); } catch { }
@@ -2895,7 +2895,7 @@
               return;
             }
             if (!_fbUser) {
-              _fbUser = user; _SEC._uid = user.uid;
+              _fbUser = user; window._fbUser = user; _SEC._uid = user.uid;
               const scr = document.getElementById('login-screen');
               if (!scr.classList.contains('hidden')) {
                 scr.classList.add('hidden'); startGame(user.uid);
@@ -2903,7 +2903,7 @@
             }
           } else if (!user && _fbUser) {
             // Normal çıkış
-            _fbUser = null; _SEC._uid = null;
+            _fbUser = null; window._fbUser = null; _SEC._uid = null;
             location.reload();
           } else if (!user && !_fbUser) {
             // Oturum yok, giriş ekranı açık — normal durum
@@ -2965,7 +2965,7 @@
         err.textContent = '⏳ Hesap oluşturuluyor...';
         window._FB.create(email, pass, name)
           .then(async cred => {
-            _fbUser = cred.user; _SEC._uid = _fbUser.uid;
+            _fbUser = cred.user; window._fbUser = cred.user; _SEC._uid = _fbUser.uid;
             try { await window._FB.logSession(_fbUser.uid, 'register'); } catch { }
             // ── YENİ KULLANICI: state'i tamamen sıfırla ──
             resetGameState();
