@@ -6,11 +6,8 @@
  * Gerekli secret:  SERVICE_ACCOUNT_KEY  (wrangler secret put SERVICE_ACCOUNT_KEY)
  */
 
-// Firebase Auth project ID (token aud/iss doğrulama için)
 const FIREBASE_PROJECT_ID = 'tarlam-oyun';
-// GCP project ID (Firestore REST API için — service account ile aynı proje)
-const GCP_PROJECT_ID      = 'tarlam-oyun-505320-p1';
-const FS_BASE      = `https://firestore.googleapis.com/v1/projects/${GCP_PROJECT_ID}/databases/(default)/documents`;
+const FS_BASE      = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 const FIREBASE_ISS = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
 
 // ═══════════════════════════════════════════════════════════
@@ -137,7 +134,6 @@ let _adminExp    = 0;
 async function getAdminToken(env) {
   if (!env.SERVICE_ACCOUNT_KEY) throw new Error('SERVICE_ACCOUNT_KEY secret eksik');
   const sa = JSON.parse(env.SERVICE_ACCOUNT_KEY);
-  console.log('[DEBUG] SA email:', sa.client_email, '| project:', sa.project_id);
   if (_adminTok && Date.now() < _adminExp - 60_000) return _adminTok;
 
   const now = Math.floor(Date.now() / 1000);
@@ -203,7 +199,7 @@ async function verifyFirebaseToken(authHeader) {
   const header  = JSON.parse(new TextDecoder().decode(b64urlDecode(parts[0])));
   const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(parts[1])));
 
-  if (payload.aud !== FIREBASE_PROJECT_ID) throw new Error('Yanlış audience');
+  if (payload.aud !== FIREBASE_PROJECT_ID)   throw new Error('Yanlış audience');
   if (payload.iss !== FIREBASE_ISS) throw new Error('Yanlış issuer');
   if (payload.exp < Date.now() / 1000) throw new Error('Token süresi dolmuş');
 
@@ -235,7 +231,7 @@ async function fsGet(path, tok) {
     headers: { Authorization: `Bearer ${tok}` }
   });
   if (res.status === 404) return null;
-  if (!res.ok) { const body = await res.text(); throw new Error(`fsGet hata ${res.status}: ${body}`); }
+  if (!res.ok) throw new Error(`fsGet hata ${res.status}: ${await res.text()}`);
   const doc = await res.json();
   return doc.fields ? fromFsFields(doc.fields) : null;
 }
