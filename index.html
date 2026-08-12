@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 
 <head>
@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Tarlam">
   <meta name="theme-color" content="#8B5A2B">
-  <title>Tarlam - Çiftlik Oyunu</title>
+  <title>Tarlam - Ã‡iftlik Oyunu</title>
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,17 +17,17 @@
     href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap"
     rel="stylesheet">
 
-  <!-- ═══════════════════════════════════════════════════
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      FIREBASE SDK
-     config değerlerini Firebase Console'dan alın:
-     console.firebase.google.com → Proje Ayarları → Uygulamalar
-     ═══════════════════════════════════════════════════ -->
+     config deÄŸerlerini Firebase Console'dan alÄ±n:
+     console.firebase.google.com â†’ Proje AyarlarÄ± â†’ Uygulamalar
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
     import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    // ═══ FIREBASE CONFIG — KENDİ DEĞERLERİNLE DEĞİŞTİR ═══
+    // â•â•â• FIREBASE CONFIG â€” KENDÄ° DEÄERLERÄ°NLE DEÄÄ°ÅTÄ°R â•â•â•
     const FB_CFG = {
       apiKey: "AIzaSyCD5UZhGC5gQVS7KwB5MmdcdnnVztHMyZc",
       authDomain: "tarlam-oyun.firebaseapp.com",
@@ -36,7 +36,7 @@
       messagingSenderId: "289156601696",
       appId: "1:289156601696:web:1f440a166906648ef3f005",
     };
-    // ══════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     const fbApp = initializeApp(FB_CFG);
     const fbAuth = getAuth(fbApp);
@@ -71,17 +71,17 @@
       }
     };
 
-    // ── Firebase hazır olduğunu IIFE'ye bildir ──
-    // type="module" asenkron çalışır; IIFE bunu bekler
+    // â”€â”€ Firebase hazÄ±r olduÄŸunu IIFE'ye bildir â”€â”€
+    // type="module" asenkron Ã§alÄ±ÅŸÄ±r; IIFE bunu bekler
     window.dispatchEvent(new CustomEvent('fbReady'));
   </script>
 
   <script>
-    // ══════════════════════════════════════════════════════════════
-    // API KATMANI — Tüm aksiyonlar Firebase Functions üzerinden
-    // FUNCTIONS_BASE_URL → deploy sonrası kendi URL'inizi yazın
-    // Yerel test için: http://localhost:5001/PROJE_ID/us-central1
-    // ══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // API KATMANI â€” TÃ¼m aksiyonlar Firebase Functions Ã¼zerinden
+    // FUNCTIONS_BASE_URL â†’ deploy sonrasÄ± kendi URL'inizi yazÄ±n
+    // Yerel test iÃ§in: http://localhost:5001/PROJE_ID/us-central1
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     const FUNCTIONS_BASE = "https://tarlam-oyun.tarlam-oyun.workers.dev";
 
     async function callAPI(endpoint, body = {}) {
@@ -101,13 +101,13 @@
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Sunucu hatası (" + res.status + ")");
+      if (!res.ok) throw new Error(data.error || "Sunucu hatasÄ± (" + res.status + ")");
       return data;
     }
 
-    // Aktif kullanıcı referansı (module script'ten gelir, güvenli)
+    // Aktif kullanÄ±cÄ± referansÄ± (module script'ten gelir, gÃ¼venli)
     window._fbUser = null;
-    // _FB.onAuthStateChanged ile set edilir (init bloğunda)
+    // _FB.onAuthStateChanged ile set edilir (init bloÄŸunda)
   </script>
 
   <style>
@@ -148,7 +148,7 @@
       pointer-events: none;
     }
 
-    /* ── HUD ── */
+    /* â”€â”€ HUD â”€â”€ */
     #hud {
       display: flex;
       justify-content: space-between;
@@ -207,7 +207,7 @@
       white-space: nowrap;
     }
 
-    /* ── TOOLBAR ── */
+    /* â”€â”€ TOOLBAR â”€â”€ */
     #toolbar {
       position: absolute;
       bottom: 0;
@@ -270,7 +270,7 @@
       line-height: 1.1;
     }
 
-    /* ── MESSAGES ── */
+    /* â”€â”€ MESSAGES â”€â”€ */
     #msg {
       position: absolute;
       top: 47%;
@@ -291,7 +291,7 @@
       max-width: 82vw;
     }
 
-    /* ── MODAL ── */
+    /* â”€â”€ MODAL â”€â”€ */
     #modal {
       position: absolute;
       top: 0;
@@ -511,7 +511,7 @@
       display: block;
     }
 
-    /* ── OVERLAYS ── */
+    /* â”€â”€ OVERLAYS â”€â”€ */
     #weather-banner {
       position: absolute;
       top: 32px;
@@ -575,7 +575,7 @@
       transition: opacity .5s;
     }
 
-    /* ── PICKUP OVERLAY ── */
+    /* â”€â”€ PICKUP OVERLAY â”€â”€ */
     #pickup-overlay {
       position: absolute;
       top: 0;
@@ -632,7 +632,7 @@
       pointer-events: none;
     }
 
-    /* ── LOGIN SCREEN ── */
+    /* â”€â”€ LOGIN SCREEN â”€â”€ */
     #login-screen {
       position: fixed;
       inset: 0;
@@ -833,25 +833,25 @@
 
 <body>
 
-  <!-- ══ GİRİŞ EKRANI ══ -->
+  <!-- â•â• GÄ°RÄ°Å EKRANI â•â• -->
   <div id="login-screen">
     <div class="ls-bg" id="ls-bg"></div>
     <div class="ls-card">
-      <span class="ls-logo">🌾</span>
+      <span class="ls-logo">ğŸŒ¾</span>
       <div class="ls-title">TARLAM</div>
-      <div class="ls-sub">2B ÇIFTLIK OYUNU</div>
+      <div class="ls-sub">2B Ã‡IFTLIK OYUNU</div>
       <label class="ls-label" for="ls-user">E-POSTA / KULLANICI ADI</label>
       <input class="ls-input" id="ls-user" type="text" placeholder="kullanici@email.com veya kullanici_adi"
         autocomplete="email" spellcheck="false">
-      <label class="ls-label" for="ls-pass">ŞİFRE</label>
-      <input class="ls-input" id="ls-pass" type="password" placeholder="••••••••" autocomplete="current-password">
-      <button class="ls-btn" onclick="doLogin()">🚜 GİRİŞ YAP</button>
+      <label class="ls-label" for="ls-pass">ÅÄ°FRE</label>
+      <input class="ls-input" id="ls-pass" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autocomplete="current-password">
+      <button class="ls-btn" onclick="doLogin()">ğŸšœ GÄ°RÄ°Å YAP</button>
       <div class="ls-error" id="ls-err"></div>
       <hr class="ls-divider">
       <button class="ls-btn" onclick="openRegister()"
-        style="background:rgba(0,80,40,0.7);border-color:#20A060;font-size:14px;margin-top:0;padding:9px;">🌱 Hesap
-        Oluştur</button>
-      <div class="ls-hint" style="margin-top:8px;">Zaten hesabın varsa üstten giriş yap.</div>
+        style="background:rgba(0,80,40,0.7);border-color:#20A060;font-size:14px;margin-top:0;padding:9px;">ğŸŒ± Hesap
+        OluÅŸtur</button>
+      <div class="ls-hint" style="margin-top:8px;">Zaten hesabÄ±n varsa Ã¼stten giriÅŸ yap.</div>
     </div>
   </div>
 
@@ -860,50 +860,50 @@
   <div id="ui">
     <div id="hud">
       <div class="hp">
-        <div class="row">💰 <span class="val" id="gold">300</span>₺</div>
-        <div class="row">⚡ <span class="val" id="eng">100</span>/<span class="val" id="meng">100</span></div>
-        <div class="row"><span class="lbl">🌾</span><span class="val" id="iw">0</span> <span class="lbl">🌽</span><span
-            class="val" id="ic">0</span> <span class="lbl">🍅</span><span class="val" id="it">0</span> <span
-            class="lbl">🥕</span><span class="val" id="ir">0</span></div>
-        <div class="row"><span class="lbl">🍎</span><span class="val" id="iapple">0</span> <span
-            class="lbl">🍊</span><span class="val" id="iorange">0</span> <span class="lbl">🍇</span><span class="val"
+        <div class="row">ğŸ’° <span class="val" id="gold">300</span>â‚º</div>
+        <div class="row">âš¡ <span class="val" id="eng">100</span>/<span class="val" id="meng">100</span></div>
+        <div class="row"><span class="lbl">ğŸŒ¾</span><span class="val" id="iw">0</span> <span class="lbl">ğŸŒ½</span><span
+            class="val" id="ic">0</span> <span class="lbl">ğŸ…</span><span class="val" id="it">0</span> <span
+            class="lbl">ğŸ¥•</span><span class="val" id="ir">0</span></div>
+        <div class="row"><span class="lbl">ğŸ</span><span class="val" id="iapple">0</span> <span
+            class="lbl">ğŸŠ</span><span class="val" id="iorange">0</span> <span class="lbl">ğŸ‡</span><span class="val"
             id="igrape">0</span></div>
       </div>
       <div class="hp hp-center">
-        <div id="sbar">🌸 Gün <span id="dn">1</span> · <span id="ts">06:00</span></div>
+        <div id="sbar">ğŸŒ¸ GÃ¼n <span id="dn">1</span> Â· <span id="ts">06:00</span></div>
       </div>
       <div class="hp" style="text-align:right">
         <div class="row" style="justify-content:flex-end"><span class="lbl">Lv</span><span class="val" id="lv">1</span>
-          ⭐<span class="val" id="xp">0</span>/<span class="val" id="mxp">100</span></div>
-        <div class="row" style="justify-content:flex-end">🐄<span class="val" id="acow">0</span> 🐑<span class="val"
-            id="asheep">0</span> 🐔<span class="val" id="achicken">0</span></div>
-        <div class="row" style="justify-content:flex-end">🥩<span class="val" id="imeat">0</span> 🧶<span class="val"
-            id="iwool">0</span> 🥚<span class="val" id="iegg">0</span></div>
+          â­<span class="val" id="xp">0</span>/<span class="val" id="mxp">100</span></div>
+        <div class="row" style="justify-content:flex-end">ğŸ„<span class="val" id="acow">0</span> ğŸ‘<span class="val"
+            id="asheep">0</span> ğŸ”<span class="val" id="achicken">0</span></div>
+        <div class="row" style="justify-content:flex-end">ğŸ¥©<span class="val" id="imeat">0</span> ğŸ§¶<span class="val"
+            id="iwool">0</span> ğŸ¥š<span class="val" id="iegg">0</span></div>
       </div>
     </div>
-    <div id="weather-banner">🌤️</div>
+    <div id="weather-banner">ğŸŒ¤ï¸</div>
     <div id="msg"></div>
-    <div id="save-indicator">💾 Kaydedildi</div>
+    <div id="save-indicator">ğŸ’¾ Kaydedildi</div>
   </div>
 
   <div id="toolbar">
     <div class="tb on" id="btn-hoe" onclick="setTool('hoe')">
-      <div class="ti">🪛</div>Çapa
+      <div class="ti">ğŸª›</div>Ã‡apa
     </div>
     <div class="tb" id="btn-wheat" onclick="setTool('wheat')">
-      <div class="ti">🌾</div>Buğday
+      <div class="ti">ğŸŒ¾</div>BuÄŸday
     </div>
     <div class="tb" id="btn-corn" onclick="setTool('corn')">
-      <div class="ti">🌽</div>Mısır
+      <div class="ti">ğŸŒ½</div>MÄ±sÄ±r
     </div>
     <div class="tb" id="btn-tomato" onclick="setTool('tomato')">
-      <div class="ti">🍅</div>Domates
+      <div class="ti">ğŸ…</div>Domates
     </div>
     <div class="tb" id="btn-carrot" onclick="setTool('carrot')">
-      <div class="ti">🥕</div>Havuç
+      <div class="ti">ğŸ¥•</div>HavuÃ§
     </div>
     <div class="tb" id="btn-water" onclick="setTool('water')">
-      <div class="ti">💧</div>Sula
+      <div class="ti">ğŸ’§</div>Sula
     </div>
     <div class="tb" id="btn-harvest" onclick="setTool('harvest')">
       <div class="ti" style="line-height:1">
@@ -915,25 +915,25 @@
       </div>Hasat
     </div>
     <div class="tb" id="btn-barn" onclick="openBarn()">
-      <div class="ti">🐄</div>Ahır
+      <div class="ti">ğŸ„</div>AhÄ±r
     </div>
     <div class="tb" id="btn-market" onclick="openMarket()">
-      <div class="ti">🛒</div>Pazar
+      <div class="ti">ğŸ›’</div>Pazar
     </div>
     <div class="tb" id="btn-quests" onclick="openQuests()">
-      <div class="ti">📋</div>Görev
+      <div class="ti">ğŸ“‹</div>GÃ¶rev
     </div>
     <div class="tb" id="btn-neighbor" onclick="openNeighbor()">
-      <div class="ti">🧑‍🌾</div>Komşu
+      <div class="ti">ğŸ§‘â€ğŸŒ¾</div>KomÅŸu
     </div>
     <div class="tb" id="btn-sleep" onclick="doSleep()">
-      <div class="ti">😴</div>Uyu
+      <div class="ti">ğŸ˜´</div>Uyu
     </div>
     <div class="tb" id="btn-settings" onclick="openSettings()">
-      <div class="ti">⚙️</div>Ayarlar
+      <div class="ti">âš™ï¸</div>Ayarlar
     </div>
     <div class="tb" id="btn-pickup" onclick="startPickup()">
-      <div class="ti">🚛</div>Nakliye
+      <div class="ti">ğŸš›</div>Nakliye
     </div>
   </div>
 
@@ -942,18 +942,18 @@
   </div>
 
   <div id="sleep-overlay">
-    <div id="sleep-text">😴 Uyuyor...<br><span id="sleep-sub"
+    <div id="sleep-text">ğŸ˜´ Uyuyor...<br><span id="sleep-sub"
         style="font-family:var(--font-ui);font-size:13px;opacity:.7"></span></div>
   </div>
 
-  <!-- ══ HAYVAN MİNİ OYUNLARI ══ -->
+  <!-- â•â• HAYVAN MÄ°NÄ° OYUNLARI â•â• -->
   <div id="minigame-overlay">
     <canvas id="mgc"></canvas>
     <div
       style="position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;padding:8px 12px;background:rgba(0,0,0,0.7);pointer-events:none;">
       <div class="hp" id="mg-title" style="font-size:14px;">Mini Oyun</div>
-      <div class="hp" id="mg-stats" style="font-size:13px;">⏱15s</div>
-      <div class="hp" style="pointer-events:all;cursor:pointer;font-size:13px;" onclick="endMiniGame(false)">✖ Çık</div>
+      <div class="hp" id="mg-stats" style="font-size:13px;">â±15s</div>
+      <div class="hp" style="pointer-events:all;cursor:pointer;font-size:13px;" onclick="endMiniGame(false)">âœ– Ã‡Ä±k</div>
     </div>
     <div id="mg-msg"
       style="position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);border:2px solid #FFD700;color:#FFD700;padding:12px 24px;border-radius:12px;font-family:var(--font-main);font-size:18px;font-weight:700;text-align:center;display:none;pointer-events:none;">
@@ -962,33 +962,33 @@
   <div id="pickup-overlay">
     <canvas id="puc"></canvas>
     <div id="pu-hud-bar">
-      <div class="hp">🚛 Nakliye</div>
-      <div class="hp" id="pu-stats">⏱100s · 💰+0 · 📦0/5</div>
-      <div class="hp exit" onclick="endPickup(false)">✖ Çık</div>
+      <div class="hp">ğŸš› Nakliye</div>
+      <div class="hp" id="pu-stats">â±100s Â· ğŸ’°+0 Â· ğŸ“¦0/5</div>
+      <div class="hp exit" onclick="endPickup(false)">âœ– Ã‡Ä±k</div>
     </div>
     <div id="pu-msg"></div>
     <!-- Mobile lane buttons -->
     <div id="pu-lane-btns"
       style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;pointer-events:all;">
       <button onclick="if(PU.truck&&PU.truck.lane>0){PU.truck.lane--;}"
-        style="width:50px;height:50px;background:rgba(0,0,0,0.7);border:2px solid #FFD700;border-radius:10px;color:#FFD700;font-size:22px;cursor:pointer;">▲</button>
+        style="width:50px;height:50px;background:rgba(0,0,0,0.7);border:2px solid #FFD700;border-radius:10px;color:#FFD700;font-size:22px;cursor:pointer;">â–²</button>
       <button onclick="if(PU.truck&&PU.truck.lane<2){PU.truck.lane++;}"
-        style="width:50px;height:50px;background:rgba(0,0,0,0.7);border:2px solid #FFD700;border-radius:10px;color:#FFD700;font-size:22px;cursor:pointer;">▼</button>
+        style="width:50px;height:50px;background:rgba(0,0,0,0.7);border:2px solid #FFD700;border-radius:10px;color:#FFD700;font-size:22px;cursor:pointer;">â–¼</button>
     </div>
     <!-- Mobile gas button -->
     <div style="position:absolute;left:10px;bottom:20px;pointer-events:all;">
       <button onpointerdown="PU.keys&&(PU.keys['ArrowRight']=true)" onpointerup="PU.keys&&(PU.keys['ArrowRight']=false)"
         onpointerleave="PU.keys&&(PU.keys['ArrowRight']=false)"
-        style="width:80px;height:60px;background:rgba(0,180,0,0.8);border:2px solid #00FF88;border-radius:12px;color:#FFF;font-size:13px;font-weight:bold;cursor:pointer;">⛽
-        İLERİ</button>
+        style="width:80px;height:60px;background:rgba(0,180,0,0.8);border:2px solid #00FF88;border-radius:12px;color:#FFF;font-size:13px;font-weight:bold;cursor:pointer;">â›½
+        Ä°LERÄ°</button>
     </div>
   </div>
 
   <script>
-    (function () {  // ══ GÜVENLİK SARMALAYICI (IIFE) — tüm state değişkenleri gizli ══
-      // updateHUD, gold, energy, level vb. window scope'dan erişilemez
+    (function () {  // â•â• GÃœVENLÄ°K SARMALAYICI (IIFE) â€” tÃ¼m state deÄŸiÅŸkenleri gizli â•â•
+      // updateHUD, gold, energy, level vb. window scope'dan eriÅŸilemez
 
-      // ── Sunucudan gelen XP/level cevabını uygula ──
+      // â”€â”€ Sunucudan gelen XP/level cevabÄ±nÄ± uygula â”€â”€
       function _applyLvl(d) {
         if (d === undefined || d === null) return;
         if (typeof d.level === 'number') level = d.level;
@@ -998,7 +998,7 @@
         _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
       }
 
-      // ── Periyodik oyun state sync (büyüme, hava, zaman) ──
+      // â”€â”€ Periyodik oyun state sync (bÃ¼yÃ¼me, hava, zaman) â”€â”€
       let _syncTimer = 0;
       function _periodicSync(dt) {
         _syncTimer += dt;
@@ -1010,15 +1010,15 @@
           orchardSlots,
           animals,
           gameTime, dayCount, weather, weatherTimer
-        }).catch(() => { }); // Sessizce başarısız olabilir
+        }).catch(() => { }); // Sessizce baÅŸarÄ±sÄ±z olabilir
       }
 
-      // Şifreler bu dosyada YOKTUR. Firebase Auth kullanılır.
+      // Åifreler bu dosyada YOKTUR. Firebase Auth kullanÄ±lÄ±r.
 
-      // Anti-tamper: kritik değerler shadow kopyasıyla korunur
+      // Anti-tamper: kritik deÄŸerler shadow kopyasÄ±yla korunur
       const _SEC = { _g: 300, _e: 100, _l: 1, _uid: null, _dirty: false }; Object.seal(_SEC);
 
-      // localStorage şifreleme (XOR obfuscation)
+      // localStorage ÅŸifreleme (XOR obfuscation)
       const _K = (() => { const k = 'tlrm_' + navigator.userAgent.length; return k; })();
       function _enc(obj) { const s = JSON.stringify(obj); let r = ''; for (let i = 0; i < s.length; i++)r += String.fromCharCode(s.charCodeAt(i) ^ _K.charCodeAt(i % _K.length)); return btoa(r); }
       function _dec(str) { try { const s = atob(str); let r = ''; for (let i = 0; i < s.length; i++)r += String.fromCharCode(s.charCodeAt(i) ^ _K.charCodeAt(i % _K.length)); return JSON.parse(r); } catch { return null; } }
@@ -1028,61 +1028,61 @@
         del(key) { try { localStorage.removeItem('_t_' + btoa(key)); } catch { } }
       };
 
-      // DevTools algılama
+      // DevTools algÄ±lama
       let _dtWarn = 0;
-      setInterval(() => { const t = performance.now(); debugger; if (performance.now() - t > 100 && Date.now() - _dtWarn > 30000) { _dtWarn = Date.now(); if (typeof showMsg === 'function') showMsg('⚠️ DevTools açık — güvenlik izleniyor.', 4000); } }, 5000);
+      setInterval(() => { const t = performance.now(); debugger; if (performance.now() - t > 100 && Date.now() - _dtWarn > 30000) { _dtWarn = Date.now(); if (typeof showMsg === 'function') showMsg('âš ï¸ DevTools aÃ§Ä±k â€” gÃ¼venlik izleniyor.', 4000); } }, 5000);
 
       let _fbUser = null;
 
-      // ══ CONSTANTS ══
+      // â•â• CONSTANTS â•â•
       const COLS = 6, ROWS = 5, CELL = 72;
       const CROPS = {
-        wheat: { seedCost: 5, growTime: 30, price: 8, xp: 5, icon: '🌾' },
-        corn: { seedCost: 10, growTime: 50, price: 15, xp: 10, icon: '🌽' },
-        tomato: { seedCost: 15, growTime: 70, price: 25, xp: 15, icon: '🍅' },
-        carrot: { seedCost: 12, growTime: 60, price: 20, xp: 12, icon: '🥕' }
+        wheat: { seedCost: 5, growTime: 30, price: 8, xp: 5, icon: 'ğŸŒ¾' },
+        corn: { seedCost: 10, growTime: 50, price: 15, xp: 10, icon: 'ğŸŒ½' },
+        tomato: { seedCost: 15, growTime: 70, price: 25, xp: 15, icon: 'ğŸ…' },
+        carrot: { seedCost: 12, growTime: 60, price: 20, xp: 12, icon: 'ğŸ¥•' }
       };
       const FRUIT_TREES = [
-        { type: 'apple', name: 'Elma', icon: '🍎', x: 0, y: 0, color: '#CC2200', trunkColor: '#7A4A22', leafColor: '#2D7A1E', price: 18, xp: 8 },
-        { type: 'orange', name: 'Portakal', icon: '🍊', x: 0, y: 0, color: '#FF8800', trunkColor: '#7A4A22', leafColor: '#3A8A15', price: 22, xp: 10 },
-        { type: 'grape', name: 'Üzüm', icon: '🍇', x: 0, y: 0, color: '#7B2FBE', trunkColor: '#6B4A22', leafColor: '#1E6B10', price: 28, xp: 12 }
+        { type: 'apple', name: 'Elma', icon: 'ğŸ', x: 0, y: 0, color: '#CC2200', trunkColor: '#7A4A22', leafColor: '#2D7A1E', price: 18, xp: 8 },
+        { type: 'orange', name: 'Portakal', icon: 'ğŸŠ', x: 0, y: 0, color: '#FF8800', trunkColor: '#7A4A22', leafColor: '#3A8A15', price: 22, xp: 10 },
+        { type: 'grape', name: 'ÃœzÃ¼m', icon: 'ğŸ‡', x: 0, y: 0, color: '#7B2FBE', trunkColor: '#6B4A22', leafColor: '#1E6B10', price: 28, xp: 12 }
       ];
       const ADEF = {
-        cow: { name: 'İnek', buy: 80, food: 'carrot', produceItem: 'milk', sellPrice: 120, slaughterMeat: 3, gestationDays: 5, emoji: '🐄' },
-        sheep: { name: 'Koyun', buy: 60, food: 'wheat', produceItem: 'wool', sellPrice: 90, slaughterMeat: 2, gestationDays: 4, emoji: '🐑' },
-        chicken: { name: 'Tavuk', buy: 30, food: 'corn', produceItem: 'egg', sellPrice: 50, slaughterMeat: 1, gestationDays: 3, emoji: '🐔' }
+        cow: { name: 'Ä°nek', buy: 80, food: 'carrot', produceItem: 'milk', sellPrice: 120, slaughterMeat: 3, gestationDays: 5, emoji: 'ğŸ„' },
+        sheep: { name: 'Koyun', buy: 60, food: 'wheat', produceItem: 'wool', sellPrice: 90, slaughterMeat: 2, gestationDays: 4, emoji: 'ğŸ‘' },
+        chicken: { name: 'Tavuk', buy: 30, food: 'corn', produceItem: 'egg', sellPrice: 50, slaughterMeat: 1, gestationDays: 3, emoji: 'ğŸ”' }
       };
       const MARKET_PRICES = { wheat: 8, corn: 15, tomato: 25, carrot: 20, meat: 45, wool: 30, egg: 12, milk: 18, apple: 18, orange: 22, grape: 28 };
-      const SEASONS = ['❄️ Kış', '🌸 İlkbahar', '☀️ Yaz', '🍂 Sonbahar'];
+      const SEASONS = ['â„ï¸ KÄ±ÅŸ', 'ğŸŒ¸ Ä°lkbahar', 'â˜€ï¸ Yaz', 'ğŸ‚ Sonbahar'];
       const WEATHER_TYPES = ['sunny', 'cloudy', 'rainy', 'stormy', 'windy'];
       const QUESTS_DEF = [
-        { id: 'q1', title: 'İlk Hasat', desc: '5 ürün hasat et', type: 'harvest', target: 5, reward: 50, xpReward: 20 },
-        { id: 'q2', title: 'Çiftçi Başlangıcı', desc: 'İlk hayvanı satın al', type: 'buy_animal', target: 1, reward: 80, xpReward: 30 },
+        { id: 'q1', title: 'Ä°lk Hasat', desc: '5 Ã¼rÃ¼n hasat et', type: 'harvest', target: 5, reward: 50, xpReward: 20 },
+        { id: 'q2', title: 'Ã‡iftÃ§i BaÅŸlangÄ±cÄ±', desc: 'Ä°lk hayvanÄ± satÄ±n al', type: 'buy_animal', target: 1, reward: 80, xpReward: 30 },
         { id: 'q3', title: 'Nakliyeci', desc: 'Nakliye oyununu 1 kez oyna', type: 'pickup', target: 1, reward: 60, xpReward: 25 },
-        { id: 'q4', title: 'Hayvan Çobanı', desc: '5 hayvan besle', type: 'feed_animal', target: 5, reward: 100, xpReward: 40 },
-        { id: 'q5', title: 'Büyük Çiftçi', desc: '500₺ kazan', type: 'earn_gold', target: 500, reward: 150, xpReward: 60 },
-        { id: 'q6', title: 'Doğa Dostu', desc: '20 kez sula', type: 'water', target: 20, reward: 70, xpReward: 30 },
-        { id: 'q7', title: 'Et Üreticisi', desc: '5 kg et elde et', type: 'slaughter', target: 5, reward: 120, xpReward: 50 },
-        { id: 'q8', title: 'Komşu Yardımı', desc: 'Komşuya 3 ürün ver', type: 'give_neighbor', target: 3, reward: 90, xpReward: 35 },
-        { id: 'q9', title: 'Usta Çiftçi', desc: 'Seviye 5\'e ulaş', type: 'reach_level', target: 5, reward: 300, xpReward: 100 },
-        { id: 'q10', title: 'Hayvan Ailesi', desc: 'Hayvanın yavru doğurmasını sağla', type: 'breed', target: 1, reward: 150, xpReward: 60 }
+        { id: 'q4', title: 'Hayvan Ã‡obanÄ±', desc: '5 hayvan besle', type: 'feed_animal', target: 5, reward: 100, xpReward: 40 },
+        { id: 'q5', title: 'BÃ¼yÃ¼k Ã‡iftÃ§i', desc: '500â‚º kazan', type: 'earn_gold', target: 500, reward: 150, xpReward: 60 },
+        { id: 'q6', title: 'DoÄŸa Dostu', desc: '20 kez sula', type: 'water', target: 20, reward: 70, xpReward: 30 },
+        { id: 'q7', title: 'Et Ãœreticisi', desc: '5 kg et elde et', type: 'slaughter', target: 5, reward: 120, xpReward: 50 },
+        { id: 'q8', title: 'KomÅŸu YardÄ±mÄ±', desc: 'KomÅŸuya 3 Ã¼rÃ¼n ver', type: 'give_neighbor', target: 3, reward: 90, xpReward: 35 },
+        { id: 'q9', title: 'Usta Ã‡iftÃ§i', desc: 'Seviye 5\'e ulaÅŸ', type: 'reach_level', target: 5, reward: 300, xpReward: 100 },
+        { id: 'q10', title: 'Hayvan Ailesi', desc: 'HayvanÄ±n yavru doÄŸurmasÄ±nÄ± saÄŸla', type: 'breed', target: 1, reward: 150, xpReward: 60 }
       ];
       const NEIGHBOR_REQUESTS = [
-        { type: 'wheat', qty: 3, reward: 40, name: 'Ahmet Abi' }, { type: 'corn', qty: 2, reward: 45, name: 'Fatma Hanım' },
-        { type: 'tomato', qty: 2, reward: 60, name: 'Mehmet Bey' }, { type: 'carrot', qty: 3, reward: 55, name: 'Ayşe Hanım' },
-        { type: 'egg', qty: 4, reward: 70, name: 'Hasan Dede' }, { type: 'wool', qty: 2, reward: 75, name: 'Zeynep Hanım' },
+        { type: 'wheat', qty: 3, reward: 40, name: 'Ahmet Abi' }, { type: 'corn', qty: 2, reward: 45, name: 'Fatma HanÄ±m' },
+        { type: 'tomato', qty: 2, reward: 60, name: 'Mehmet Bey' }, { type: 'carrot', qty: 3, reward: 55, name: 'AyÅŸe HanÄ±m' },
+        { type: 'egg', qty: 4, reward: 70, name: 'Hasan Dede' }, { type: 'wool', qty: 2, reward: 75, name: 'Zeynep HanÄ±m' },
         { type: 'milk', qty: 3, reward: 65, name: 'Ali Usta' }, { type: 'apple', qty: 2, reward: 55, name: 'Recep Amca' },
-        { type: 'grape', qty: 2, reward: 70, name: 'Nurgül Teyze' }
+        { type: 'grape', qty: 2, reward: 70, name: 'NurgÃ¼l Teyze' }
       ];
 
-      // ══ STATE ══
+      // â•â• STATE â•â•
       const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
       let W, H, SCALE, OX, OY;
       let tiles = [], animals = [], animalId = 1;
       let player = { x: 2, y: 2, moving: false };
       let gold = 300, energy = 100, maxEnergy = 100, level = 1, xp = 0, maxXp = 100;
       let inventory = { wheat: 0, corn: 0, tomato: 0, carrot: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0 };
-      // Meyve bahçesi: tarla çevresinde 4 interaktif ağaç yuvası
+      // Meyve bahÃ§esi: tarla Ã§evresinde 4 interaktif aÄŸaÃ§ yuvasÄ±
       let orchardSlots = [];
       function _defaultOrchard() {
         return [
@@ -1104,10 +1104,10 @@
       let neighborRequests = [], neighborCooldown = 0;
       let lastSaveTime = 0, autoSaveInterval = 30;
 
-      // ══ SAVE/LOAD ══
+      // â•â• SAVE/LOAD â•â•
       function saveGame() {
-        // Artık yalnızca simülasyon state'ini yerel olarak yedekle
-        // Altın, enerji, envanter sunucu tarafından yönetilir
+        // ArtÄ±k yalnÄ±zca simÃ¼lasyon state'ini yerel olarak yedekle
+        // AltÄ±n, enerji, envanter sunucu tarafÄ±ndan yÃ¶netilir
         _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
         _localSaveGame();
       }
@@ -1122,7 +1122,7 @@
         try {
           localStorage.setItem('tarlam_save', JSON.stringify(data));
           const si = document.getElementById('save-indicator'); si.style.opacity = '1'; setTimeout(() => si.style.opacity = '0', 1500);
-        } catch (e) { console.warn('Kayıt hatası:', e); }
+        } catch (e) { console.warn('KayÄ±t hatasÄ±:', e); }
       }
       function loadGame() {
         try {
@@ -1147,17 +1147,17 @@
           orchardSlots = d.orchardSlots && d.orchardSlots.length > 0 ? d.orchardSlots : _defaultOrchard();
           currentTool = d.currentTool || 'hoe';
           return true;
-        } catch (e) { console.warn('Yükleme hatası:', e); return false; }
+        } catch (e) { console.warn('YÃ¼kleme hatasÄ±:', e); return false; }
       }
 
-      // ══ INIT ══
+      // â•â• INIT â•â•
       function initTiles() {
         tiles = [];
         for (let r = 0; r < ROWS; r++)for (let c = 0; c < COLS; c++)
           tiles.push({ c, r, state: 'grass', crop: null, growProgress: 0, watered: false, waterTimer: 0 });
       }
       function initFruitTrees() {
-        // orchardSlots varsa zaten init edilmiş
+        // orchardSlots varsa zaten init edilmiÅŸ
         if (!orchardSlots || orchardSlots.length === 0) orchardSlots = _defaultOrchard();
       }
       function initQuests() {
@@ -1170,11 +1170,11 @@
         }
       }
 
-      // ══ MEYVE BAHÇESİ (ORCHARD) SİSTEMİ ══
+      // â•â• MEYVE BAHÃ‡ESÄ° (ORCHARD) SÄ°STEMÄ° â•â•
       const ORCHARD_DEF = {
-        apple: { name: 'Elma', icon: '🍎', color: '#CC2200', leafColor: '#2D7A1E', growTime: 45, produceTime: 30, price: 20 },
-        orange: { name: 'Portakal', icon: '🍊', color: '#FF8800', leafColor: '#3A8A15', growTime: 55, produceTime: 35, price: 24 },
-        grape: { name: 'Üzüm', icon: '🍇', color: '#7B2FBE', leafColor: '#1E6B10', growTime: 65, produceTime: 40, price: 28 },
+        apple: { name: 'Elma', icon: 'ğŸ', color: '#CC2200', leafColor: '#2D7A1E', growTime: 45, produceTime: 30, price: 20 },
+        orange: { name: 'Portakal', icon: 'ğŸŠ', color: '#FF8800', leafColor: '#3A8A15', growTime: 55, produceTime: 35, price: 24 },
+        grape: { name: 'ÃœzÃ¼m', icon: 'ğŸ‡', color: '#7B2FBE', leafColor: '#1E6B10', growTime: 65, produceTime: 40, price: 28 },
       };
       const ORCHARD_SEED_COST = { apple: 30, orange: 40, grape: 50 };
 
@@ -1203,8 +1203,8 @@
         ctx.setLineDash([]);
         // Zone labels
         ctx.fillStyle = 'rgba(180,220,100,0.7)'; ctx.font = (9 * SCALE) + 'px Nunito,sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('🌳 Bahçe', OX - 53 * SCALE, OY - 14 * SCALE);
-        ctx.fillText('🌳 Bahçe', OX + COLS * CELL * SCALE + 53 * SCALE, OY - 14 * SCALE);
+        ctx.fillText('ğŸŒ³ BahÃ§e', OX - 53 * SCALE, OY - 14 * SCALE);
+        ctx.fillText('ğŸŒ³ BahÃ§e', OX + COLS * CELL * SCALE + 53 * SCALE, OY - 14 * SCALE);
         ctx.textAlign = 'left';
 
         // Draw each slot
@@ -1305,14 +1305,14 @@
               addSparkles(x, y - 40 * SCALE, 12, def.color, '#FFFFA0');
               slot.fruitsReady = 0; slot.growTimer = 0;
               _applyLvl(d); updateHUD(); showMsg(def.icon + ' ' + d.count + ' ' + def.name + ' hasat edildi!');
-            }).catch(e => showMsg('❌ ' + e.message));
+            }).catch(e => showMsg('âŒ ' + e.message));
           } else if (currentTool === 'water' && slot.stage >= 1) {
             callAPI('waterOrchard', { side: slot.side, idx: slot.idx }).then(d => {
               slot.watered = true; energy = d.newEnergy; updateHUD();
-              addParticle(x, y - 20 * SCALE, '💧', '#5BB8F5'); showMsg('🌳 Ağaç sulandı!');
-            }).catch(e => showMsg('❌ ' + e.message));
+              addParticle(x, y - 20 * SCALE, 'ğŸ’§', '#5BB8F5'); showMsg('ğŸŒ³ AÄŸaÃ§ sulandÄ±!');
+            }).catch(e => showMsg('âŒ ' + e.message));
           } else if (slot.stage === 3 && slot.fruitsReady === 0) {
-            showMsg('🌳 Meyveler olgunlaşıyor...');
+            showMsg('ğŸŒ³ Meyveler olgunlaÅŸÄ±yor...');
           }
         });
         return handled;
@@ -1320,13 +1320,13 @@
 
       function _openOrchardBuy(slot) {
         const mc = document.getElementById('modal-content');
-        let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🌳 Ağaç Dik</h2>';
-        html += '<div class="section-label">Bu bahçe yuvasına hangi ağacı dikmek istersin?</div>';
+        let html = '<button class="mclose" onclick="closeModal()">âœ– Kapat</button><h2>ğŸŒ³ AÄŸaÃ§ Dik</h2>';
+        html += '<div class="section-label">Bu bahÃ§e yuvasÄ±na hangi aÄŸacÄ± dikmek istersin?</div>';
         Object.entries(ORCHARD_DEF).forEach(([type, def]) => {
           const cost = ORCHARD_SEED_COST[type];
           html += `<div class="mrow">
-      <div><div class="mrow-label">${def.icon} ${def.name}</div><div class="mrow-sub">Büyüme: ${def.growTime} sn · Ürün değeri: ${def.price}₺</div></div>
-      <button class="mbtn" onclick="buyOrchardTree('${slot.side}',${slot.idx},'${type}')">${cost}₺ Dik</button>
+      <div><div class="mrow-label">${def.icon} ${def.name}</div><div class="mrow-sub">BÃ¼yÃ¼me: ${def.growTime} sn Â· ÃœrÃ¼n deÄŸeri: ${def.price}â‚º</div></div>
+      <button class="mbtn" onclick="buyOrchardTree('${slot.side}',${slot.idx},'${type}')">${cost}â‚º Dik</button>
     </div>`;
         });
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
@@ -1337,8 +1337,8 @@
           const slot = orchardSlots.find(s => s.side === side && s.idx === idx);
           if (slot) { slot.type = type; slot.stage = 1; slot.growTimer = 0; slot.fruitsReady = 0; }
           gold = d.newGold; _applyLvl(d); updateHUD(); closeModal();
-          showMsg(ORCHARD_DEF[type].icon + ' ' + ORCHARD_DEF[type].name + ' fidanı dikildi!');
-        }).catch(e => showMsg('❌ ' + e.message));
+          showMsg(ORCHARD_DEF[type].icon + ' ' + ORCHARD_DEF[type].name + ' fidanÄ± dikildi!');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
 
       function updateOrchard(dt) {
@@ -1355,7 +1355,7 @@
             slot.growTimer += growRate;
             if (slot.growTimer >= def.produceTime) {
               slot.fruitsReady = Math.min(6, slot.fruitsReady + 1); slot.growTimer = 0;
-              addParticle(...Object.values(getOrchardSlotPos(slot)).slice(0, 2), def.icon + ' Hazır!', def.color);
+              addParticle(...Object.values(getOrchardSlotPos(slot)).slice(0, 2), def.icon + ' HazÄ±r!', def.color);
             }
           }
           slot.watered = false;// reset each tick
@@ -1378,7 +1378,7 @@
         for (let i = 0; i < 6; i++)clouds.push({ x: Math.random() * W, y: 25 + Math.random() * 60, w: 50 + Math.random() * 80, speed: .12 + Math.random() * .2 });
       }
 
-      // ══ HUD ══
+      // â•â• HUD â•â•
       function updateHUD() {
         document.getElementById('gold').textContent = gold;
         document.getElementById('eng').textContent = energy; document.getElementById('meng').textContent = maxEnergy;
@@ -1395,7 +1395,7 @@
         document.getElementById('iwool').textContent = inventory.wool; document.getElementById('iegg').textContent = inventory.egg;
       }
 
-      // ══ MESSAGES ══
+      // â•â• MESSAGES â•â•
       function showMsg(txt, dur = 1800) {
         const m = document.getElementById('msg'); m.innerHTML = txt; m.style.opacity = '1';
         clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = '0', dur);
@@ -1410,24 +1410,24 @@
         }
       }
 
-      // ══ TOOLS ══
+      // â•â• TOOLS â•â•
       function setTool(t) {
         currentTool = t;
         document.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
         const el = document.getElementById('btn-' + t); if (el) el.classList.add('on');
       }
-      function useEnergy(a) { if (energy < a) { showMsg('⚡ Enerji bitti! Uyu veya yeni gün bekle.'); return false; } energy -= a; updateHUD(); return true; }
+      function useEnergy(a) { if (energy < a) { showMsg('âš¡ Enerji bitti! Uyu veya yeni gÃ¼n bekle.'); return false; } energy -= a; updateHUD(); return true; }
       function addXp(a) {
         xp += a;
         while (xp >= maxXp) {
           xp -= maxXp; level++; maxXp = Math.floor(maxXp * 1.4); maxEnergy = 100 + (level - 1) * 10; energy = maxEnergy;
-          showMsg('🎉 SEVİYE ' + level + '!', 3000); addParticle(W / 2, H / 2, '🎉 LEVEL UP!', '#FFD700'); checkQuestProgress('reach_level', level);
+          showMsg('ğŸ‰ SEVÄ°YE ' + level + '!', 3000); addParticle(W / 2, H / 2, 'ğŸ‰ LEVEL UP!', '#FFD700'); checkQuestProgress('reach_level', level);
         }
         updateHUD();
       }
-      // earnGold artık kullanılmıyor — tüm gold değişiklikleri sunucu üzerinden
+      // earnGold artÄ±k kullanÄ±lmÄ±yor â€” tÃ¼m gold deÄŸiÅŸiklikleri sunucu Ã¼zerinden
 
-      // ══ CLICK / TOUCH ══
+      // â•â• CLICK / TOUCH â•â•
       // Mobile: touchstart fires immediately on first tap (no delay, no 2-finger issues)
       let _lastTouchTarget = null;
       function handlePointer(e) {
@@ -1439,7 +1439,7 @@
         } else { clientX = e.clientX; clientY = e.clientY; }
         const rect = canvas.getBoundingClientRect();
         const sx = clientX - rect.left, sy = clientY - rect.top;
-        // Önce bahçe (orchard) alanını kontrol et
+        // Ã–nce bahÃ§e (orchard) alanÄ±nÄ± kontrol et
         if (handleOrchardClick(sx, sy)) return;
         const c = Math.floor((sx - OX) / (CELL * SCALE)), r = Math.floor((sy - OY) / (CELL * SCALE));
         if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
@@ -1448,26 +1448,26 @@
         const cx = OX + (c + .5) * CELL * SCALE, cy = OY + (r + .5) * CELL * SCALE;
         const rainBonus = (weather === 'rainy' || weather === 'stormy');
         if (currentTool === 'hoe') {
-          if (tile.state !== 'grass') { showMsg('Bu arazi zaten hazır.'); return; }
-          showMsg('⏳ İşleniyor...');
+          if (tile.state !== 'grass') { showMsg('Bu arazi zaten hazÄ±r.'); return; }
+          showMsg('â³ Ä°ÅŸleniyor...');
           callAPI('tillTile', { c, r }).then(d => {
             tile.state = 'tilled';
             energy = d.newEnergy; _applyLvl(d);
-            addParticle(cx, cy - 20, '⛏️+2xp', '#A0522D'); showMsg('Toprak sürüldü!'); updateHUD();
-          }).catch(e => showMsg('❌ ' + e.message));
+            addParticle(cx, cy - 20, 'â›ï¸+2xp', '#A0522D'); showMsg('Toprak sÃ¼rÃ¼ldÃ¼!'); updateHUD();
+          }).catch(e => showMsg('âŒ ' + e.message));
 
         } else if (currentTool === 'water') {
           if (tile.state !== 'tilled' && !(tile.state === 'planted' && !tile.watered)) { showMsg('Sulanacak alan yok.'); return; }
           callAPI('waterTile', { c, r }).then(d => {
             tile.watered = true; tile.waterTimer = d.rainBonus ? 200 : 120;
             energy = d.newEnergy; updateHUD();
-            addParticle(cx, cy - 20, '💧', '#5BB8F5');
+            addParticle(cx, cy - 20, 'ğŸ’§', '#5BB8F5');
             checkQuestProgress('water', 1, true);
-            showMsg('Sulandı!' + (d.rainBonus ? ' (Yağmur bonusu!)' : ''));
-          }).catch(e => showMsg('❌ ' + e.message));
+            showMsg('SulandÄ±!' + (d.rainBonus ? ' (YaÄŸmur bonusu!)' : ''));
+          }).catch(e => showMsg('âŒ ' + e.message));
 
         } else if (currentTool === 'harvest') {
-          if (tile.state !== 'ready') { showMsg('Henüz hasat zamanı değil.'); return; }
+          if (tile.state !== 'ready') { showMsg('HenÃ¼z hasat zamanÄ± deÄŸil.'); return; }
           callAPI('harvestCrop', { c, r }).then(d => {
             const cn = tile.crop;
             tile.state = 'tilled'; tile.crop = null; tile.growProgress = 0; tile.watered = false;
@@ -1475,38 +1475,38 @@
             _applyLvl(d); checkQuestProgress('harvest', 1, true);
             addParticle(cx, cy - 20, CROPS[cn]?.icon + ' +1', CROPS[cn]?.color || '#FFD700');
             addSparkles(cx, cy - 20, 10, CROPS[cn]?.color || '#FFD700', '#FFFFA0');
-            showMsg('Hasat yapıldı!'); updateHUD();
-          }).catch(e => showMsg('❌ ' + e.message));
+            showMsg('Hasat yapÄ±ldÄ±!'); updateHUD();
+          }).catch(e => showMsg('âŒ ' + e.message));
 
         } else if (CROPS[currentTool]) {
-          if (tile.state !== 'tilled') { showMsg('Önce toprağı çapalayın!'); return; }
+          if (tile.state !== 'tilled') { showMsg('Ã–nce topraÄŸÄ± Ã§apalayÄ±n!'); return; }
           callAPI('plantCrop', { c, r, cropType: currentTool }).then(d => {
             tile.state = 'planted'; tile.crop = currentTool; tile.growProgress = 0;
             gold = d.newGold; energy = d.newEnergy; updateHUD();
-            addParticle(cx, cy - 20, '🌱 Ekildi!', '#4FA028');
-            showMsg(CROPS[currentTool].icon + ' ekildi! -' + d.seedCost + '₺');
-          }).catch(e => showMsg('❌ ' + e.message));
+            addParticle(cx, cy - 20, 'ğŸŒ± Ekildi!', '#4FA028');
+            showMsg(CROPS[currentTool].icon + ' ekildi! -' + d.seedCost + 'â‚º');
+          }).catch(e => showMsg('âŒ ' + e.message));
         }
       }
       // Keep handleClick as alias for keyboard use
       function handleClick(e) { handlePointer(e); }
 
-      // ══ BARN ══
-      const FOOD_NAMES = { carrot: '🥕 Havuç', wheat: '🌾 Buğday', corn: '🌽 Mısır' };
-      const MG_LABEL = { chicken: '🥚 Yumurta Topla', cow: '🍶 Süt Sağ', sheep: '✂️ Yün Kırp' };
+      // â•â• BARN â•â•
+      const FOOD_NAMES = { carrot: 'ğŸ¥• HavuÃ§', wheat: 'ğŸŒ¾ BuÄŸday', corn: 'ğŸŒ½ MÄ±sÄ±r' };
+      const MG_LABEL = { chicken: 'ğŸ¥š Yumurta Topla', cow: 'ğŸ¶ SÃ¼t SaÄŸ', sheep: 'âœ‚ï¸ YÃ¼n KÄ±rp' };
 
       function openBarn() {
         const mc = document.getElementById('modal-content');
-        let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🐄 Ahır</h2>';
-        html += '<div class="section-label">Hayvan Satın Al</div>';
+        let html = '<button class="mclose" onclick="closeModal()">âœ– Kapat</button><h2>ğŸ„ AhÄ±r</h2>';
+        html += '<div class="section-label">Hayvan SatÄ±n Al</div>';
         Object.entries(ADEF).forEach(([type, d]) => {
           html += `<div class="mrow">
-      <div><div class="mrow-label">${d.emoji} ${d.name}</div><div class="mrow-sub">Yem: ${FOOD_NAMES[d.food] || d.food} · Ürün: ${d.produceItem}</div></div>
-      <button class="mbtn" onclick="buyAnimal('${type}')">${d.buy}₺ Satın Al</button>
+      <div><div class="mrow-label">${d.emoji} ${d.name}</div><div class="mrow-sub">Yem: ${FOOD_NAMES[d.food] || d.food} Â· ÃœrÃ¼n: ${d.produceItem}</div></div>
+      <button class="mbtn" onclick="buyAnimal('${type}')">${d.buy}â‚º SatÄ±n Al</button>
     </div>`;
         });
         if (animals.length > 0) {
-          html += '<div class="section-label">Hayvanlarım (' + animals.length + ')</div>';
+          html += '<div class="section-label">HayvanlarÄ±m (' + animals.length + ')</div>';
           animals.forEach(a => {
             const d = ADEF[a.type];
             const hc = a.hunger > 60 ? '#4FA028' : a.hunger > 30 ? '#F0A500' : '#CC3300';
@@ -1514,31 +1514,31 @@
             const canMG = a.hunger > 20;
             html += `<div class="acard">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
-          <div><div class="acard-name">${d.emoji} ${a.name}${a.pregnant ? ' 🤰' : ''}${a.readyProduce ? ' 🎁' : ''}</div>
-          <div class="acard-sub">Yaş: ${Math.floor(a.age)} gün &nbsp;·&nbsp; Yem: ${FOOD_NAMES[d.food] || d.food}</div></div>
+          <div><div class="acard-name">${d.emoji} ${a.name}${a.pregnant ? ' ğŸ¤°' : ''}${a.readyProduce ? ' ğŸ' : ''}</div>
+          <div class="acard-sub">YaÅŸ: ${Math.floor(a.age)} gÃ¼n &nbsp;Â·&nbsp; Yem: ${FOOD_NAMES[d.food] || d.food}</div></div>
         </div>
-        <div class="abar-label">🍽️ Açlık: ${Math.floor(a.hunger)}%</div>
+        <div class="abar-label">ğŸ½ï¸ AÃ§lÄ±k: ${Math.floor(a.hunger)}%</div>
         <div class="abar-wrap"><div class="abar" style="width:${a.hunger}%;background:${hc}"></div></div>
-        <div class="abar-label" style="margin-top:4px;">😊 Mutluluk: ${Math.floor(a.happy)}%</div>
+        <div class="abar-label" style="margin-top:4px;">ğŸ˜Š Mutluluk: ${Math.floor(a.happy)}%</div>
         <div class="abar-wrap"><div class="abar" style="width:${a.happy}%;background:${hpc}"></div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-          <button class="mbtn" onclick="feedAnimal(${a.id})">🍽️ Besle</button>
+          <button class="mbtn" onclick="feedAnimal(${a.id})">ğŸ½ï¸ Besle</button>
           ${canMG ? `<button class="mbtn blue" onclick="startAnimalMiniGame(${a.id},'${a.type}')">${MG_LABEL[a.type]}</button>` : ''}
-          ${!a.pregnant && a.age >= 5 ? `<button class="mbtn blue" onclick="breedAnimal(${a.id})">🍀 Çiftleş</button>` : ''}
-          <button class="mbtn red" onclick="confirmSlaughter(${a.id})">🔪 Mezbaha</button>
-          <button class="mbtn gold" onclick="sellAnimal(${a.id})">💰 Sat ${d.sellPrice}₺</button>
+          ${!a.pregnant && a.age >= 5 ? `<button class="mbtn blue" onclick="breedAnimal(${a.id})">ğŸ€ Ã‡iftleÅŸ</button>` : ''}
+          <button class="mbtn red" onclick="confirmSlaughter(${a.id})">ğŸ”ª Mezbaha</button>
+          <button class="mbtn gold" onclick="sellAnimal(${a.id})">ğŸ’° Sat ${d.sellPrice}â‚º</button>
         </div>
       </div>`;
           });
-        } else html += '<div style="color:#666;font-size:14px;margin-top:14px;text-align:center;line-height:1.8;">Henüz hayvanın yok.<br>Yukarıdan satın alabilirsin!</div>';
+        } else html += '<div style="color:#666;font-size:14px;margin-top:14px;text-align:center;line-height:1.8;">HenÃ¼z hayvanÄ±n yok.<br>YukarÄ±dan satÄ±n alabilirsin!</div>';
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
       }
       function buyAnimal(type) {
         callAPI('buyAnimal', { animalType: type }).then(d => {
           gold = d.newGold; animals.push(d.animal); _applyLvl(d);
           checkQuestProgress('buy_animal', 1, true); updateHUD(); openBarn();
-          showMsg(ADEF[type].emoji + ' ' + ADEF[type].name + ' satın alındı!');
-        }).catch(e => showMsg('❌ ' + e.message));
+          showMsg(ADEF[type].emoji + ' ' + ADEF[type].name + ' satÄ±n alÄ±ndÄ±!');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
       function feedAnimal(id) {
         callAPI('feedAnimal', { animalId: id }).then(d => {
@@ -1547,32 +1547,32 @@
           inventory = d.inventory;
           checkQuestProgress('feed_animal', 1, true); updateHUD(); openBarn();
           showMsg(ADEF[animals.find(x => x.id === id)?.type]?.emoji + ' beslendi!');
-        }).catch(e => showMsg('❌ ' + e.message));
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
       function collectProduce(id) {
         callAPI('collectProduce', { animalId: id }).then(d => {
           const a = animals.find(x => x.id === id);
           if (a) { a.readyProduce = false; a.produceTimer = 0; }
           inventory = d.inventory; _applyLvl(d); updateHUD(); openBarn();
-          showMsg(ADEF[a?.type]?.emoji + ' → +1 ' + d.produceItem + '!');
-        }).catch(e => showMsg('❌ ' + e.message));
+          showMsg(ADEF[a?.type]?.emoji + ' â†’ +1 ' + d.produceItem + '!');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
       function breedAnimal(id) {
         callAPI('breedAnimal', { animalId: id }).then(d => {
           const a = animals.find(x => x.id === id);
           if (a) { a.pregnant = true; a.pregnancyDays = 0; }
-          openBarn(); showMsg('🍀 Gebe! ' + d.gestationDays + ' gün sonra doğum.');
-        }).catch(e => showMsg('❌ ' + e.message));
+          openBarn(); showMsg('ğŸ€ Gebe! ' + d.gestationDays + ' gÃ¼n sonra doÄŸum.');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
       function confirmSlaughter(id) {
         const a = animals.find(x => x.id === id); if (!a) return; const d = ADEF[a.type];
         const mc = document.getElementById('modal-content');
-        mc.innerHTML = `<button class="mclose" onclick="openBarn()">← Geri</button><h2>🔪 Mezbaha</h2>
-  <div style="padding:12px 0;color:#FF9090;font-size:15px;">${d.emoji} <b>${a.name}</b><br>→ <b>${d.slaughterMeat} kg 🥩 et</b> elde edilir</div>
-  <div style="color:#888;font-size:13px;margin-bottom:14px;">⚠️ Bu işlem geri alınamaz!</div>
+        mc.innerHTML = `<button class="mclose" onclick="openBarn()">â† Geri</button><h2>ğŸ”ª Mezbaha</h2>
+  <div style="padding:12px 0;color:#FF9090;font-size:15px;">${d.emoji} <b>${a.name}</b><br>â†’ <b>${d.slaughterMeat} kg ğŸ¥© et</b> elde edilir</div>
+  <div style="color:#888;font-size:13px;margin-bottom:14px;">âš ï¸ Bu iÅŸlem geri alÄ±namaz!</div>
   <div style="display:flex;gap:10px;">
-    <button class="mbtn red" onclick="slaughterAnimal(${id})">✅ Evet, Kes</button>
-    <button class="mbtn" onclick="openBarn()">❌ Vazgeç</button>
+    <button class="mbtn red" onclick="slaughterAnimal(${id})">âœ… Evet, Kes</button>
+    <button class="mbtn" onclick="openBarn()">âŒ VazgeÃ§</button>
   </div>`;
       }
       function slaughterAnimal(id) {
@@ -1580,43 +1580,43 @@
           animals = animals.filter(x => x.id !== id);
           inventory = d.inventory; _applyLvl(d);
           checkQuestProgress('slaughter', d.meatGained, true);
-          updateHUD(); closeModal(); showMsg('🔪 Hayvan kesildi! +' + d.meatGained + ' 🥩');
-        }).catch(e => showMsg('❌ ' + e.message));
+          updateHUD(); closeModal(); showMsg('ğŸ”ª Hayvan kesildi! +' + d.meatGained + ' ğŸ¥©');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
       function sellAnimal(id) {
         const a = animals.find(x => x.id === id); if (!a) return;
         callAPI('sellAnimal', { animalId: id }).then(d => {
           animals = animals.filter(x => x.id !== id);
           gold = d.newGold; _applyLvl(d); updateHUD(); openBarn();
-          showMsg('💰 ' + a.name + ' ' + d.earned + "₺'ye satıldı!");
-        }).catch(e => showMsg('❌ ' + e.message));
+          showMsg('ğŸ’° ' + a.name + ' ' + d.earned + "â‚º'ye satÄ±ldÄ±!");
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
 
-      // ══ MARKET ══
+      // â•â• MARKET â•â•
       function openMarket() {
         const mc = document.getElementById('modal-content');
-        let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🛒 Pazar Yeri</h2>';
+        let html = '<button class="mclose" onclick="closeModal()">âœ– Kapat</button><h2>ğŸ›’ Pazar Yeri</h2>';
         const items = [
-          { key: 'wheat', icon: '🌾', name: 'Buğday' }, { key: 'corn', icon: '🌽', name: 'Mısır' },
-          { key: 'tomato', icon: '🍅', name: 'Domates' }, { key: 'carrot', icon: '🥕', name: 'Havuç' },
-          { key: 'apple', icon: '🍎', name: 'Elma' }, { key: 'orange', icon: '🍊', name: 'Portakal' },
-          { key: 'grape', icon: '🍇', name: 'Üzüm' }, { key: 'meat', icon: '🥩', name: 'Et' },
-          { key: 'wool', icon: '🧶', name: 'Yün' }, { key: 'egg', icon: '🥚', name: 'Yumurta' }, { key: 'milk', icon: '🍶', name: 'Süt' }
+          { key: 'wheat', icon: 'ğŸŒ¾', name: 'BuÄŸday' }, { key: 'corn', icon: 'ğŸŒ½', name: 'MÄ±sÄ±r' },
+          { key: 'tomato', icon: 'ğŸ…', name: 'Domates' }, { key: 'carrot', icon: 'ğŸ¥•', name: 'HavuÃ§' },
+          { key: 'apple', icon: 'ğŸ', name: 'Elma' }, { key: 'orange', icon: 'ğŸŠ', name: 'Portakal' },
+          { key: 'grape', icon: 'ğŸ‡', name: 'ÃœzÃ¼m' }, { key: 'meat', icon: 'ğŸ¥©', name: 'Et' },
+          { key: 'wool', icon: 'ğŸ§¶', name: 'YÃ¼n' }, { key: 'egg', icon: 'ğŸ¥š', name: 'Yumurta' }, { key: 'milk', icon: 'ğŸ¶', name: 'SÃ¼t' }
         ];
         let totalValue = 0;
         items.forEach(it => {
           const qty = inventory[it.key] || 0; const price = MARKET_PRICES[it.key] || 0; const val = qty * price; totalValue += val;
           html += `<div class="mrow">
-      <div><div class="mrow-label">${it.icon} ${it.name}</div><div class="mrow-sub">${price}₺/adet · Elimde: ${qty}</div></div>
+      <div><div class="mrow-label">${it.icon} ${it.name}</div><div class="mrow-sub">${price}â‚º/adet Â· Elimde: ${qty}</div></div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="color:#FFD700;font-size:15px;font-weight:800;">${val}₺</span>
+        <span style="color:#FFD700;font-size:15px;font-weight:800;">${val}â‚º</span>
         <button class="mbtn" onclick="sellAll('${it.key}')">Sat</button>
       </div>
     </div>`;
         });
         html += `<div style="margin-top:12px;padding-top:10px;border-top:2px solid #7A4A1B;display:flex;justify-content:space-between;align-items:center;">
-    <div><div style="color:#aaa;font-size:13px;">Toplam Değer:</div><div style="color:#FFD700;font-size:20px;font-weight:800;">${totalValue}₺</div></div>
-    <button class="mbtn gold" onclick="sellAllItems()">Tümünü Sat</button>
+    <div><div style="color:#aaa;font-size:13px;">Toplam DeÄŸer:</div><div style="color:#FFD700;font-size:20px;font-weight:800;">${totalValue}â‚º</div></div>
+    <button class="mbtn gold" onclick="sellAllItems()">TÃ¼mÃ¼nÃ¼ Sat</button>
   </div>`;
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
       }
@@ -1624,32 +1624,32 @@
         if ((inventory[key] || 0) <= 0) { showMsg('Satacak yok!'); openMarket(); return; }
         callAPI('sellItem', { itemKey: key }).then(d => {
           gold = d.newGold; inventory = Object.assign({}, inventory, { [key]: 0 });
-          _applyLvl(d); updateHUD(); openMarket(); showMsg('✅ +' + d.earned + '₺ kazanıldı!');
-        }).catch(e => showMsg('❌ ' + e.message));
+          _applyLvl(d); updateHUD(); openMarket(); showMsg('âœ… +' + d.earned + 'â‚º kazanÄ±ldÄ±!');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
       function sellAllItems() {
         callAPI('sellAllItems').then(d => {
           gold = d.newGold; inventory = d.inventory; _applyLvl(d); updateHUD(); closeModal();
-          showMsg('🎉 +' + d.total + '₺ kazanıldı!');
-        }).catch(e => showMsg('❌ ' + e.message));
+          showMsg('ğŸ‰ +' + d.total + 'â‚º kazanÄ±ldÄ±!');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
 
-      // ══ QUESTS ══
+      // â•â• QUESTS â•â•
       function openQuests() {
         const mc = document.getElementById('modal-content');
-        let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>📋 Görevler</h2>';
-        if (activeQuests.length === 0) { html += '<div style="color:#666;font-size:14px;text-align:center;margin-top:14px;">Tüm görevler tamamlandı! 🏆</div>'; }
+        let html = '<button class="mclose" onclick="closeModal()">âœ– Kapat</button><h2>ğŸ“‹ GÃ¶revler</h2>';
+        if (activeQuests.length === 0) { html += '<div style="color:#666;font-size:14px;text-align:center;margin-top:14px;">TÃ¼m gÃ¶revler tamamlandÄ±! ğŸ†</div>'; }
         activeQuests.forEach(q => {
           const pct = Math.min(100, Math.floor((q.progress / q.target) * 100));
           html += `<div class="quest-item${q.done ? ' quest-done' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="quest-title">${q.title}</div>
-        <span style="color:#FFD700;font-size:14px;font-weight:800;">${q.done ? '✅' : pct + '%'}</span>
+        <span style="color:#FFD700;font-size:14px;font-weight:800;">${q.done ? 'âœ…' : pct + '%'}</span>
       </div>
       <div class="quest-desc">${q.desc}</div>
       <div style="background:#1A1A1A;border-radius:4px;height:8px;margin:4px 0;"><div style="height:8px;border-radius:4px;background:${q.done ? '#4FA028' : '#F0A500'};width:${pct}%"></div></div>
-      <div class="quest-prog">${q.progress} / ${q.target} &nbsp;·&nbsp; 💰 +${q.reward}₺ &nbsp;·&nbsp; ⭐ +${q.xpReward}</div>
-      ${q.done ? `<button class="mbtn gold" style="margin-top:6px;" onclick="claimQuest('${q.id}')">🎁 Ödülü Al</button>` : ''}
+      <div class="quest-prog">${q.progress} / ${q.target} &nbsp;Â·&nbsp; ğŸ’° +${q.reward}â‚º &nbsp;Â·&nbsp; â­ +${q.xpReward}</div>
+      ${q.done ? `<button class="mbtn gold" style="margin-top:6px;" onclick="claimQuest('${q.id}')">ğŸ Ã–dÃ¼lÃ¼ Al</button>` : ''}
     </div>`;
         });
         html += '<div style="color:#666;font-size:13px;margin-top:10px;text-align:right;">Tamamlanan: ' + completedQuests.length + '/' + QUESTS_DEF.length + '</div>';
@@ -1659,7 +1659,7 @@
         activeQuests.forEach(q => {
           if (q.done || q.type !== type) return;
           if (isInc) q.progress += amount; else q.progress = Math.max(q.progress, amount);
-          if (q.progress >= q.target) { q.done = true; showMsg('📋 Görev Tamamlandı: ' + q.title + '!', 2500); }
+          if (q.progress >= q.target) { q.done = true; showMsg('ğŸ“‹ GÃ¶rev TamamlandÄ±: ' + q.title + '!', 2500); }
         });
       }
       function claimQuest(id) {
@@ -1668,34 +1668,34 @@
           activeQuests = activeQuests.filter(x => x.id !== id);
           const nextQ = QUESTS_DEF.find(qd => !completedQuests.includes(qd.id) && !activeQuests.find(a => a.id === qd.id));
           if (nextQ) activeQuests.push({ ...nextQ, progress: 0, done: false });
-          _applyLvl(d); updateHUD(); openQuests(); showMsg('🎁 Ödül alındı! +' + d.reward + '₺');
-        }).catch(e => showMsg('❌ ' + e.message));
+          _applyLvl(d); updateHUD(); openQuests(); showMsg('ğŸ Ã–dÃ¼l alÄ±ndÄ±! +' + d.reward + 'â‚º');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
 
-      // ══ NEIGHBOR ══
+      // â•â• NEIGHBOR â•â•
       function openNeighbor() {
         const mc = document.getElementById('modal-content');
-        let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🧑‍🌾 Komşu Çiftçiler</h2>';
-        html += '<div class="section-label" style="font-size:13px;font-weight:400;color:#aaa;">Komşular ürün istiyor — yardım et, altın kazan!</div>';
-        const icons = { wheat: '🌾', corn: '🌽', tomato: '🍅', carrot: '🥕', egg: '🥚', wool: '🧶', milk: '🍶', meat: '🥩', apple: '🍎', grape: '🍇' };
-        const itemNames = { wheat: 'Buğday', corn: 'Mısır', tomato: 'Domates', carrot: 'Havuç', egg: 'Yumurta', wool: 'Yün', milk: 'Süt', meat: 'Et', apple: 'Elma', grape: 'Üzüm' };
+        let html = '<button class="mclose" onclick="closeModal()">âœ– Kapat</button><h2>ğŸ§‘â€ğŸŒ¾ KomÅŸu Ã‡iftÃ§iler</h2>';
+        html += '<div class="section-label" style="font-size:13px;font-weight:400;color:#aaa;">KomÅŸular Ã¼rÃ¼n istiyor â€” yardÄ±m et, altÄ±n kazan!</div>';
+        const icons = { wheat: 'ğŸŒ¾', corn: 'ğŸŒ½', tomato: 'ğŸ…', carrot: 'ğŸ¥•', egg: 'ğŸ¥š', wool: 'ğŸ§¶', milk: 'ğŸ¶', meat: 'ğŸ¥©', apple: 'ğŸ', grape: 'ğŸ‡' };
+        const itemNames = { wheat: 'BuÄŸday', corn: 'MÄ±sÄ±r', tomato: 'Domates', carrot: 'HavuÃ§', egg: 'Yumurta', wool: 'YÃ¼n', milk: 'SÃ¼t', meat: 'Et', apple: 'Elma', grape: 'ÃœzÃ¼m' };
         neighborRequests.forEach((req, i) => {
           const have = inventory[req.type] || 0; const canFill = have >= req.qty && !req.fulfilled;
           html += `<div class="mrow">
       <div>
         <div class="mrow-label">${req.name}</div>
-        <div class="mrow-sub">${icons[req.type] || '📦'} ${req.qty}× ${itemNames[req.type] || req.type} istiyor</div>
+        <div class="mrow-sub">${icons[req.type] || 'ğŸ“¦'} ${req.qty}Ã— ${itemNames[req.type] || req.type} istiyor</div>
         <div style="font-size:13px;margin-top:3px;">
           <span style="color:${have >= req.qty ? '#4FA028' : '#CC3300'}">Elimde: ${have}</span>
-          &nbsp;·&nbsp;<span style="color:#FFD700;">Ödül: +${req.reward}₺</span>
+          &nbsp;Â·&nbsp;<span style="color:#FFD700;">Ã–dÃ¼l: +${req.reward}â‚º</span>
         </div>
       </div>
       <div style="min-width:80px;text-align:right;">
-        ${req.fulfilled ? '<span style="color:#4FA028;font-size:18px;">✅</span>' : canFill ? `<button class="mbtn" onclick="giveNeighbor(${i})">Ver +${req.reward}₺</button>` : `<span style="color:#CC3300;font-size:12px;">Yeterli yok</span>`}
+        ${req.fulfilled ? '<span style="color:#4FA028;font-size:18px;">âœ…</span>' : canFill ? `<button class="mbtn" onclick="giveNeighbor(${i})">Ver +${req.reward}â‚º</button>` : `<span style="color:#CC3300;font-size:12px;">Yeterli yok</span>`}
       </div>
     </div>`;
         });
-        html += `<div style="margin-top:12px;"><button class="mbtn gold" onclick="refreshNeighborRequests()">🔄 İstekleri Yenile</button></div>`;
+        html += `<div style="margin-top:12px;"><button class="mbtn gold" onclick="refreshNeighborRequests()">ğŸ”„ Ä°stekleri Yenile</button></div>`;
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
       }
       function giveNeighbor(i) {
@@ -1703,8 +1703,8 @@
           neighborRequests[i].fulfilled = true;
           gold = d.newGold; inventory = d.inventory; _applyLvl(d);
           checkQuestProgress('give_neighbor', 1, true); updateHUD(); openNeighbor();
-          showMsg('🧑‍🌾 ' + neighborRequests[i].name + "'e verildi! " + +d.reward + '₺');
-        }).catch(e => showMsg('❌ ' + e.message));
+          showMsg('ğŸ§‘â€ğŸŒ¾ ' + neighborRequests[i].name + "'e verildi! " + +d.reward + 'â‚º');
+        }).catch(e => showMsg('âŒ ' + e.message));
       }
       function refreshNeighborRequests() {
         neighborRequests = [];
@@ -1712,7 +1712,7 @@
         openNeighbor();
       }
 
-      // ══ SLEEP ══
+      // â•â• SLEEP â•â•
       function doSleep() {
         if (energy >= maxEnergy) { showMsg('Enerjin dolu!'); return; }
         const overlay = document.getElementById('sleep-overlay'), txt = document.getElementById('sleep-text');
@@ -1726,20 +1726,20 @@
           setTimeout(() => txt.style.opacity = '0', 1200);
           setTimeout(() => {
             overlay.style.background = 'rgba(0,0,20,0)';
-            setTimeout(() => overlay.style.display = 'none', 1000); showMsg('☀️ Günaydın! Gün ' + dayCount + '.', 2500);
+            setTimeout(() => overlay.style.display = 'none', 1000); showMsg('â˜€ï¸ GÃ¼naydÄ±n! GÃ¼n ' + dayCount + '.', 2500);
           }, 1800);
         }).catch(e => {
-          overlay.style.display = 'none'; showMsg('❌ ' + e.message);
+          overlay.style.display = 'none'; showMsg('âŒ ' + e.message);
         });
       }
 
-      // ══ WEATHER ══
+      // â•â• WEATHER â•â•
       function updateWeather(dt) {
         weatherTimer -= dt;
         if (weatherTimer <= 0) {
           const types = level < 3 ? ['sunny', 'sunny', 'cloudy', 'rainy'] : WEATHER_TYPES;
           weather = types[Math.floor(Math.random() * types.length)]; weatherTimer = 180 + Math.random() * 300; weatherIntensity = Math.random();
-          const msgs = { sunny: '☀️ Hava açıldı!', cloudy: '⛅ Bulutlanıyor.', rainy: '🌧️ Yağmur! Bitkiler 2x büyür.', stormy: '⛈️ Fırtına!', windy: '💨 Rüzgar!' };
+          const msgs = { sunny: 'â˜€ï¸ Hava aÃ§Ä±ldÄ±!', cloudy: 'â›… BulutlanÄ±yor.', rainy: 'ğŸŒ§ï¸ YaÄŸmur! Bitkiler 2x bÃ¼yÃ¼r.', stormy: 'â›ˆï¸ FÄ±rtÄ±na!', windy: 'ğŸ’¨ RÃ¼zgar!' };
           const wb = document.getElementById('weather-banner'); wb.textContent = msgs[weather] || ''; wb.style.opacity = '1'; setTimeout(() => wb.style.opacity = '0', 3000);
           if (weather === 'rainy' || weather === 'stormy') tiles.forEach(t => { if (t.state === 'planted') { t.watered = true; t.waterTimer = 200; } });
         }
@@ -1749,7 +1749,7 @@
         rainDrops = rainDrops.filter(d => d.life > 0 && d.y < H);
       }
 
-      // ══ ANIMALS ══
+      // â•â• ANIMALS â•â•
       function updateAnimals(dt) {
         const dp = dt * (2 / 60 / 24);
         animals.forEach(a => {
@@ -1762,16 +1762,16 @@
             if (a.pregnancyDays >= d.gestationDays) {
               a.pregnant = false; a.pregnancyDays = 0;
               animals.push({ id: animalId++, type: a.type, name: ADEF[a.type].name + ' Yavru', hunger: 100, happy: 100, age: 0, pregnant: false, pregnancyDays: 0, readyProduce: false, produceTimer: 0 });
-              checkQuestProgress('breed', 1, true); showMsg('🍼 Yavru doğdu!', 3000); updateHUD(); saveGame();
+              checkQuestProgress('breed', 1, true); showMsg('ğŸ¼ Yavru doÄŸdu!', 3000); updateHUD(); saveGame();
             }
           }
         });
-        // Orchard güncelleme: updateOrchard(dt) ile yapılıyor
+        // Orchard gÃ¼ncelleme: updateOrchard(dt) ile yapÄ±lÄ±yor
       }
 
-      // ══════════════════════════════════════════════
-      // NAKLİYE MİNİ OYUNU — YENİ HARITA + WIN ANİMASYON
-      // ══════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // NAKLÄ°YE MÄ°NÄ° OYUNU â€” YENÄ° HARITA + WIN ANÄ°MASYON
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       let PU = { active: false }, puRAF = null;
       const LANE_COUNT = 3;
 
@@ -1790,7 +1790,7 @@
 
       function startPickup() {
         const tot = Object.values(inventory).reduce((a, b) => a + b, 0);
-        if (tot === 0) { showMsg('Taşıyacak ürün yok! Önce hasat yap.'); return; }
+        if (tot === 0) { showMsg('TaÅŸÄ±yacak Ã¼rÃ¼n yok! Ã–nce hasat yap.'); return; }
         const ov = document.getElementById('pickup-overlay'); ov.style.display = 'block';
         const puc = document.getElementById('puc');
         const pw = window.innerWidth, ph = window.innerHeight;
@@ -1801,21 +1801,21 @@
 
         const cropKeys = Object.keys(inventory).filter(k => inventory[k] > 0);
 
-        // ── Ürün ve engel konumları — tam deterministik, kesinlikle spawn olur ──
-        // Yolu eşit bölümlere böl, her bölüme 1 ürün + 1 engel
-        // Engeller: ürünlerden ~200 birim önce veya sonra, farklı şerit
-        const SEGMENT = Math.floor((ROAD_LEN - 400) / 10); // 10 ürün için
+        // â”€â”€ ÃœrÃ¼n ve engel konumlarÄ± â€” tam deterministik, kesinlikle spawn olur â”€â”€
+        // Yolu eÅŸit bÃ¶lÃ¼mlere bÃ¶l, her bÃ¶lÃ¼me 1 Ã¼rÃ¼n + 1 engel
+        // Engeller: Ã¼rÃ¼nlerden ~200 birim Ã¶nce veya sonra, farklÄ± ÅŸerit
+        const SEGMENT = Math.floor((ROAD_LEN - 400) / 10); // 10 Ã¼rÃ¼n iÃ§in
         const cropItems = [];
         const obstacles = [];
 
         for (let i = 0; i < 10; i++) {
-          const segStart = 200 + i * SEGMENT;
-          // Ürün: segment ortasında, sabit şerit rotasyonu
+          const segStart = 500 + i * SEGMENT;  // 500+ safe zone from truck start
+          // ÃœrÃ¼n: segment ortasÄ±nda, sabit ÅŸerit rotasyonu
           const cLane = i % LANE_COUNT;
           const cWx = segStart + Math.floor(SEGMENT * 0.35) + Math.floor(Math.random() * (SEGMENT * 0.2));
           cropItems.push({ wx: cWx, lane: cLane, collected: false, type: cropKeys[i % cropKeys.length] });
 
-          // Engel: ürünün 180-250 birim ötesinde, farklı şerit
+          // Engel: Ã¼rÃ¼nÃ¼n 180-250 birim Ã¶tesinde, farklÄ± ÅŸerit
           if (i < 6) { // 6 engel yeterli
             const oLane = (cLane + 1 + Math.floor(Math.random() * 2)) % LANE_COUNT;
             const oWx = cWx + 180 + Math.floor(Math.random() * 70);
@@ -1828,7 +1828,7 @@
         const markets = [
           { wx: 1400, lane: 0, reached: false, label: '1. Pazar' },
           { wx: 2600, lane: 2, reached: false, label: '2. Pazar' },
-          { wx: ROAD_LEN - 300, lane: 1, reached: false, label: '🏁 Son Pazar', isFinal: true }
+          { wx: ROAD_LEN - 300, lane: 1, reached: false, label: 'ğŸ Son Pazar', isFinal: true }
         ];
 
         // Win animation state
@@ -1844,13 +1844,13 @@
 
         PU = {
           active: true, ctx: pc, w: pw, h: ph,
-          truck: { wx: 0, lane: 1 },   // wx=0, camX=0 → başlangıç noktası
+          truck: { wx: 0, lane: 1 },   // wx=0, camX=0 â†’ baÅŸlangÄ±Ã§ noktasÄ±
           cargo: 0, maxCargo, score: 0, timeLeft: 110, animT: 0,
           gameOver: false, won: false, winAnim,
           cropItems, markets, obstacles,
           ROAD_LEN, camX: 0,
           keys: {}, laneCooldown: 0,
-          mkCooldown: {}  // pazar başına 1 kez tetikle
+          mkCooldown: {}  // pazar baÅŸÄ±na 1 kez tetikle
         };
 
         // Touch controls for pickup
@@ -1881,14 +1881,14 @@
         document.getElementById('pu-msg').style.display = 'none';
         checkQuestProgress('pickup', 1, true);
         puLoop();
-        showMsg('🚛 Kaydır ↑↓ şerit değiştir | → ilerle | Ürünleri topla → pazara götür!', 3500);
+        showMsg('ğŸš› KaydÄ±r â†‘â†“ ÅŸerit deÄŸiÅŸtir | â†’ ilerle | ÃœrÃ¼nleri topla â†’ pazara gÃ¶tÃ¼r!', 3500);
       }
 
       function puDrawScene() {
         const pc = PU.ctx, pw = PU.w, ph = PU.h, t = PU.truck;
         const camX = PU.camX;
 
-        // ── SKY gradient ──
+        // â”€â”€ SKY gradient â”€â”€
         const skyGrad = pc.createLinearGradient(0, 0, 0, ph * 0.4);
         skyGrad.addColorStop(0, '#1a6bba'); skyGrad.addColorStop(1, '#7ac8f5');
         pc.fillStyle = skyGrad; pc.fillRect(0, 0, pw, ph * 0.4);
@@ -1920,7 +1920,7 @@
           pc.beginPath(); pc.arc(sx + 9, ty - 16, 12, 0, Math.PI * 2); pc.fill();
         });
 
-        // ── ROAD: draw all 3 lanes with perspective ──
+        // â”€â”€ ROAD: draw all 3 lanes with perspective â”€â”€
         // Bottom fill (dirt shoulder)
         pc.fillStyle = '#8B6A3B'; pc.fillRect(0, getLaneY(2, ph), pw, ph - getLaneY(2, ph));
 
@@ -1946,7 +1946,7 @@
           }
         }
 
-        // ── OBSTACLES ──
+        // â”€â”€ OBSTACLES â”€â”€
         PU.obstacles.forEach(ob => {
           const sx = ob.wx - camX;
           if (sx < -80 || sx > pw + 80) return;
@@ -1962,7 +1962,7 @@
             pc.strokeStyle = '#5A2D0A'; pc.lineWidth = 3;
             pc.beginPath(); pc.moveTo(sx - 14, cy2 - 12); pc.lineTo(sx + 14, cy2 - 12); pc.stroke();
             pc.beginPath(); pc.moveTo(sx - 14, cy2 - 2); pc.lineTo(sx + 14, cy2 - 2); pc.stroke();
-            pc.fillStyle = '#FFD700'; pc.font = '12px serif'; pc.textAlign = 'center'; pc.fillText('⚠️', sx, cy2 - 4); pc.textAlign = 'left';
+            pc.fillStyle = '#FFD700'; pc.font = '12px serif'; pc.textAlign = 'center'; pc.fillText('âš ï¸', sx, cy2 - 4); pc.textAlign = 'left';
           } else {
             // hay bale
             pc.fillStyle = '#DAA520'; pc.beginPath(); pc.ellipse(sx, cy2 - 8, 22, 16, 0, 0, Math.PI * 2); pc.fill();
@@ -1973,8 +1973,8 @@
           pc.fillStyle = 'rgba(255,80,0,0.15)'; pc.beginPath(); pc.ellipse(sx, cy2 + 4, 26, 8, 0, 0, Math.PI * 2); pc.fill();
         });
 
-        // ── CROP ITEMS ──
-        const icons = { wheat: '🌾', corn: '🌽', tomato: '🍅', carrot: '🥕', meat: '🥩', wool: '🧶', egg: '🥚', milk: '🍶', apple: '🍎', orange: '🍊', grape: '🍇' };
+        // â”€â”€ CROP ITEMS â”€â”€
+        const icons = { wheat: 'ğŸŒ¾', corn: 'ğŸŒ½', tomato: 'ğŸ…', carrot: 'ğŸ¥•', meat: 'ğŸ¥©', wool: 'ğŸ§¶', egg: 'ğŸ¥š', milk: 'ğŸ¶', apple: 'ğŸ', orange: 'ğŸŠ', grape: 'ğŸ‡' };
         PU.cropItems.forEach(ci => {
           if (ci.collected) return;
           const sx = ci.wx - camX;
@@ -1985,10 +1985,10 @@
           pc.fillStyle = 'rgba(0,255,120,0.18)'; pc.beginPath(); pc.arc(sx, cy2 - 5, 22, 0, Math.PI * 2); pc.fill();
           // Bob animation
           const bob = Math.sin(PU.animT * 0.06 + ci.wx * 0.01) * 3;
-          pc.font = '22px serif'; pc.textAlign = 'center'; pc.fillText(icons[ci.type] || '📦', sx, cy2 - 8 + bob); pc.textAlign = 'left';
+          pc.font = '22px serif'; pc.textAlign = 'center'; pc.fillText(icons[ci.type] || 'ğŸ“¦', sx, cy2 - 8 + bob); pc.textAlign = 'left';
         });
 
-        // ── MARKETS ──
+        // â”€â”€ MARKETS â”€â”€
         PU.markets.forEach(mk => {
           const sx = mk.wx - camX;
           if (sx < -100 || sx > pw + 100) return;
@@ -2000,7 +2000,7 @@
           pc.beginPath(); pc.moveTo(sx - 50, by - 80); pc.lineTo(sx, by - 112); pc.lineTo(sx + 50, by - 80); pc.closePath(); pc.fill();
           // Sign
           pc.fillStyle = '#FFF'; pc.font = 'bold 10px Nunito,sans-serif'; pc.textAlign = 'center';
-          pc.fillText(mk.reached ? '✅ TAMAM' : mk.label, sx, by - 48); pc.textAlign = 'left';
+          pc.fillText(mk.reached ? 'âœ… TAMAM' : mk.label, sx, by - 48); pc.textAlign = 'left';
           // Gold vertical guide line
           if (!mk.reached) {
             pc.strokeStyle = 'rgba(255,215,0,0.6)'; pc.lineWidth = 2; pc.setLineDash([8, 6]);
@@ -2013,7 +2013,7 @@
           }
         });
 
-        // ── FINISH GATE ──
+        // â”€â”€ FINISH GATE â”€â”€
         const goalSX = PU.ROAD_LEN - camX;
         if (goalSX > -60 && goalSX < pw + 60) {
           // Checkered gate posts
@@ -2025,13 +2025,13 @@
           // Finish banner
           pc.fillStyle = '#FF2222'; pc.fillRect(goalSX - 54, getLaneY(0, ph) - 20, 108, 22);
           pc.fillStyle = '#FFF'; pc.font = 'bold 12px Nunito,sans-serif'; pc.textAlign = 'center';
-          pc.fillText('🏁 BİTİŞ', goalSX, getLaneY(0, ph) - 4); pc.textAlign = 'left';
+          pc.fillText('ğŸ BÄ°TÄ°Å', goalSX, getLaneY(0, ph) - 4); pc.textAlign = 'left';
           // Vertical line all lanes
           pc.strokeStyle = 'rgba(255,50,50,0.7)'; pc.lineWidth = 3; pc.setLineDash([12, 8]);
           pc.beginPath(); pc.moveTo(goalSX, getLaneY(0, ph)); pc.lineTo(goalSX, ph); pc.stroke(); pc.setLineDash([]);
         }
 
-        // ── PROGRESS BAR ──
+        // â”€â”€ PROGRESS BAR â”€â”€
         const prog = Math.min(1, t.wx / PU.ROAD_LEN);
         const pbx = pw * 0.12, pbw = pw * 0.76, pby = ph - 14;
         pc.fillStyle = 'rgba(0,0,0,0.55)'; pc.beginPath(); pc.roundRect ? pc.roundRect(pbx - 2, pby - 2, pbw + 4, 12, 5) : pc.fillRect(pbx - 2, pby - 2, pbw + 4, 12); pc.fill();
@@ -2044,10 +2044,10 @@
           pc.fillStyle = mk.reached ? '#4FA028' : '#FFD700'; pc.fillRect(mx - 2, pby - 3, 4, 14);
         });
         pc.fillStyle = '#FFD700'; pc.font = 'bold 9px monospace'; pc.textAlign = 'center';
-        pc.fillText('🏁 ' + Math.round(prog * 100) + '%', pw / 2, pby - 4); pc.textAlign = 'left';
+        pc.fillText('ğŸ ' + Math.round(prog * 100) + '%', pw / 2, pby - 4); pc.textAlign = 'left';
 
-        // ── TRUCK ──
-        const TSX = Math.round(pw * 0.30); // kamyon her zaman ekranın 30%'inde
+        // â”€â”€ TRUCK â”€â”€
+        const TSX = Math.round(t.wx - PU.camX); // truck screen X = world pos - camera
         const TSY = getLaneY(t.lane, ph) + getLaneH(t.lane, ph) * 0.5;
         // Shadow
         pc.fillStyle = 'rgba(0,0,0,0.2)'; pc.beginPath(); pc.ellipse(TSX - 5, TSY + 12, 40, 8, 0, 0, Math.PI * 2); pc.fill();
@@ -2076,18 +2076,18 @@
           }
         }
         // Cargo on truck bed
-        for (let ci = 0; ci < PU.cargo; ci++) { pc.font = '13px serif'; pc.fillText(['🌾', '🌽', '🍅', '🥕'][ci % 4], TSX - 48 + ci * 14, TSY - 10); }
+        for (let ci = 0; ci < PU.cargo; ci++) { pc.font = '13px serif'; pc.fillText(['ğŸŒ¾', 'ğŸŒ½', 'ğŸ…', 'ğŸ¥•'][ci % 4], TSX - 48 + ci * 14, TSY - 10); }
         // FULL indicator
         if (PU.cargo === PU.maxCargo) {
           pc.fillStyle = `rgba(255,215,0,${0.15 + 0.1 * Math.sin(PU.animT * 0.15)})`; pc.beginPath(); pc.arc(TSX - 5, TSY - 28, 28, 0, Math.PI * 2); pc.fill();
-          pc.fillStyle = '#FFD700'; pc.font = 'bold 9px Nunito,sans-serif'; pc.textAlign = 'center'; pc.fillText('DOLU→PAZAR!', TSX - 5, TSY - 52); pc.textAlign = 'left';
+          pc.fillStyle = '#FFD700'; pc.font = 'bold 9px Nunito,sans-serif'; pc.textAlign = 'center'; pc.fillText('DOLUâ†’PAZAR!', TSX - 5, TSY - 52); pc.textAlign = 'left';
         }
 
         // Lane change arrows on truck
-        if (t.lane > 0) { pc.fillStyle = 'rgba(255,255,255,0.7)'; pc.font = 'bold 16px serif'; pc.textAlign = 'center'; pc.fillText('▲', TSX - 5, TSY - 38); pc.textAlign = 'left'; }
-        if (t.lane < LANE_COUNT - 1) { pc.fillStyle = 'rgba(255,255,255,0.7)'; pc.font = 'bold 16px serif'; pc.textAlign = 'center'; pc.fillText('▼', TSX - 5, TSY + 32); pc.textAlign = 'left'; }
+        if (t.lane > 0) { pc.fillStyle = 'rgba(255,255,255,0.7)'; pc.font = 'bold 16px serif'; pc.textAlign = 'center'; pc.fillText('â–²', TSX - 5, TSY - 38); pc.textAlign = 'left'; }
+        if (t.lane < LANE_COUNT - 1) { pc.fillStyle = 'rgba(255,255,255,0.7)'; pc.font = 'bold 16px serif'; pc.textAlign = 'center'; pc.fillText('â–¼', TSX - 5, TSY + 32); pc.textAlign = 'left'; }
 
-        // ── WIN ANIMATION ──
+        // â”€â”€ WIN ANIMATION â”€â”€
         if (PU.winAnim.active) {
           PU.winAnim.t++;
           const wt = PU.winAnim.t;
@@ -2104,9 +2104,9 @@
           // Trophy + text
           if (wt > 20) {
             const bounce = Math.sin(wt * 0.12) * 6;
-            pc.font = 'bold 70px serif'; pc.textAlign = 'center'; pc.fillText('🏆', pw / 2, ph * 0.35 + bounce);
-            pc.fillStyle = '#FFD700'; pc.font = 'bold 28px Fredoka,sans-serif'; pc.fillText('TEBRİKLER!', pw / 2, ph * 0.52);
-            pc.fillStyle = '#FFF'; pc.font = '18px Nunito,sans-serif'; pc.fillText('Nakliye tamamlandı! +' + PU.score + '₺', pw / 2, ph * 0.60);
+            pc.font = 'bold 70px serif'; pc.textAlign = 'center'; pc.fillText('ğŸ†', pw / 2, ph * 0.35 + bounce);
+            pc.fillStyle = '#FFD700'; pc.font = 'bold 28px Fredoka,sans-serif'; pc.fillText('TEBRÄ°KLER!', pw / 2, ph * 0.52);
+            pc.fillStyle = '#FFF'; pc.font = '18px Nunito,sans-serif'; pc.fillText('Nakliye tamamlandÄ±! +' + PU.score + 'â‚º', pw / 2, ph * 0.60);
             pc.fillStyle = 'rgba(255,215,0,0.8)'; pc.font = '13px Nunito,sans-serif'; pc.fillText('Ekrana dokun veya devam et...', pw / 2, ph * 0.68);
             pc.textAlign = 'left';
           }
@@ -2121,10 +2121,10 @@
 
         if (!PU.winAnim.active) {
           PU.timeLeft -= 1 / 60;
-          document.getElementById('pu-stats').textContent = `⏱${Math.ceil(PU.timeLeft)}s · 💰+${PU.score} · 📦${PU.cargo}/${PU.maxCargo}`;
+          document.getElementById('pu-stats').textContent = `â±${Math.ceil(PU.timeLeft)}s Â· ğŸ’°+${PU.score} Â· ğŸ“¦${PU.cargo}/${PU.maxCargo}`;
 
           const t = PU.truck;
-          // Kamyon her zaman yavaşça ilerler, tuşla hızlanır
+          // Kamyon her zaman yavaÅŸÃ§a ilerler, tuÅŸla hÄ±zlanÄ±r
           const baseSpeed = 1.2;
           const boost = (PU.keys['ArrowRight'] || PU.keys['d'] || PU.keys['D']) ? 3.5 : 0;
           const brake = (PU.keys['ArrowLeft'] || PU.keys['a'] || PU.keys['A']) ? -2.5 : 0;
@@ -2136,17 +2136,17 @@
             if ((PU.keys['ArrowUp'] || PU.keys['w']) && t.lane > 0) { t.lane--; PU.laneCooldown = 20; }
             if ((PU.keys['ArrowDown'] || PU.keys['s']) && t.lane < LANE_COUNT - 1) { t.lane++; PU.laneCooldown = 20; }
           }
-          // Kamera: wx<pw*0.30 iken 0, sonra kamyon ekranın %30'unda sabit
+          // Kamera: wx<pw*0.30 iken 0, sonra kamyon ekranÄ±n %30'unda sabit
           PU.camX = Math.max(0, t.wx - pw * 0.30);
 
           const truckWX = t.wx;
           // Collect crops
           PU.cropItems.forEach(ci => {
             if (!ci.collected && ci.lane === t.lane && Math.abs(truckWX - ci.wx) < 55 && PU.cargo < PU.maxCargo) {
-              ci.collected = true; PU.cargo++; PU.score += 10; showPuMsg('📦 +Ürün! ×' + PU.cargo, 800);
+              ci.collected = true; PU.cargo++; PU.score += 10; showPuMsg('ğŸ“¦ +ÃœrÃ¼n! Ã—' + PU.cargo, 800);
             }
           });
-          // Market collision — geniş tetikleme alanı, cooldown ile tekrar tetikleme önlendi
+          // Market collision â€” geniÅŸ tetikleme alanÄ±, cooldown ile tekrar tetikleme Ã¶nlendi
           PU.markets.forEach((mk, mi) => {
             if (mk.reached) return;
             const dist = Math.abs(truckWX - mk.wx);
@@ -2155,17 +2155,20 @@
               if (Date.now() - cd < 1500) return; // 1.5s cooldown
               PU.mkCooldown[mi] = Date.now();
               if (PU.cargo > 0) {
-                const earned = PU.cargo * 28; PU.score += earned; earnGold(earned); PU.cargo = 0; mk.reached = true;
-                updateHUD(); showPuMsg('🛒 +' + earned + '₺ KAZANILDI!', 1800);
+                const earned = PU.cargo * 28; PU.score += earned; gold += earned; PU.cargo = 0; mk.reached = true;
+                updateHUD(); showPuMsg('ğŸ›’ +' + earned + 'â‚º KAZANILDI!', 1800);
               } else if (mk.isFinal) { mk.reached = true; }
-              else { showPuMsg('📦 Önce ürün topla!', 1200); }
+              else { showPuMsg('ğŸ“¦ Ã–nce Ã¼rÃ¼n topla!', 1200); }
             }
           });
-          // Obstacle
+          // Obstacle — one-time hit per obstacle with cooldown to prevent sticking
           PU.obstacles.forEach(ob => {
-            if (ob.lane === t.lane && Math.abs(truckWX - ob.wx) < 48) {
-              if (PU.cargo > 0) { PU.cargo = Math.max(0, PU.cargo - 1); showPuMsg('💥 Çarpma! -1 ürün', 1000); }
-              t.wx = Math.max(30, t.wx - 80);
+            if (ob.lane === t.lane && Math.abs(truckWX - ob.wx) < 50) {
+              if (!ob._lastHit || PU.animT - ob._lastHit > 90) {
+                ob._lastHit = PU.animT;
+                if (PU.cargo > 0) { PU.cargo = Math.max(0, PU.cargo - 1); showPuMsg('💥 Çarpma! -1 ürün', 1200); }
+                t.wx = Math.max(0, t.wx - 100);
+              }
             }
           });
           // End conditions
@@ -2197,16 +2200,16 @@
           }).catch(() => { });
         }
         if (!PU.won) {
-          showMsg('⏱ Süre doldu! +' + PU.score + '₺ kazandın.', 2800);
+          showMsg('â± SÃ¼re doldu! +' + PU.score + 'â‚º kazandÄ±n.', 2800);
         }
         setTimeout(() => { ov.style.display = 'none'; }, PU.won ? 200 : 2400);
       }
 
       function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
-      // ══════════════════════════════════════════════════════
-      // HAYVAN MİNİ OYUNLARI
-      // ══════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // HAYVAN MÄ°NÄ° OYUNLARI
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       let MG = { active: false }, mgRAF = null;
 
       function startAnimalMiniGame(animalId, type) {
@@ -2219,13 +2222,13 @@
         const mc = mgc.getContext('2d');
 
         const configs = {
-          chicken: { title: '🐔 Yumurta Toplama', time: 20, reward: 'egg', rewardName: 'Yumurta', icon: '🥚', color: '#FFE566', bgColor: '#8B4513' },
-          cow: { title: '🐄 Süt Sağma', time: 18, reward: 'milk', rewardName: 'Süt', icon: '🍶', color: '#FFFFFF', bgColor: '#7A9A5A' },
-          sheep: { title: '🐑 Yün Kırpma', time: 22, reward: 'wool', rewardName: 'Yün', icon: '🧶', color: '#E8E0D0', bgColor: '#9B7A5A' }
+          chicken: { title: 'ğŸ” Yumurta Toplama', time: 20, reward: 'egg', rewardName: 'Yumurta', icon: 'ğŸ¥š', color: '#FFE566', bgColor: '#8B4513' },
+          cow: { title: 'ğŸ„ SÃ¼t SaÄŸma', time: 18, reward: 'milk', rewardName: 'SÃ¼t', icon: 'ğŸ¶', color: '#FFFFFF', bgColor: '#7A9A5A' },
+          sheep: { title: 'ğŸ‘ YÃ¼n KÄ±rpma', time: 22, reward: 'wool', rewardName: 'YÃ¼n', icon: 'ğŸ§¶', color: '#E8E0D0', bgColor: '#9B7A5A' }
         };
         const cfg = configs[type];
         document.getElementById('mg-title').textContent = cfg.title;
-        document.getElementById('mg-stats').textContent = '⏱' + cfg.time + 's · 0 ' + cfg.icon;
+        document.getElementById('mg-stats').textContent = 'â±' + cfg.time + 's Â· 0 ' + cfg.icon;
         document.getElementById('mg-msg').style.display = 'none';
 
         // Spawn targets based on type
@@ -2297,7 +2300,7 @@
           MG.cowDrag.x = x; MG.cowDrag.y = y;
           if (MG.cowDrag.fill >= 100) {
             const t = MG.targets.find(t2 => t2.id === MG.cowDrag.targetId && !t2.hit);
-            if (t) { t.hit = true; t.scale = 1.4; MG.score++; spawnTarget(); showMgMsg('🍶 +1 Süt!', 700); }
+            if (t) { t.hit = true; t.scale = 1.4; MG.score++; spawnTarget(); showMgMsg('ğŸ¶ +1 SÃ¼t!', 700); }
             MG.cowDrag = { active: false, x: 0, y: 0, fill: 0, targetId: null };
           }
         }
@@ -2331,11 +2334,11 @@
             const margin = 60;
             MG.targets.push({ x: margin + Math.random() * (mw - margin * 2), y: 80 + Math.random() * (mh - 220), r: MG.type === 'cow' ? 38 : 32, hit: false, scale: 1, pulse: Math.random() * Math.PI * 2, id: Date.now() });
           }
-          document.getElementById('mg-stats').textContent = '⏱' + Math.ceil(MG.timeLeft) + 's · ' + MG.score + ' ' + MG.cfg.icon;
+          document.getElementById('mg-stats').textContent = 'â±' + Math.ceil(MG.timeLeft) + 's Â· ' + MG.score + ' ' + MG.cfg.icon;
           if (MG.timeLeft <= 0) { MG.won = true; setTimeout(() => endMiniGame(true), 1400); }
         }
 
-        // ── DRAW ──
+        // â”€â”€ DRAW â”€â”€
         // Background based on type
         const bgColors = { chicken: '#C8864A', cow: '#6A9A4A', sheep: '#8A7A5A' };
         mc.fillStyle = bgColors[MG.type]; mc.fillRect(0, 0, mw, mh);
@@ -2350,7 +2353,7 @@
 
         // Background animal silhouette
         mc.globalAlpha = 0.12; mc.font = `${mh * 0.45}px serif`; mc.textAlign = 'center';
-        mc.fillStyle = '#FFF'; mc.fillText(MG.type === 'chicken' ? '🐔' : MG.type === 'cow' ? '🐄' : '🐑', mw / 2, mh * 0.72);
+        mc.fillStyle = '#FFF'; mc.fillText(MG.type === 'chicken' ? 'ğŸ”' : MG.type === 'cow' ? 'ğŸ„' : 'ğŸ‘', mw / 2, mh * 0.72);
         mc.globalAlpha = 1; mc.textAlign = 'left';
 
         // Animate and draw targets
@@ -2364,7 +2367,7 @@
             mc.fillStyle = 'rgba(255,230,100,0.2)'; mc.beginPath(); mc.arc(0, 0, t.r + 12, 0, Math.PI * 2); mc.fill();
             mc.fillStyle = '#FFF5D0'; mc.beginPath(); mc.ellipse(0, 0, t.r * 0.75, t.r, 0, 0, Math.PI * 2); mc.fill();
             mc.strokeStyle = '#E8C878'; mc.lineWidth = 2; mc.beginPath(); mc.ellipse(0, 0, t.r * 0.75, t.r, 0, 0, Math.PI * 2); mc.stroke();
-            mc.font = `${t.r * 1.1}px serif`; mc.textAlign = 'center'; mc.fillText('🥚', 0, t.r * 0.38);
+            mc.font = `${t.r * 1.1}px serif`; mc.textAlign = 'center'; mc.fillText('ğŸ¥š', 0, t.r * 0.38);
           } else if (MG.type === 'cow') {
             // Udder/milk spot
             const progress = MG.cowDrag.targetId === t.id ? MG.cowDrag.fill / 100 : 0;
@@ -2375,10 +2378,10 @@
             if (progress > 0) {
               mc.fillStyle = 'rgba(100,180,255,0.35)'; mc.beginPath(); mc.arc(0, 0, t.r * progress, 0, Math.PI * 2); mc.fill();
             }
-            mc.font = `${t.r * 0.85}px serif`; mc.textAlign = 'center'; mc.fillText('🍶', 0, t.r * 0.3);
+            mc.font = `${t.r * 0.85}px serif`; mc.textAlign = 'center'; mc.fillText('ğŸ¶', 0, t.r * 0.3);
             if (MG.cowDrag.targetId === t.id) {
               mc.fillStyle = '#FFD700'; mc.font = 'bold 11px Nunito,sans-serif'; mc.textAlign = 'center';
-              mc.fillText('← Sürükle →', 0, t.r + 22);
+              mc.fillText('â† SÃ¼rÃ¼kle â†’', 0, t.r + 22);
             }
           } else {
             // Wool puff
@@ -2388,7 +2391,7 @@
               mc.fillStyle = '#E8E0D0'; mc.beginPath(); mc.arc(Math.cos(wa) * wr * 0.5, Math.sin(wa) * wr * 0.5, t.r * 0.55, 0, Math.PI * 2); mc.fill();
             }
             mc.strokeStyle = '#C8B89A'; mc.lineWidth = 1.5; mc.beginPath(); mc.arc(0, 0, t.r, 0, Math.PI * 2); mc.stroke();
-            mc.font = `${t.r * 0.9}px serif`; mc.textAlign = 'center'; mc.fillText('🧶', 0, t.r * 0.35);
+            mc.font = `${t.r * 0.9}px serif`; mc.textAlign = 'center'; mc.fillText('ğŸ§¶', 0, t.r * 0.35);
           }
           mc.textAlign = 'left'; mc.restore();
         });
@@ -2413,10 +2416,10 @@
         // Win overlay
         if (MG.won) {
           mc.fillStyle = 'rgba(0,0,0,0.6)'; mc.fillRect(0, 0, mw, mh);
-          mc.font = `${mh * 0.18}px serif`; mc.textAlign = 'center'; mc.fillText('🎉', mw / 2, mh * 0.42);
+          mc.font = `${mh * 0.18}px serif`; mc.textAlign = 'center'; mc.fillText('ğŸ‰', mw / 2, mh * 0.42);
           mc.fillStyle = '#FFD700'; mc.font = 'bold 28px Fredoka,sans-serif'; mc.fillText('Harika!', mw / 2, mh * 0.56);
           mc.fillStyle = '#FFF'; mc.font = '18px Nunito,sans-serif';
-          mc.fillText('+' + MG.score + ' ' + MG.cfg.rewardName + ' kazandın!', mw / 2, mh * 0.65);
+          mc.fillText('+' + MG.score + ' ' + MG.cfg.rewardName + ' kazandÄ±n!', mw / 2, mh * 0.65);
           mc.textAlign = 'left';
         }
 
@@ -2432,16 +2435,16 @@
             inventory = d.inventory; _applyLvl(d);
             const a = animals.find(x => x.id === MG.animalId);
             if (a) { a.happy = Math.min(100, a.happy + 15); a.readyProduce = false; }
-            updateHUD(); showMsg('🎉 +' + MG.score + ' ' + MG.cfg.icon + ' ' + MG.cfg.rewardName + ' kazandın!', 3000);
+            updateHUD(); showMsg('ğŸ‰ +' + MG.score + ' ' + MG.cfg.icon + ' ' + MG.cfg.rewardName + ' kazandÄ±n!', 3000);
           }).catch(() => {
-            // Fallback: yerel kayıt
+            // Fallback: yerel kayÄ±t
             inventory[MG.cfg.reward] = (inventory[MG.cfg.reward] || 0) + MG.score; updateHUD();
           });
         }
         setTimeout(() => { ov.style.display = 'none'; }, auto ? 1800 : 0);
       }
 
-      // ══ RENDER HELPERS ══
+      // â•â• RENDER HELPERS â•â•
       function lerpC(c1, c2, t) {
         const p = v => parseInt(v, 16);
         const r1 = p(c1.slice(1, 3)), g1 = p(c1.slice(3, 5)), b1 = p(c1.slice(5, 7));
@@ -2456,17 +2459,19 @@
         if (h < 20) return lerpC('#87CEEB', '#FF6B35', (h - 18) / 2); if (h < 22) return lerpC('#FF6B35', '#0D1B4B', (h - 20) / 2); return '#0D1B4B';
       }
 
-      // Compute ground line Y for a given screen X (hills in bg)
+      // Ground line aligned with the farm's lower half (60% down the grid)
+      // This makes background elements (trees, buildings) sit beside the farm visually
       function groundY(sx) {
-        // gentle hills following sin wave
-        return H * 0.46 - Math.sin(sx / W * Math.PI * 1.5) * H * 0.04;
+        const base = OY + ROWS * CELL * SCALE * 0.62;
+        return base + Math.sin(sx / Math.max(W, 1) * Math.PI * 2) * H * 0.008;
       }
 
       function drawBg() {
         const h = (gameTime / 60) % 24;
 
-        // ── SKY GRADIENT ──
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.52);
+        // â”€â”€ SKY GRADIENT â”€â”€
+        const gY = groundY(W / 2);
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, gY);
         const skyMid = getSkyColor();
         let skyTop;
         if (h >= 7 && h < 18) skyTop = weather === 'stormy' ? '#1A2F3D' : weather === 'rainy' ? '#3A5060' : '#1A6AAE';
@@ -2477,7 +2482,7 @@
         skyGrad.addColorStop(0, skyTop); skyGrad.addColorStop(1, skyMid);
         ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, W, H);
 
-        // ── SUN ──
+        // â”€â”€ SUN â”€â”€
         if (h >= 5 && h < 20 && weather !== 'stormy') {
           const sx = W * ((h - 5) / 15), sy = H * .25 - Math.sin(((h - 5) / 15) * Math.PI) * H * .18;
           const sunR = 18 * SCALE;
@@ -2504,7 +2509,7 @@
           ctx.fillStyle = 'rgba(255,255,220,0.55)'; ctx.beginPath(); ctx.arc(sx - sunR * .28, sy - sunR * .28, sunR * .42, 0, Math.PI * 2); ctx.fill();
         }
 
-        // ── MOON & STARS ──
+        // â”€â”€ MOON & STARS â”€â”€
         if (h < 5 || h >= 20) {
           // Animated stars
           for (let i = 0; i < 45; i++) {
@@ -2529,23 +2534,28 @@
           ctx.beginPath(); ctx.arc(mx + moonR * .1, my - moonR * .42, moonR * .11, 0, Math.PI * 2); ctx.fill();
         }
 
-        // ── MOUNTAINS with gradient ──
-        for (let i = 0; i < 4; i++) {
-          const mx = W * (.06 + i * .25), mhh = H * (.19 + (i % 2) * .1);
-          const mGrad = ctx.createLinearGradient(mx, H * .44 - mhh, mx, H * .44);
+        // â”€â”€ MOUNTAINS with gradient â”€â”€
+        // Only draw mountains in side areas (left of farm, far right)
+        const mDefs = [
+          { x: OX * 0.25, h: gY * 0.44 },
+          { x: OX * 0.72, h: gY * 0.32 },
+          { x: OX + COLS * CELL * SCALE + (W - OX - COLS * CELL * SCALE) * 0.55, h: gY * 0.38 },
+          { x: OX + COLS * CELL * SCALE + (W - OX - COLS * CELL * SCALE) * 0.85, h: gY * 0.28 }
+        ];
+        mDefs.forEach((md, i) => {
+          const mGrad = ctx.createLinearGradient(md.x, gY - md.h, md.x, gY);
           mGrad.addColorStop(0, i % 2 === 0 ? '#5A6A7E' : '#4E5F70');
           mGrad.addColorStop(1, '#6B7A8D');
           ctx.fillStyle = mGrad;
-          ctx.beginPath(); ctx.moveTo(mx - 88 * SCALE, H * .44); ctx.lineTo(mx, H * .44 - mhh); ctx.lineTo(mx + 88 * SCALE, H * .44); ctx.closePath(); ctx.fill();
-          // Snow cap
+          const hw = 75 * SCALE;
+          ctx.beginPath(); ctx.moveTo(md.x - hw, gY); ctx.lineTo(md.x, gY - md.h); ctx.lineTo(md.x + hw, gY); ctx.closePath(); ctx.fill();
           ctx.fillStyle = '#EEF2F6';
-          ctx.beginPath(); ctx.moveTo(mx - 20 * SCALE, H * .44 - mhh * .76); ctx.lineTo(mx, H * .44 - mhh); ctx.lineTo(mx + 20 * SCALE, H * .44 - mhh * .76); ctx.closePath(); ctx.fill();
-          // Shadow
+          ctx.beginPath(); ctx.moveTo(md.x - 14 * SCALE, gY - md.h * .78); ctx.lineTo(md.x, gY - md.h); ctx.lineTo(md.x + 14 * SCALE, gY - md.h * .78); ctx.closePath(); ctx.fill();
           ctx.fillStyle = 'rgba(30,40,60,0.12)';
-          ctx.beginPath(); ctx.moveTo(mx, H * .44 - mhh); ctx.lineTo(mx + 88 * SCALE, H * .44); ctx.lineTo(mx + 20 * SCALE, H * .44); ctx.closePath(); ctx.fill();
-        }
+          ctx.beginPath(); ctx.moveTo(md.x, gY - md.h); ctx.lineTo(md.x + hw, gY); ctx.lineTo(md.x + 16 * SCALE, gY); ctx.closePath(); ctx.fill();
+        });
 
-        // ── CLOUDS ──
+        // â”€â”€ CLOUDS â”€â”€
         clouds.forEach(cl => {
           const alpha = weather === 'stormy' ? .5 : .9;
           ctx.fillStyle = weather === 'stormy' ? `rgba(80,90,110,${alpha})` : `rgba(255,255,255,${alpha})`;
@@ -2565,7 +2575,7 @@
           }
         });
 
-        // ── RAIN ──
+        // â”€â”€ RAIN â”€â”€
         if (weather === 'rainy' || weather === 'stormy') {
           const rainCol = weather === 'stormy' ? 'rgba(160,190,255,.55)' : 'rgba(130,170,255,.4)';
           ctx.strokeStyle = rainCol; ctx.lineWidth = 1;
@@ -2582,7 +2592,7 @@
           }
         }
 
-        // ── WIND STREAKS ──
+        // â”€â”€ WIND STREAKS â”€â”€
         if (weather === 'windy') {
           for (let i = 0; i < 14; i++) {
             const wx = (animT * 3.5 + i * 140) % W, wy = H * .28 + Math.sin(animT * .04 + i) * H * .12;
@@ -2592,53 +2602,66 @@
           }
         }
 
-        // ── GROUND ──
-        const gGrad = ctx.createLinearGradient(0, H * .42, 0, H);
-        gGrad.addColorStop(0, '#3A7A1E'); gGrad.addColorStop(0.3, '#2E6618'); gGrad.addColorStop(1, '#1E4510');
+        // â”€â”€ GROUND â”€â”€
+        // Green ground fill — visible only in side areas (farm tiles cover center)
+        const gGrad = ctx.createLinearGradient(0, gY, 0, H);
+        gGrad.addColorStop(0, '#3A7A1E'); gGrad.addColorStop(0.4, '#2E6618'); gGrad.addColorStop(1, '#1E4510');
         ctx.fillStyle = gGrad;
-        ctx.beginPath(); ctx.moveTo(0, groundY(0));
+        ctx.beginPath(); ctx.moveTo(0, gY);
         for (let sx = 0; sx <= W; sx += 20) ctx.lineTo(sx, groundY(sx));
         ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
         // Ground highlight strip
         ctx.strokeStyle = '#4A9A22'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(0, groundY(0));
+        ctx.beginPath();
         for (let sx = 0; sx <= W; sx += 20) ctx.lineTo(sx, groundY(sx));
         ctx.stroke();
 
-        // ── RIVER ──
-        const riverLeft = OX - 90 * SCALE, riverRight = OX - 18 * SCALE;
+        // â”€â”€ RIVER â”€â”€
+        // River — thin horizontal stream/irrigation channel on the left side
+        const riverLeft = OX - 82 * SCALE, riverRight = OX - 6 * SCALE;
         const rGrad = ctx.createLinearGradient(riverLeft, 0, riverRight, 0);
-        rGrad.addColorStop(0, '#1A6FA8'); rGrad.addColorStop(0.5, '#2490CC'); rGrad.addColorStop(1, '#1A6FA8');
-        ctx.fillStyle = rGrad;
-        ctx.beginPath(); ctx.moveTo(riverLeft, groundY(riverLeft)); ctx.lineTo(riverRight, groundY(riverRight)); ctx.lineTo(riverRight, H); ctx.lineTo(riverLeft, H); ctx.closePath(); ctx.fill();
-        // Animated water shimmer
-        for (let r = 0; r < 5; r++) {
-          const ry = groundY(riverLeft) + r * H * .04 + Math.sin(animT * .06 + r) * 4;
-          const rxOff = Math.sin(animT * .04 + r * 1.8) * 8;
-          ctx.strokeStyle = `rgba(120,210,255,${0.25 - r * 0.04})`; ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.moveTo(riverLeft + 6 + rxOff, ry); ctx.lineTo(riverRight - 6 + rxOff, ry); ctx.stroke();
+        rGrad.addColorStop(0, '#1A5F98'); rGrad.addColorStop(0.4, '#2490CC'); rGrad.addColorStop(1, '#1A5F98');
+        const rY = groundY(riverLeft) - 2 * SCALE;
+        const rH = 14 * SCALE;
+        // River bank (darker strip below)
+        ctx.fillStyle = '#1A4A70'; ctx.fillRect(riverLeft - 3 * SCALE, rY + rH, riverRight - riverLeft + 6 * SCALE, 5 * SCALE);
+        ctx.fillStyle = rGrad; ctx.fillRect(riverLeft, rY, riverRight - riverLeft, rH);
+        // Animated ripple lines
+        for (let r = 0; r < 4; r++) {
+          const rxOff = (animT * 0.8 + r * 18) % (riverRight - riverLeft);
+          ctx.strokeStyle = `rgba(180,230,255,${0.35 - r * 0.07})`; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(riverLeft + rxOff, rY + rH * 0.35); ctx.lineTo(riverLeft + rxOff + 12 * SCALE, rY + rH * 0.35); ctx.stroke();
         }
+        // Reflection highlight
+        ctx.fillStyle = 'rgba(200,240,255,0.18)'; ctx.fillRect(riverLeft + 4 * SCALE, rY + 2, (riverRight - riverLeft) * 0.6, rH * 0.35);
 
-        // ── TREES ──
-        drawTree(OX - 88 * SCALE, groundY(OX - 88 * SCALE), SCALE);
-        drawTree(OX - 52 * SCALE, groundY(OX - 52 * SCALE), SCALE * .82);
-        drawTree(OX - 118 * SCALE, groundY(OX - 118 * SCALE), SCALE * .72);
+        // â”€â”€ TREES â”€â”€
+        // Trees left of farm — positioned beside farm, properly grounded
+        const lt1 = OX - 45 * SCALE, lt2 = OX - 110 * SCALE, lt3 = OX - 168 * SCALE;
+        drawTree(lt1, groundY(lt1), SCALE * 0.95);
+        if (OX > 80 * SCALE) drawTree(lt2, groundY(lt2), SCALE * 0.78);
+        if (OX > 140 * SCALE) drawTree(lt3, groundY(lt3), SCALE * 0.62);
 
-        // House & Barn & Windmill
-        const hx = W - OX - 15, hy = groundY(W - OX - 15) - 8;
-        drawHouse(hx, hy, SCALE * .9);
-        const bx = W - OX + 38, by = groundY(W - OX + 38);
-        drawBarnBld(bx, by, SCALE * .73);
-        const wmx = OX + COLS * CELL * SCALE + 55 * SCALE, wmy = groundY(wmx);
-        drawWindmill(wmx, wmy, SCALE);
+        // House, Barn, Windmill — right of farm, outside tile area
+        const rightEdge = OX + COLS * CELL * SCALE;
+        const sideW = W - rightEdge;
+        const wmx = rightEdge + Math.min(50 * SCALE, sideW * 0.25), wmy = groundY(wmx);
+        drawWindmill(wmx, wmy, SCALE * 0.9);
+        const hx2 = rightEdge + Math.min(130 * SCALE, sideW * 0.55), hy2 = groundY(hx2);
+        drawHouse(hx2, hy2, SCALE * 0.82);
+        if (sideW > 160 * SCALE) {
+          const bx2 = rightEdge + Math.min(220 * SCALE, sideW * 0.85), by2 = groundY(bx2);
+          drawBarnBld(bx2, by2, SCALE * 0.65);
+        }
+        const bx = rightEdge + Math.min(130 * SCALE, sideW * 0.55), by = groundY(bx);
 
         // Animals near barn (bigger, with shadow)
-        const emojiMap = { cow: '🐄', sheep: '🐑', chicken: '🐔' };
+        const emojiMap = { cow: 'ğŸ„', sheep: 'ğŸ‘', chicken: 'ğŸ”' };
         animals.slice(0, 6).forEach((a, i) => {
           const ax = bx + (i % 3 - 1) * 30 * SCALE, ay = by + Math.floor(i / 3) * 24 * SCALE;
           const bob2 = Math.sin(animT * .08 + i * 1.4) * 1.5 * SCALE;
           ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(ax + 6 * SCALE, ay + 1 * SCALE, 8 * SCALE, 3 * SCALE, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.font = (15 * SCALE) + 'px serif'; ctx.fillText(emojiMap[a.type] || '🐾', ax, ay + bob2);
+          ctx.font = (15 * SCALE) + 'px serif'; ctx.fillText(emojiMap[a.type] || 'ğŸ¾', ax, ay + bob2);
         });
       }
 
@@ -2650,7 +2673,7 @@
         const trGrad = ctx.createLinearGradient(x - 5 * sc, 0, x + 5 * sc, 0);
         trGrad.addColorStop(0, '#7B4A1A'); trGrad.addColorStop(0.4, '#9A5E22'); trGrad.addColorStop(1, '#5A3510');
         ctx.fillStyle = trGrad; ctx.fillRect(x - 5 * sc, y - 32 * sc, 10 * sc, 32 * sc);
-        // Canopy layers (dark → light)
+        // Canopy layers (dark â†’ light)
         ctx.fillStyle = '#1E5410'; ctx.beginPath(); ctx.arc(x + sway, y - 48 * sc, 24 * sc, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#2D7A1E'; ctx.beginPath(); ctx.arc(x - 9 * sc + sway, y - 38 * sc, 16 * sc, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(x + 9 * sc + sway, y - 44 * sc, 18 * sc, 0, Math.PI * 2); ctx.fill();
@@ -2828,7 +2851,7 @@
             ctx.fillRect(gx, gy, 2 * SCALE, 4 * SCALE);
           }
         } else {
-          // Soil — richer browns
+          // Soil â€” richer browns
           ctx.fillStyle = tile.watered ? '#2E1D08' : '#6A3C18'; ctx.fillRect(x, y, cs, cs);
           // Furrow rows
           ctx.fillStyle = tile.watered ? '#1E1005' : '#5A2E0E';
@@ -2840,7 +2863,7 @@
         ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth = 1; ctx.strokeRect(x, y, cs, cs);
       }
 
-      // ══ CROP DRAWING — realistic visuals ══
+      // â•â• CROP DRAWING â€” realistic visuals â•â•
       function drawCrop(tile, x, y, cs) {
         const crop = CROPS[tile.crop]; if (!crop) return;
         const prog = Math.min(1, tile.growProgress / crop.growTime);
@@ -3013,7 +3036,7 @@
         if (d > 0) { ctx.fillStyle = `rgba(0,0,20,${d})`; ctx.fillRect(0, 0, W, H); }
       }
 
-      // ══ MAIN LOOP ══
+      // â•â• MAIN LOOP â•â•
       const keys2 = {};
       window.addEventListener('keydown', e => {
         keys2[e.key] = true; if (PU.active) PU.keys = keys2;
@@ -3030,11 +3053,11 @@
         if (gameTime >= 24 * 60) {
           gameTime -= 24 * 60; dayCount++; energy = Math.min(maxEnergy, energy + 30);
           animals.forEach(a => a.hunger = Math.max(0, a.hunger - 10));
-          updateHUD(); showMsg('🌅 Sabah! Gün ' + dayCount); if (dayCount % 7 === 0) refreshNeighborRequests();
+          updateHUD(); showMsg('ğŸŒ… Sabah! GÃ¼n ' + dayCount); if (dayCount % 7 === 0) refreshNeighborRequests();
         }
         const h = Math.floor(gameTime / 60), m = Math.floor(gameTime % 60);
         const si = Math.floor(dayCount / 7) % 4;
-        document.getElementById('sbar').textContent = SEASONS[si] + ' · Gün ' + dayCount + ' · ' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        document.getElementById('sbar').textContent = SEASONS[si] + ' Â· GÃ¼n ' + dayCount + ' Â· ' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
 
         // Grow crops
         tiles.forEach(tile => {
@@ -3044,7 +3067,7 @@
             if (tile.waterTimer > 0) { tile.waterTimer -= dt * 60; if (tile.waterTimer <= 0) tile.watered = false; }
             if (tile.growProgress >= CROPS[tile.crop].growTime) {
               tile.state = 'ready'; tile.growProgress = CROPS[tile.crop].growTime;
-              addParticle(OX + (tile.c + .5) * CELL * SCALE, OY + (tile.r + .3) * CELL * SCALE, '✅ Hazır!', CROPS[tile.crop]?.color || '#FFD700');
+              addParticle(OX + (tile.c + .5) * CELL * SCALE, OY + (tile.r + .3) * CELL * SCALE, 'âœ… HazÄ±r!', CROPS[tile.crop]?.color || '#FFD700');
             }
           }
         });
@@ -3090,7 +3113,7 @@
         requestAnimationFrame(mainLoop);
       }
 
-      // ══ LOGIN ══
+      // â•â• LOGIN â•â•
       (function buildLoginBg() {
         const bg = document.getElementById('ls-bg'); if (!bg) return;
         for (let i = 0; i < 60; i++) { const s = document.createElement('div'); s.className = 'ls-star'; const sz = 1 + Math.random() * 2; s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random() * 100}%;top:${Math.random() * 65}%;animation-delay:${Math.random() * 3}s;animation-duration:${2 + Math.random() * 3}s;`; bg.appendChild(s); }
@@ -3098,19 +3121,19 @@
         const moon = document.createElement('div'); moon.style.cssText = 'position:absolute;width:44px;height:44px;border-radius:50%;background:#E0E8FF;right:12%;top:8%;'; bg.appendChild(moon);
       })();
 
-      // ══ FİREBASE GİRİŞ ══
+      // â•â• FÄ°REBASE GÄ°RÄ°Å â•â•
       function doLogin() {
         if (!window._FB) {
           const e = document.getElementById('ls-err');
-          if (e) e.textContent = '⏳ Firebase bağlanıyor, bir saniye bekle...';
+          if (e) e.textContent = 'â³ Firebase baÄŸlanÄ±yor, bir saniye bekle...';
           return;
         }
         const raw = document.getElementById('ls-user').value.trim().toLowerCase();
         const pass = document.getElementById('ls-pass').value;
         const err = document.getElementById('ls-err');
-        if (!raw || !pass) { err.textContent = '⚠️ E-posta/kullanıcı adı ve şifre boş olamaz.'; return; }
+        if (!raw || !pass) { err.textContent = 'âš ï¸ E-posta/kullanÄ±cÄ± adÄ± ve ÅŸifre boÅŸ olamaz.'; return; }
         const email = raw.includes('@') ? raw : raw + '@tarlam.game';
-        err.textContent = '⏳ Giriş yapılıyor...';
+        err.textContent = 'â³ GiriÅŸ yapÄ±lÄ±yor...';
         const btn = document.querySelector('.ls-btn'); btn.disabled = true;
         window._FB.signIn(email, pass)
           .then(async cred => {
@@ -3123,13 +3146,13 @@
           })
           .catch(e => {
             btn.disabled = false;
-            const codes = { 'auth/invalid-credential': '❌ E-posta veya şifre hatalı.', 'auth/too-many-requests': '⛔ Çok fazla deneme. Bekle.', 'auth/network-request-failed': '🌐 İnternet bağlantısı yok.' };
-            err.textContent = codes[e.code] || '❌ Hata: ' + e.code;
+            const codes = { 'auth/invalid-credential': 'âŒ E-posta veya ÅŸifre hatalÄ±.', 'auth/too-many-requests': 'â›” Ã‡ok fazla deneme. Bekle.', 'auth/network-request-failed': 'ğŸŒ Ä°nternet baÄŸlantÄ±sÄ± yok.' };
+            err.textContent = codes[e.code] || 'âŒ Hata: ' + e.code;
             err.classList.remove('shake'); void err.offsetWidth; err.classList.add('shake');
             document.getElementById('ls-pass').value = ''; document.getElementById('ls-pass').focus();
           });
       }
-      // Keydown listeners — DOMContentLoaded'da güvenli eklenir
+      // Keydown listeners â€” DOMContentLoaded'da gÃ¼venli eklenir
       document.addEventListener('DOMContentLoaded', () => {
         const p = document.getElementById('ls-pass'), u = document.getElementById('ls-user');
         if (p) p.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -3149,26 +3172,26 @@
           } else canvas.addEventListener('click', handlePointer);
           document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
           if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => { });
-          const displayName = _fbUser?.displayName || (_fbUser?.email?.split('@')[0]) || 'Çiftçi';
-          showMsg(isNewUser ? '🌾 Hoş geldin ' + displayName + '! İlk tarlanı kurmanın vakti!' : '💾 Hoş geldin ' + displayName + '! Gün ' + dayCount + ' devam ediyor.', 3500);
+          const displayName = _fbUser?.displayName || (_fbUser?.email?.split('@')[0]) || 'Ã‡iftÃ§i';
+          showMsg(isNewUser ? 'ğŸŒ¾ HoÅŸ geldin ' + displayName + '! Ä°lk tarlanÄ± kurmanÄ±n vakti!' : 'ğŸ’¾ HoÅŸ geldin ' + displayName + '! GÃ¼n ' + dayCount + ' devam ediyor.', 3500);
           requestAnimationFrame(mainLoop);
           setInterval(() => { if (_SEC._uid) _saveToCloud(_SEC._uid); }, 60000);
           window.addEventListener('pagehide', () => { if (_SEC._uid) { window._FB.logSession(_SEC._uid, 'logout').catch(() => { }); } });
         };
 
         if (isNewUser) {
-          // Yeni kullanıcı: state zaten sıfırlanmış, doğrudan başlat
+          // Yeni kullanÄ±cÄ±: state zaten sÄ±fÄ±rlanmÄ±ÅŸ, doÄŸrudan baÅŸlat
           initTiles(); _boot(); return;
         }
 
-        // Mevcut kullanıcı: önce cloud'dan yükle
+        // Mevcut kullanÄ±cÄ±: Ã¶nce cloud'dan yÃ¼kle
         initTiles();
         _loadFromCloud(uid).then(loaded => {
           if (!loaded) {
-            // Cloud'da kayıt yok: localStorage'dan dene
-            // Ama önce bu UID'e ait mi kontrol et — farklı kullanıcı verisi yükleme
+            // Cloud'da kayÄ±t yok: localStorage'dan dene
+            // Ama Ã¶nce bu UID'e ait mi kontrol et â€” farklÄ± kullanÄ±cÄ± verisi yÃ¼kleme
             const ll = loadGame();
-            if (!ll) initTiles(); // localStorage'da da yok → sıfırdan başla
+            if (!ll) initTiles(); // localStorage'da da yok â†’ sÄ±fÄ±rdan baÅŸla
           }
           _boot();
         });
@@ -3201,9 +3224,9 @@
       }
 
       async function _saveToCloud(uid) {
-        // Sanity check: şüpheli değerleri kaydetme
+        // Sanity check: ÅŸÃ¼pheli deÄŸerleri kaydetme
         const snap = { gold, energy, maxEnergy, level, xp };
-        if (!_sanitizeBeforeSave(snap)) { showMsg('⚠️ Güvenlik: değerler doğrulanamadı, kayıt atlandı.', 3000); return; }
+        if (!_sanitizeBeforeSave(snap)) { showMsg('âš ï¸ GÃ¼venlik: deÄŸerler doÄŸrulanamadÄ±, kayÄ±t atlandÄ±.', 3000); return; }
         _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
         try {
           await window._FB.saveGame(uid, {
@@ -3215,34 +3238,34 @@
         } catch (e) { console.warn('Cloud save error:', e); }
       }
 
-      // ── Firebase bağlantısını bekle, sonra auth listener'ı başlat ──
-      // type="module" asenkron — fbReady eventi gelene kadar bekle
+      // â”€â”€ Firebase baÄŸlantÄ±sÄ±nÄ± bekle, sonra auth listener'Ä± baÅŸlat â”€â”€
+      // type="module" asenkron â€” fbReady eventi gelene kadar bekle
       function _initWithFirebase() {
         if (!window._FB) {
-          // Nadir durum: olay kaçtıysa tekrar dene
+          // Nadir durum: olay kaÃ§tÄ±ysa tekrar dene
           setTimeout(_initWithFirebase, 50);
           return;
         }
-        // Auth state listener — sayfa yenilenince oturumu sürdür
+        // Auth state listener â€” sayfa yenilenince oturumu sÃ¼rdÃ¼r
         window._FB.onAuthStateChanged(async user => {
           if (user) {
-            // Token'ı zorla yenile — kullanıcı silinmişse burada hata verir
+            // Token'Ä± zorla yenile â€” kullanÄ±cÄ± silinmiÅŸse burada hata verir
             try {
               await user.getIdToken(true);
             } catch (e) {
-              // Token yenilenemedi — kullanıcı silinmiş veya devre dışı
-              console.warn('[TARLAM] Geçersiz oturum:', e.code);
+              // Token yenilenemedi â€” kullanÄ±cÄ± silinmiÅŸ veya devre dÄ±ÅŸÄ±
+              console.warn('[TARLAM] GeÃ§ersiz oturum:', e.code);
               _fbUser = null; window._fbUser = null; _SEC._uid = null;
               // localStorage + sessionStorage temizle
               try { Object.keys(localStorage).filter(k => k.startsWith('_t_')).forEach(k => localStorage.removeItem(k)); } catch { }
               try { sessionStorage.clear(); } catch { }
               // Firebase cache temizle
               try { await window._FB.signOut(); } catch { }
-              // Giriş ekranını göster (reload yerine soft reset)
+              // GiriÅŸ ekranÄ±nÄ± gÃ¶ster (reload yerine soft reset)
               const scr = document.getElementById('login-screen');
               if (scr) { scr.style.opacity = '1'; scr.classList.remove('hidden'); }
               const err = document.getElementById('ls-err');
-              if (err) err.textContent = '⚠️ Hesabınız bulunamadı. Lütfen tekrar giriş yapın.';
+              if (err) err.textContent = 'âš ï¸ HesabÄ±nÄ±z bulunamadÄ±. LÃ¼tfen tekrar giriÅŸ yapÄ±n.';
               return;
             }
             if (!_fbUser) {
@@ -3253,25 +3276,25 @@
               }
             }
           } else if (!user && _fbUser) {
-            // Normal çıkış
+            // Normal Ã§Ä±kÄ±ÅŸ
             _fbUser = null; window._fbUser = null; _SEC._uid = null;
             location.reload();
           } else if (!user && !_fbUser) {
-            // Oturum yok, giriş ekranı açık — normal durum
+            // Oturum yok, giriÅŸ ekranÄ± aÃ§Ä±k â€” normal durum
           }
         });
-        // Giriş ekranı input odağı
+        // GiriÅŸ ekranÄ± input odaÄŸÄ±
         const lsUser = document.getElementById('ls-user');
         if (lsUser && !document.getElementById('login-screen').classList.contains('hidden')) {
           lsUser.focus();
         }
       }
-      // fbReady eventi module script'ten gelir; eğer module zaten bitmişse flag kontrol et
+      // fbReady eventi module script'ten gelir; eÄŸer module zaten bitmiÅŸse flag kontrol et
       if (window._FB) { _initWithFirebase(); }
       else { window.addEventListener('fbReady', _initWithFirebase, { once: true }); }
 
 
-      // ══ KAYIT SİSTEMİ ══
+      // â•â• KAYIT SÄ°STEMÄ° â•â•
       function openRegister() {
         document.getElementById('register-modal').style.display = 'flex';
         document.getElementById('reg-err').textContent = '';
@@ -3281,8 +3304,8 @@
         document.getElementById('register-modal').style.display = 'none';
       }
 
-      // ══ YENİ KULLANICI BAŞLANGIÇ DURUMU ══
-      // Yeni kayıt veya farklı kullanıcı girişinde tüm state'i sıfırla
+      // â•â• YENÄ° KULLANICI BAÅLANGIÃ‡ DURUMU â•â•
+      // Yeni kayÄ±t veya farklÄ± kullanÄ±cÄ± giriÅŸinde tÃ¼m state'i sÄ±fÄ±rla
       function resetGameState() {
         gold = 300; energy = 100; maxEnergy = 100; level = 1; xp = 0; maxXp = 100;
         totalGoldEarned = 0; dayCount = 1; gameTime = 6 * 60;
@@ -3296,69 +3319,69 @@
         neighborRequests = [];
         particles = [];
         _SEC._g = 300; _SEC._e = 100; _SEC._l = 1;
-        // localStorage temizle — önceki kullanıcı verisinin kalıntısını önle
+        // localStorage temizle â€” Ã¶nceki kullanÄ±cÄ± verisinin kalÄ±ntÄ±sÄ±nÄ± Ã¶nle
         try {
           Object.keys(localStorage).filter(k => k.startsWith('_t_')).forEach(k => localStorage.removeItem(k));
         } catch { }
       }
 
       function doRegister() {
-        if (!window._FB) { document.getElementById('reg-err').textContent = '⏳ Firebase bağlanıyor...'; return; }
+        if (!window._FB) { document.getElementById('reg-err').textContent = 'â³ Firebase baÄŸlanÄ±yor...'; return; }
         const name = document.getElementById('reg-name').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
         const emailInput = document.getElementById('reg-email').value.trim();
         const pass = document.getElementById('reg-pass').value;
         const pass2 = document.getElementById('reg-pass2').value;
         const err = document.getElementById('reg-err');
-        if (!name || name.length < 3) { err.textContent = '⚠️ Kullanıcı adı en az 3 karakter olmalı (harf/rakam/_)'; return; }
-        if (pass.length < 6) { err.textContent = '⚠️ Şifre en az 6 karakter olmalı.'; return; }
-        if (pass !== pass2) { err.textContent = '❌ Şifreler eşleşmiyor.'; return; }
+        if (!name || name.length < 3) { err.textContent = 'âš ï¸ KullanÄ±cÄ± adÄ± en az 3 karakter olmalÄ± (harf/rakam/_)'; return; }
+        if (pass.length < 6) { err.textContent = 'âš ï¸ Åifre en az 6 karakter olmalÄ±.'; return; }
+        if (pass !== pass2) { err.textContent = 'âŒ Åifreler eÅŸleÅŸmiyor.'; return; }
         const email = emailInput.includes('@') && emailInput.includes('.') ? emailInput : name + '@tarlam.game';
-        err.textContent = '⏳ Hesap oluşturuluyor...';
+        err.textContent = 'â³ Hesap oluÅŸturuluyor...';
         window._FB.create(email, pass, name)
           .then(async cred => {
             _fbUser = cred.user; window._fbUser = cred.user; _SEC._uid = _fbUser.uid;
             try { await window._FB.logSession(_fbUser.uid, 'register'); } catch { }
-            // ── YENİ KULLANICI: state'i tamamen sıfırla ──
+            // â”€â”€ YENÄ° KULLANICI: state'i tamamen sÄ±fÄ±rla â”€â”€
             resetGameState();
             initQuests(); initNeighborRequests();
-            // Sunucuda oyuncu kaydı oluştur (başlangıç değerleri Functions'tan gelir)
+            // Sunucuda oyuncu kaydÄ± oluÅŸtur (baÅŸlangÄ±Ã§ deÄŸerleri Functions'tan gelir)
             callAPI('createPlayer').then(() => {
-              err.textContent = '✅ Hesap oluşturuldu! Hoş geldin ' + name + '!';
+              err.textContent = 'âœ… Hesap oluÅŸturuldu! HoÅŸ geldin ' + name + '!';
               setTimeout(() => {
                 document.getElementById('register-modal').style.display = 'none';
                 resetGameState();
                 startGame(_fbUser.uid, true/*isNewUser*/);
               }, 1200);
             }).catch(e => {
-              err.textContent = '❌ Kayıt hatası: ' + e.message;
+              err.textContent = 'âŒ KayÄ±t hatasÄ±: ' + e.message;
             });
           })
           .catch(e => {
             const codes = {
-              'auth/email-already-in-use': '❌ Bu kullanıcı adı zaten alınmış.',
-              'auth/invalid-email': '❌ Geçersiz e-posta.',
-              'auth/weak-password': '❌ Şifre çok zayıf.'
+              'auth/email-already-in-use': 'âŒ Bu kullanÄ±cÄ± adÄ± zaten alÄ±nmÄ±ÅŸ.',
+              'auth/invalid-email': 'âŒ GeÃ§ersiz e-posta.',
+              'auth/weak-password': 'âŒ Åifre Ã§ok zayÄ±f.'
             };
-            err.textContent = codes[e.code] || '❌ Hata: ' + e.code;
+            err.textContent = codes[e.code] || 'âŒ Hata: ' + e.code;
           });
       }
 
-      // ══ AYARLAR ══
+      // â•â• AYARLAR â•â•
       let _sfxOn = true, _gameSpeed = 1;
 
       function openSettings() {
         const m = document.getElementById('settings-modal');
         m.style.display = 'flex';
-        const dispName = _fbUser?.displayName || (_fbUser?.email?.split('@')[0]) || '—';
+        const dispName = _fbUser?.displayName || (_fbUser?.email?.split('@')[0]) || 'â€”';
         document.getElementById('st-username').textContent = dispName;
-        document.getElementById('st-email').textContent = _fbUser?.email || '—';
+        document.getElementById('st-email').textContent = _fbUser?.email || 'â€”';
         const sfxEl = document.getElementById('st-sfx');
         const spdEl = document.getElementById('st-speed');
         if (sfxEl) sfxEl.checked = _sfxOn;
         if (spdEl) spdEl.value = String(_gameSpeed);
-        document.getElementById('st-sfx-lbl').textContent = _sfxOn ? 'Açık' : 'Kapalı';
-        document.getElementById('st-lastlogin').textContent = 'Firestore loglarından yükleniyor...';
-        // Son giriş — sadece _FB hazırsa yükle
+        document.getElementById('st-sfx-lbl').textContent = _sfxOn ? 'AÃ§Ä±k' : 'KapalÄ±';
+        document.getElementById('st-lastlogin').textContent = 'Firestore loglarÄ±ndan yÃ¼kleniyor...';
+        // Son giriÅŸ â€” sadece _FB hazÄ±rsa yÃ¼kle
         if (_SEC._uid && window._FB && window._FB.db) {
           import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
             .then(({ collection, query, orderBy, limit, getDocs }) => {
@@ -3367,23 +3390,23 @@
                 const el = document.getElementById('st-lastlogin'); if (!el) return;
                 if (!snap.empty) {
                   const ts = snap.docs[0].data().timestamp?.toDate?.();
-                  el.textContent = ts ? ts.toLocaleString('tr-TR') : '—';
-                } else el.textContent = '—';
-              }).catch(() => { document.getElementById('st-lastlogin').textContent = 'Yüklenemedi'; });
+                  el.textContent = ts ? ts.toLocaleString('tr-TR') : 'â€”';
+                } else el.textContent = 'â€”';
+              }).catch(() => { document.getElementById('st-lastlogin').textContent = 'YÃ¼klenemedi'; });
             }).catch(() => { });
         } else {
-          document.getElementById('st-lastlogin').textContent = '—';
+          document.getElementById('st-lastlogin').textContent = 'â€”';
         }
       }
       function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
-      function toggleSfx(v) { _sfxOn = v; document.getElementById('st-sfx-lbl').textContent = v ? 'Açık' : 'Kapalı'; }
+      function toggleSfx(v) { _sfxOn = v; document.getElementById('st-sfx-lbl').textContent = v ? 'AÃ§Ä±k' : 'KapalÄ±'; }
       function setGameSpeed(v) { _gameSpeed = parseFloat(v); }
 
       function promptChangeName() {
         const area = document.getElementById('st-action-area');
         area.innerHTML = `<div style="margin-top:4px;">
-    <label class="section-label">Yeni Kullanıcı Adı</label>
+    <label class="section-label">Yeni KullanÄ±cÄ± AdÄ±</label>
     <input class="ls-input" id="st-new-name" type="text" placeholder="yeni_ad" style="margin:6px 0;font-size:14px;">
     <button class="mbtn gold" onclick="_applyChangeName()">Kaydet</button>
     <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
@@ -3395,7 +3418,7 @@
         import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({ updateProfile }) => {
           updateProfile(_fbUser, { displayName: n }).then(() => {
             document.getElementById('st-username').textContent = n;
-            document.getElementById('st-feedback').textContent = '✅ İsim güncellendi!';
+            document.getElementById('st-feedback').textContent = 'âœ… Ä°sim gÃ¼ncellendi!';
             document.getElementById('st-feedback').style.color = '#80FF80';
             setTimeout(() => document.getElementById('st-action-area').innerHTML = '', 1800);
           }).catch(e => document.getElementById('st-feedback').textContent = 'Hata: ' + e.message);
@@ -3407,8 +3430,8 @@
         area.innerHTML = `<div style="margin-top:4px;">
     <label class="section-label">Yeni E-posta</label>
     <input class="ls-input" id="st-new-email" type="email" placeholder="yeni@email.com" style="margin:6px 0;font-size:14px;">
-    <label class="section-label">Mevcut Şifre (doğrulama)</label>
-    <input class="ls-input" id="st-cur-pass" type="password" placeholder="mevcut şifren" style="margin:6px 0;font-size:14px;">
+    <label class="section-label">Mevcut Åifre (doÄŸrulama)</label>
+    <input class="ls-input" id="st-cur-pass" type="password" placeholder="mevcut ÅŸifren" style="margin:6px 0;font-size:14px;">
     <button class="mbtn gold" onclick="_applyChangeEmail()">Kaydet</button>
     <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
   </div>`;
@@ -3416,12 +3439,12 @@
       function _applyChangeEmail() {
         const newEmail = document.getElementById('st-new-email').value.trim();
         const curPass = document.getElementById('st-cur-pass').value;
-        if (!newEmail || !curPass) { document.getElementById('st-feedback').textContent = 'Tüm alanları doldur.'; return; }
+        if (!newEmail || !curPass) { document.getElementById('st-feedback').textContent = 'TÃ¼m alanlarÄ± doldur.'; return; }
         import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({ reauthenticateWithCredential, EmailAuthProvider, updateEmail }) => {
           const cred = EmailAuthProvider.credential(_fbUser.email, curPass);
           reauthenticateWithCredential(_fbUser, cred).then(() => updateEmail(_fbUser, newEmail)).then(() => {
             document.getElementById('st-email').textContent = newEmail;
-            document.getElementById('st-feedback').textContent = '✅ E-posta güncellendi!';
+            document.getElementById('st-feedback').textContent = 'âœ… E-posta gÃ¼ncellendi!';
             document.getElementById('st-feedback').style.color = '#80FF80';
             setTimeout(() => document.getElementById('st-action-area').innerHTML = '', 1800);
           }).catch(e => document.getElementById('st-feedback').textContent = 'Hata: ' + e.message);
@@ -3431,10 +3454,10 @@
       function promptChangePass() {
         const area = document.getElementById('st-action-area');
         area.innerHTML = `<div style="margin-top:4px;">
-    <label class="section-label">Mevcut Şifre</label>
-    <input class="ls-input" id="st-cur-pass2" type="password" placeholder="mevcut şifren" style="margin:6px 0;font-size:14px;">
-    <label class="section-label">Yeni Şifre</label>
-    <input class="ls-input" id="st-new-pass" type="password" placeholder="yeni şifre (min 6)" style="margin:6px 0;font-size:14px;">
+    <label class="section-label">Mevcut Åifre</label>
+    <input class="ls-input" id="st-cur-pass2" type="password" placeholder="mevcut ÅŸifren" style="margin:6px 0;font-size:14px;">
+    <label class="section-label">Yeni Åifre</label>
+    <input class="ls-input" id="st-new-pass" type="password" placeholder="yeni ÅŸifre (min 6)" style="margin:6px 0;font-size:14px;">
     <button class="mbtn gold" onclick="_applyChangePass()">Kaydet</button>
     <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
   </div>`;
@@ -3442,11 +3465,11 @@
       function _applyChangePass() {
         const cur = document.getElementById('st-cur-pass2').value;
         const np = document.getElementById('st-new-pass').value;
-        if (!cur || np.length < 6) { document.getElementById('st-feedback').textContent = 'Şifre en az 6 karakter olmalı.'; return; }
+        if (!cur || np.length < 6) { document.getElementById('st-feedback').textContent = 'Åifre en az 6 karakter olmalÄ±.'; return; }
         import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({ reauthenticateWithCredential, EmailAuthProvider, updatePassword }) => {
           const cred = EmailAuthProvider.credential(_fbUser.email, cur);
           reauthenticateWithCredential(_fbUser, cred).then(() => updatePassword(_fbUser, np)).then(() => {
-            document.getElementById('st-feedback').textContent = '✅ Şifre güncellendi!';
+            document.getElementById('st-feedback').textContent = 'âœ… Åifre gÃ¼ncellendi!';
             document.getElementById('st-feedback').style.color = '#80FF80';
             setTimeout(() => document.getElementById('st-action-area').innerHTML = '', 1800);
           }).catch(e => document.getElementById('st-feedback').textContent = 'Hata: ' + e.message);
@@ -3461,48 +3484,48 @@
       function confirmDeleteAccount() {
         const area = document.getElementById('st-action-area');
         area.innerHTML = `<div style="margin-top:8px;padding:12px;background:rgba(120,20,20,0.3);border:1px solid #8A2020;border-radius:8px;">
-    <div style="color:#FF8080;font-size:13px;font-weight:700;margin-bottom:8px;">⚠️ Hesabı silerseniz tüm verileriniz kalıcı olarak silinir!</div>
-    <label class="section-label">Şifrenizi girin (onay)</label>
-    <input class="ls-input" id="st-del-pass" type="password" placeholder="şifreniz" style="margin:6px 0;font-size:14px;">
+    <div style="color:#FF8080;font-size:13px;font-weight:700;margin-bottom:8px;">âš ï¸ HesabÄ± silerseniz tÃ¼m verileriniz kalÄ±cÄ± olarak silinir!</div>
+    <label class="section-label">Åifrenizi girin (onay)</label>
+    <input class="ls-input" id="st-del-pass" type="password" placeholder="ÅŸifreniz" style="margin:6px 0;font-size:14px;">
     <div style="display:flex;gap:8px;margin-top:6px;">
-      <button class="mbtn red" onclick="_applyDeleteAccount()">🗑️ Evet, Sil</button>
-      <button class="mbtn" onclick="document.getElementById('st-action-area').innerHTML=''">İptal</button>
+      <button class="mbtn red" onclick="_applyDeleteAccount()">ğŸ—‘ï¸ Evet, Sil</button>
+      <button class="mbtn" onclick="document.getElementById('st-action-area').innerHTML=''">Ä°ptal</button>
     </div>
     <div id="st-feedback" style="font-size:12px;margin-top:6px;color:#FF8080;"></div>
   </div>`;
       }
       function _applyDeleteAccount() {
         const pass = document.getElementById('st-del-pass').value;
-        if (!pass) { document.getElementById('st-feedback').textContent = 'Şifre boş olamaz.'; return; }
+        if (!pass) { document.getElementById('st-feedback').textContent = 'Åifre boÅŸ olamaz.'; return; }
         import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({ reauthenticateWithCredential, EmailAuthProvider, deleteUser }) => {
           import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(({ deleteDoc, doc: firestoreDoc }) => {
             const cred = EmailAuthProvider.credential(_fbUser.email, pass);
             reauthenticateWithCredential(_fbUser, cred).then(async () => {
               // Firestore verisini sil
               try { await deleteDoc(firestoreDoc(window._FB.db, 'users', _SEC._uid, 'gameData', 'save')); } catch { }
-              // Auth hesabını sil
+              // Auth hesabÄ±nÄ± sil
               await deleteUser(_fbUser);
-              document.getElementById('st-feedback').textContent = '✅ Hesap silindi. Yönlendiriliyor...';
+              document.getElementById('st-feedback').textContent = 'âœ… Hesap silindi. YÃ¶nlendiriliyor...';
               document.getElementById('st-feedback').style.color = '#80FF80';
               setTimeout(() => location.reload(), 1500);
             }).catch(e => {
-              document.getElementById('st-feedback').textContent = 'Hata: ' + (e.code === 'auth/wrong-password' ? 'Şifre yanlış.' : e.message);
+              document.getElementById('st-feedback').textContent = 'Hata: ' + (e.code === 'auth/wrong-password' ? 'Åifre yanlÄ±ÅŸ.' : e.message);
             });
           });
         });
       }
 
-      // ══ _FB.create eklentisi (IIFE'den önce erişim gerektiğinden burada tanımlıyoruz) ══
-      // Bu fonksiyon, Firebase module scope'daki createUserWithEmailAndPassword'ı çağırır
-      // Not: window._FB._create'i Firebase module script bloğundan set etmeliyiz
+      // â•â• _FB.create eklentisi (IIFE'den Ã¶nce eriÅŸim gerektiÄŸinden burada tanÄ±mlÄ±yoruz) â•â•
+      // Bu fonksiyon, Firebase module scope'daki createUserWithEmailAndPassword'Ä± Ã§aÄŸÄ±rÄ±r
+      // Not: window._FB._create'i Firebase module script bloÄŸundan set etmeliyiz
 
-      // ══ GLOBALS — IIFE içindeki UI fonksiyonlarını dışa aç ══
-      // State değişkenleri (gold, energy vb.) buraya eklenmez — dışarıdan erişilemez
-      // Fonksiyon referansları atanır, değişken değil
+      // â•â• GLOBALS â€” IIFE iÃ§indeki UI fonksiyonlarÄ±nÄ± dÄ±ÅŸa aÃ§ â•â•
+      // State deÄŸiÅŸkenleri (gold, energy vb.) buraya eklenmez â€” dÄ±ÅŸarÄ±dan eriÅŸilemez
+      // Fonksiyon referanslarÄ± atanÄ±r, deÄŸiÅŸken deÄŸil
       (() => {
-        // Basit atama: fonksiyon referansı global olur, ama state değişmez
-        // Kötü niyetli atama: window.openBarn = ()=>{gold=99999} çalışır ama
-        // gold IIFE içinde kapalı olduğundan etkisi yok
+        // Basit atama: fonksiyon referansÄ± global olur, ama state deÄŸiÅŸmez
+        // KÃ¶tÃ¼ niyetli atama: window.openBarn = ()=>{gold=99999} Ã§alÄ±ÅŸÄ±r ama
+        // gold IIFE iÃ§inde kapalÄ± olduÄŸundan etkisi yok
         const pub = [
           ['doLogin', doLogin], ['setTool', setTool], ['openBarn', openBarn],
           ['openMarket', openMarket], ['openQuests', openQuests], ['openNeighbor', openNeighbor],
@@ -3521,7 +3544,7 @@
           ['promptChangePass', promptChangePass], ['doLogout', doLogout],
           ['confirmDeleteAccount', confirmDeleteAccount],
           ['toggleSfx', toggleSfx], ['setGameSpeed', setGameSpeed],
-          // _apply fonksiyonları: ayarlar ekranının dinamik HTML'inden çağrılır
+          // _apply fonksiyonlarÄ±: ayarlar ekranÄ±nÄ±n dinamik HTML'inden Ã§aÄŸrÄ±lÄ±r
           ['_applyChangeName', _applyChangeName],
           ['_applyChangeEmail', _applyChangeEmail],
           ['_applyChangePass', _applyChangePass],
@@ -3530,101 +3553,101 @@
         pub.forEach(([name, fn]) => { window[name] = fn; });
       })();
 
-      // ══ SANITY CHECK: sunucu kayıt anında değer doğrulama ══
+      // â•â• SANITY CHECK: sunucu kayÄ±t anÄ±nda deÄŸer doÄŸrulama â•â•
       function _sanitizeBeforeSave(data) {
         const MAX = { gold: 9999999, energy: 9999, level: 100, xp: 99999 };
         if (data.gold > MAX.gold || data.energy > MAX.energy || data.level > MAX.level) {
-          console.warn('[TARLAM] Sanity check: şüpheli değer tespit edildi');
+          console.warn('[TARLAM] Sanity check: ÅŸÃ¼pheli deÄŸer tespit edildi');
           return false;
         }
-        // Gold delta kontrolü: son kayıttan bu yana çok fazla artış var mı?
+        // Gold delta kontrolÃ¼: son kayÄ±ttan bu yana Ã§ok fazla artÄ±ÅŸ var mÄ±?
         const prev = _SEC._g || 0;
         if (data.gold - prev > 50000) {
-          console.warn('[TARLAM] Gold delta çok yüksek, kayıt reddedildi');
+          console.warn('[TARLAM] Gold delta Ã§ok yÃ¼ksek, kayÄ±t reddedildi');
           return false;
         }
         return true;
       }
-    })(); // ══ IIFE SONU ══
+    })(); // â•â• IIFE SONU â•â•
   </script>
 
-  <!-- ══ KAYIT EKRANI MODAL ══ -->
+  <!-- â•â• KAYIT EKRANI MODAL â•â• -->
   <div id="register-modal"
     style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.88);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
     <div class="ls-card" style="max-width:340px;width:92vw;">
-      <span style="font-size:40px;">🌱</span>
-      <div class="ls-title" style="font-size:22px;">HESAP OLUŞTUR</div>
-      <div class="ls-sub">Ücretsiz, anında oyna</div>
+      <span style="font-size:40px;">ğŸŒ±</span>
+      <div class="ls-title" style="font-size:22px;">HESAP OLUÅTUR</div>
+      <div class="ls-sub">Ãœcretsiz, anÄ±nda oyna</div>
       <label class="ls-label" for="reg-name">KULLANICI ADI</label>
       <input class="ls-input" id="reg-name" type="text" placeholder="ahmet_ciftci" autocomplete="off"
         spellcheck="false">
-      <label class="ls-label" for="reg-email">E-POSTA (İSTEĞE BAĞLI)</label>
-      <input class="ls-input" id="reg-email" type="email" placeholder="ahmet@email.com (boş bırakılabilir)"
+      <label class="ls-label" for="reg-email">E-POSTA (Ä°STEÄE BAÄLI)</label>
+      <input class="ls-input" id="reg-email" type="email" placeholder="ahmet@email.com (boÅŸ bÄ±rakÄ±labilir)"
         autocomplete="email">
-      <label class="ls-label" for="reg-pass">ŞİFRE (en az 6 karakter)</label>
-      <input class="ls-input" id="reg-pass" type="password" placeholder="••••••••" autocomplete="new-password">
-      <label class="ls-label" for="reg-pass2">ŞİFRE TEKRAR</label>
-      <input class="ls-input" id="reg-pass2" type="password" placeholder="••••••••" autocomplete="new-password">
-      <button class="ls-btn" onclick="doRegister()" style="background:#1E5A10;border-color:#3A9A20;">✅ Hesap
-        Oluştur</button>
+      <label class="ls-label" for="reg-pass">ÅÄ°FRE (en az 6 karakter)</label>
+      <input class="ls-input" id="reg-pass" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autocomplete="new-password">
+      <label class="ls-label" for="reg-pass2">ÅÄ°FRE TEKRAR</label>
+      <input class="ls-input" id="reg-pass2" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autocomplete="new-password">
+      <button class="ls-btn" onclick="doRegister()" style="background:#1E5A10;border-color:#3A9A20;">âœ… Hesap
+        OluÅŸtur</button>
       <div class="ls-error" id="reg-err" style="min-height:18px;"></div>
       <hr class="ls-divider">
       <button onclick="closeRegister()"
-        style="background:none;border:1px solid #8B5A2B;color:#C8A060;font-family:var(--font-ui);font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;width:100%;">←
-        Girişe Dön</button>
+        style="background:none;border:1px solid #8B5A2B;color:#C8A060;font-family:var(--font-ui);font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;width:100%;">â†
+        GiriÅŸe DÃ¶n</button>
     </div>
   </div>
 
-  <!-- ══ AYARLAR MODAL ══ -->
+  <!-- â•â• AYARLAR MODAL â•â• -->
   <div id="settings-modal"
     style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.85);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
     <div class="mbox" style="max-width:400px;">
-      <button class="mclose" onclick="closeSettings()">✖ Kapat</button>
-      <h2>⚙️ Oyun Ayarları</h2>
+      <button class="mclose" onclick="closeSettings()">âœ– Kapat</button>
+      <h2>âš™ï¸ Oyun AyarlarÄ±</h2>
       <div class="section-label">Hesap Bilgileri</div>
       <div class="mrow">
         <div>
-          <div class="mrow-label">👤 Kullanıcı Adı</div>
-          <div class="mrow-sub" id="st-username">—</div>
-        </div><button class="mbtn" onclick="promptChangeName()">Değiştir</button>
+          <div class="mrow-label">ğŸ‘¤ KullanÄ±cÄ± AdÄ±</div>
+          <div class="mrow-sub" id="st-username">â€”</div>
+        </div><button class="mbtn" onclick="promptChangeName()">DeÄŸiÅŸtir</button>
       </div>
       <div class="mrow">
         <div>
-          <div class="mrow-label">📧 E-posta</div>
-          <div class="mrow-sub" id="st-email">—</div>
-        </div><button class="mbtn" onclick="promptChangeEmail()">Değiştir</button>
+          <div class="mrow-label">ğŸ“§ E-posta</div>
+          <div class="mrow-sub" id="st-email">â€”</div>
+        </div><button class="mbtn" onclick="promptChangeEmail()">DeÄŸiÅŸtir</button>
       </div>
       <div class="mrow">
         <div>
-          <div class="mrow-label">🔑 Şifre</div>
-          <div class="mrow-sub">••••••••</div>
-        </div><button class="mbtn" onclick="promptChangePass()">Değiştir</button>
+          <div class="mrow-label">ğŸ”‘ Åifre</div>
+          <div class="mrow-sub">â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢</div>
+        </div><button class="mbtn" onclick="promptChangePass()">DeÄŸiÅŸtir</button>
       </div>
       <div class="section-label" style="margin-top:14px;">Oyun Tercihleri</div>
       <div class="mrow">
-        <div class="mrow-label">🔊 Ses Efektleri</div><label
+        <div class="mrow-label">ğŸ”Š Ses Efektleri</div><label
           style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="st-sfx"
             onchange="toggleSfx(this.checked)" style="width:18px;height:18px;accent-color:#00FF88;"><span
-            style="font-size:13px;color:#FFD700;" id="st-sfx-lbl">Açık</span></label>
+            style="font-size:13px;color:#FFD700;" id="st-sfx-lbl">AÃ§Ä±k</span></label>
       </div>
       <div class="mrow">
-        <div class="mrow-label">⏩ Oyun Hızı</div>
+        <div class="mrow-label">â© Oyun HÄ±zÄ±</div>
         <select id="st-speed" onchange="setGameSpeed(this.value)"
           style="background:#1A0A00;color:#FFD700;border:1.5px solid #8B5A2B;border-radius:6px;padding:5px 10px;font-family:var(--font-ui);font-size:13px;">
-          <option value="0.5">Yavaş</option>
+          <option value="0.5">YavaÅŸ</option>
           <option value="1" selected>Normal</option>
-          <option value="1.5">Hızlı</option>
-          <option value="2">Çok Hızlı</option>
+          <option value="1.5">HÄ±zlÄ±</option>
+          <option value="2">Ã‡ok HÄ±zlÄ±</option>
         </select>
       </div>
       <div class="section-label" style="margin-top:14px;">Oturum</div>
       <div class="mrow">
-        <div class="mrow-label">📊 Son Giriş</div>
-        <div class="mrow-sub" id="st-lastlogin">—</div>
+        <div class="mrow-label">ğŸ“Š Son GiriÅŸ</div>
+        <div class="mrow-sub" id="st-lastlogin">â€”</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-        <button class="mbtn gold" onclick="doLogout()">🚪 Çıkış Yap</button>
-        <button class="mbtn red" onclick="confirmDeleteAccount()">🗑️ Hesabı Sil</button>
+        <button class="mbtn gold" onclick="doLogout()">ğŸšª Ã‡Ä±kÄ±ÅŸ Yap</button>
+        <button class="mbtn red" onclick="confirmDeleteAccount()">ğŸ—‘ï¸ HesabÄ± Sil</button>
       </div>
       <div id="st-action-area" style="margin-top:12px;"></div>
     </div>
@@ -3632,3 +3655,15 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
