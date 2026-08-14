@@ -3254,7 +3254,6 @@
         if (sideW > 160 * SCALE) drawBarnBld(bx, by, SCALE * 0.63);
 
         // Animals — walk in/out of barn door
-        const emojiMap = { cow: '🐄', sheep: '🐑', chicken: '🐔' };
         const barnDoorX = sideW > 160 * SCALE ? bx : hx;
         animals.slice(0, 6).forEach((a, i) => {
           const period = 320 + i * 45;
@@ -3270,10 +3269,12 @@
           else { return; }
           const ax = barnDoorX + dir * maxDist * progress;
           const ay = groundY(ax);
-          const legBob = isWalking ? Math.sin(animT * 0.32 + i * 1.1) * 2.5 * SCALE : Math.sin(animT * 0.06 + i) * SCALE;
-          ctx.fillStyle = 'rgba(0,0,0,0.15)';
-          ctx.beginPath(); ctx.ellipse(ax + 5 * SCALE, ay + 1 * SCALE, 8 * SCALE, 3 * SCALE, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.font = (15 * SCALE) + 'px serif'; ctx.fillText(emojiMap[a.type] || '🐾', ax - 8 * SCALE, ay + legBob);
+          const walkPh = animT * 0.32 + i * 1.1;
+          const facingRight = phase < halfP ? (dir > 0) : (dir <= 0);
+          const sc = SCALE * 0.75;
+          if (a.type === 'chicken') drawPixelChicken(ax, ay, sc, facingRight, isWalking, walkPh);
+          else if (a.type === 'sheep') drawPixelSheep(ax, ay, sc, facingRight, isWalking, walkPh);
+          else drawPixelCow(ax, ay, sc, facingRight, isWalking, walkPh);
         });
       }
 
@@ -3416,6 +3417,149 @@
         // AHIR sign
         ctx.fillStyle = '#FFD700'; ctx.font = 'bold ' + (8 * sc) + 'px Nunito,sans-serif'; ctx.textAlign = 'center';
         ctx.fillText('AHIR', x, y - 66 * sc); ctx.textAlign = 'left';
+      }
+
+      function drawPixelChicken(cx, cy, s, right, moving, ph) {
+        const d = right ? 1 : -1;
+        const lb = moving ? Math.sin(ph) * 2.5 * s : 0;
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.13)'; ctx.beginPath(); ctx.ellipse(cx, cy + s, 8*s, 2.5*s, 0, 0, Math.PI*2); ctx.fill();
+        // Tail feathers
+        ctx.fillStyle = '#B8A040';
+        ctx.beginPath(); ctx.moveTo(cx - d*5*s, cy - 7*s); ctx.lineTo(cx - d*13*s, cy - 3*s); ctx.lineTo(cx - d*11*s, cy - 11*s); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#CDB050';
+        ctx.beginPath(); ctx.moveTo(cx - d*6*s, cy - 9*s); ctx.lineTo(cx - d*15*s, cy - 14*s); ctx.lineTo(cx - d*10*s, cy - 6*s); ctx.closePath(); ctx.fill();
+        // Wing
+        ctx.fillStyle = '#C8B870';
+        ctx.beginPath(); ctx.ellipse(cx - d*2*s, cy - 8*s, 5*s, 3.5*s, d*0.35, 0, Math.PI*2); ctx.fill();
+        // Body
+        ctx.fillStyle = '#EEE0A8';
+        ctx.beginPath(); ctx.ellipse(cx, cy - 8*s, 8*s, 6*s, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.beginPath(); ctx.ellipse(cx + d*2*s, cy - 10*s, 4*s, 2.5*s, d*0.3, 0, Math.PI*2); ctx.fill();
+        // Neck
+        ctx.fillStyle = '#EEE0A8';
+        ctx.beginPath(); ctx.moveTo(cx + d*5*s, cy - 11*s); ctx.lineTo(cx + d*9*s, cy - 12*s); ctx.lineTo(cx + d*9*s, cy - 16*s); ctx.lineTo(cx + d*5*s, cy - 14*s); ctx.closePath(); ctx.fill();
+        // Head
+        const hx = cx + d*10*s;
+        ctx.fillStyle = '#EEE0A8';
+        ctx.beginPath(); ctx.arc(hx, cy - 17*s, 5.5*s, 0, Math.PI*2); ctx.fill();
+        // Comb (3 bumps)
+        ctx.fillStyle = '#CC1515';
+        ctx.beginPath(); ctx.arc(hx - d*2*s, cy - 23*s, 2*s, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(hx,           cy - 24.5*s, 2.5*s, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(hx + d*2*s,   cy - 22.5*s, 1.8*s, 0, Math.PI*2); ctx.fill();
+        // Wattle
+        ctx.beginPath(); ctx.ellipse(hx + d*2.5*s, cy - 14.5*s, 1.8*s, 2.5*s, 0, 0, Math.PI*2); ctx.fill();
+        // Beak
+        ctx.fillStyle = '#F0A018';
+        ctx.beginPath(); ctx.moveTo(hx + d*5*s, cy - 18.5*s); ctx.lineTo(hx + d*11*s, cy - 17*s); ctx.lineTo(hx + d*5*s, cy - 15.5*s); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#C88008';
+        ctx.beginPath(); ctx.moveTo(hx + d*5*s, cy - 17*s); ctx.lineTo(hx + d*11*s, cy - 17*s); ctx.lineTo(hx + d*5*s, cy - 16.5*s); ctx.closePath(); ctx.fill();
+        // Eye
+        ctx.fillStyle = '#101010'; ctx.beginPath(); ctx.arc(hx + d*2.5*s, cy - 18*s, 2*s, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hx + d*3*s, cy - 18.5*s, 0.8*s, 0, Math.PI*2); ctx.fill();
+        // Legs
+        ctx.strokeStyle = '#F0A018'; ctx.lineWidth = 1.8*s; ctx.lineCap = 'round';
+        const l1y = cy + lb, l2y = cy - lb;
+        ctx.beginPath(); ctx.moveTo(cx - 2*s, cy - 2*s); ctx.lineTo(cx - 2*s, l1y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + 2*s, cy - 2*s); ctx.lineTo(cx + 2*s, l2y); ctx.stroke();
+        // Feet
+        ctx.lineWidth = s; ctx.lineCap = 'butt';
+        [[cx - 2*s, l1y], [cx + 2*s, l2y]].forEach(([lx, ly]) => {
+          ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx - d*4*s, ly); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + d*1.5*s, ly); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + 2*s); ctx.stroke();
+        });
+        ctx.lineCap = 'butt';
+      }
+
+      function drawPixelSheep(cx, cy, s, right, moving, ph) {
+        const d = right ? 1 : -1;
+        const lb = moving ? Math.sin(ph) * 2 * s : 0;
+        const bob = moving ? Math.abs(Math.sin(ph)) * 0.8 * s : 0;
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.13)'; ctx.beginPath(); ctx.ellipse(cx, cy + s, 11*s, 2.5*s, 0, 0, Math.PI*2); ctx.fill();
+        // Wool body — shadow ring first
+        const wCenters = [[0,-8,7],[-5.5,-8,5.5],[5.5,-8,5.5],[-8.5,-5,4.5],[8.5,-5,4.5],[0,-13,5.5],[-4.5,-14.5,4.5],[4.5,-14.5,4.5]];
+        ctx.fillStyle = '#C4C0B8';
+        wCenters.forEach(([ox,oy,r]) => { ctx.beginPath(); ctx.arc(cx+ox*s, cy+(oy-bob)*s, (r+1.2)*s, 0, Math.PI*2); ctx.fill(); });
+        ctx.fillStyle = '#F0EDE6';
+        wCenters.forEach(([ox,oy,r]) => { ctx.beginPath(); ctx.arc(cx+ox*s, cy+(oy-bob)*s, r*s, 0, Math.PI*2); ctx.fill(); });
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        wCenters.forEach(([ox,oy,r]) => { ctx.beginPath(); ctx.arc(cx+ox*s-0.5*s, cy+(oy-bob-0.5)*s, r*0.45*s, 0, Math.PI*2); ctx.fill(); });
+        // Face
+        const fx = cx + d*10*s;
+        ctx.fillStyle = '#2A2018'; ctx.beginPath(); ctx.ellipse(fx, cy-11*s-bob, 5.5*s, 5*s, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#3A3028'; ctx.beginPath(); ctx.ellipse(fx, cy-10.5*s-bob, 4.2*s, 4*s, 0, 0, Math.PI*2); ctx.fill();
+        // Ears
+        ctx.fillStyle = '#2A2018'; ctx.beginPath(); ctx.ellipse(fx - d*3*s, cy-16*s-bob, 3*s, 2*s, d*0.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#C87878'; ctx.beginPath(); ctx.ellipse(fx - d*3*s, cy-16*s-bob, 1.8*s, 1.2*s, d*0.5, 0, Math.PI*2); ctx.fill();
+        // Muzzle
+        ctx.fillStyle = '#5A4030'; ctx.beginPath(); ctx.ellipse(fx + d*3.5*s, cy-9.5*s-bob, 2.5*s, 2*s, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#0A0808';
+        ctx.beginPath(); ctx.arc(fx + d*2.5*s, cy-9.5*s-bob, 0.8*s, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(fx + d*4.5*s, cy-9.5*s-bob, 0.8*s, 0, Math.PI*2); ctx.fill();
+        // Eye
+        ctx.fillStyle = '#F0C080'; ctx.beginPath(); ctx.arc(fx + d*1.5*s, cy-12.5*s-bob, 2*s, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#1A1008'; ctx.beginPath(); ctx.arc(fx + d*1.8*s, cy-12.5*s-bob, 1.3*s, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(fx + d*2.2*s, cy-13*s-bob, 0.55*s, 0, Math.PI*2); ctx.fill();
+        // Legs (4 short dark legs)
+        const legOffs = [[cx-5*s, lb],[cx-1.5*s,-lb],[cx+1.5*s,lb],[cx+5*s,-lb]];
+        legOffs.forEach(([lx, off]) => {
+          ctx.fillStyle = '#2A2018'; ctx.fillRect(lx-1.5*s, cy-3*s, 3*s, 4*s);
+          ctx.fillStyle = '#1A1008'; ctx.fillRect(lx-2.2*s, cy+0.8*s+off*0.3, 4.4*s, 1.8*s);
+        });
+      }
+
+      function drawPixelCow(cx, cy, s, right, moving, ph) {
+        const d = right ? 1 : -1;
+        const lb = moving ? Math.sin(ph) * 2.2 * s : 0;
+        const bob = moving ? Math.abs(Math.sin(ph)) * 0.8 * s : 0;
+        const swing = Math.sin(animT * 0.09) * 7 * s;
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.beginPath(); ctx.ellipse(cx, cy + s, 14*s, 3*s, 0, 0, Math.PI*2); ctx.fill();
+        // Tail
+        ctx.strokeStyle = '#2A2018'; ctx.lineWidth = 1.8*s; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(cx - d*11*s, cy-13*s-bob); ctx.quadraticCurveTo(cx - d*18*s, cy-6*s-bob+swing*0.5, cx - d*15*s, cy-2*s-bob+swing); ctx.stroke();
+        ctx.fillStyle = '#2A2018'; ctx.beginPath(); ctx.arc(cx - d*15*s, cy-2*s-bob+swing, 2.5*s, 0, Math.PI*2); ctx.fill();
+        ctx.lineCap = 'butt';
+        // Body
+        ctx.fillStyle = '#F5F0E8';
+        ctx.beginPath(); ctx.ellipse(cx, cy-10*s-bob, 12*s, 8*s, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillRect(cx-12*s, cy-10*s-bob, 24*s, 6*s);
+        // Black patches
+        ctx.fillStyle = '#1A1510';
+        ctx.beginPath(); ctx.ellipse(cx-4*s, cy-13*s-bob, 6*s, 4.5*s, 0.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+5*s, cy-10*s-bob, 4.5*s, 3.5*s, -0.3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+8*s, cy-15.5*s-bob, 3*s, 2.5*s, 0.2, 0, Math.PI*2); ctx.fill();
+        // Body re-fill bottom strip (fix patch overdraw at feet)
+        ctx.fillStyle = '#F5F0E8'; ctx.fillRect(cx-12*s, cy-4*s-bob, 24*s, 4*s);
+        // Udder
+        ctx.fillStyle = '#F0A8A0'; ctx.beginPath(); ctx.ellipse(cx + d*2*s, cy-2.5*s-bob, 5.5*s, 2*s, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#DD8888';
+        for (let u = 0; u < 4; u++) { ctx.beginPath(); ctx.arc(cx + d*(u-1.5)*2.5*s, cy-0.8*s-bob, 1*s, 0, Math.PI*2); ctx.fill(); }
+        // Head
+        const hx = cx + d*17*s;
+        ctx.fillStyle = '#C8BFB0'; ctx.beginPath(); ctx.ellipse(hx, cy-12*s-bob, 7.5*s, 6.5*s, 0, 0, Math.PI*2); ctx.fill();
+        // Head patch
+        ctx.fillStyle = '#1A1510'; ctx.beginPath(); ctx.ellipse(hx - d*s, cy-14*s-bob, 4*s, 3*s, 0.3, 0, Math.PI*2); ctx.fill();
+        // Ear
+        ctx.fillStyle = '#C8BFB0'; ctx.beginPath(); ctx.ellipse(hx - d*4.5*s, cy-17.5*s-bob, 3*s, 4*s, d*0.4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#E090A0'; ctx.beginPath(); ctx.ellipse(hx - d*4.5*s, cy-17.5*s-bob, 1.8*s, 2.5*s, d*0.4, 0, Math.PI*2); ctx.fill();
+        // Eye
+        ctx.fillStyle = '#1A1208'; ctx.beginPath(); ctx.arc(hx + d*2*s, cy-13.5*s-bob, 2.2*s, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hx + d*2.6*s, cy-14*s-bob, 0.9*s, 0, Math.PI*2); ctx.fill();
+        // Muzzle
+        ctx.fillStyle = '#DDD0C0'; ctx.beginPath(); ctx.ellipse(hx + d*5.5*s, cy-10*s-bob, 3*s, 2.5*s, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#1A1208';
+        ctx.beginPath(); ctx.arc(hx + d*4*s, cy-10*s-bob, 0.9*s, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(hx + d*6*s, cy-10*s-bob, 0.9*s, 0, Math.PI*2); ctx.fill();
+        // Legs (4) with walk animation
+        [[cx-8*s, lb],[cx-3*s,-lb],[cx+3*s,lb],[cx+8*s,-lb]].forEach(([lx, off]) => {
+          ctx.fillStyle = '#C8BFB0'; ctx.fillRect(lx-2.2*s, cy-3.5*s, 4.4*s, 3.5*s+Math.abs(off)*0.4);
+          ctx.fillStyle = '#1A1510'; ctx.fillRect(lx-2.8*s, cy+off*0.3, 5.6*s, 2.2*s);
+        });
       }
 
       function drawWindmill(x, y, sc) {
