@@ -938,6 +938,13 @@
     <div class="tb" id="btn-garage" onclick="openGarage()">
       <div class="ti">🏎️</div>Garaj
     </div>
+    <div class="tb" id="btn-wardrobe" onclick="openWardrobe()">
+      <div class="ti">👗</div>Kıyafet
+    </div>
+  </div>
+
+  <div id="char-setup-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(8,18,10,0.97);z-index:9999;overflow-y:auto;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+    <div id="char-setup-content" style="max-width:420px;width:100%;"></div>
   </div>
 
   <div id="modal">
@@ -1079,6 +1086,16 @@
       ];
       // ── NAKLİYE ARAÇLARI ──
       const UPGRADE_COSTS = [200, 450, 800];
+      const OUTFITS = {
+        farmer:   { name:'Çiftçi',        gender:'male',   price:0,   skirt:false, shirt:['#3A80C9','#4A90D9','#2E6AB0'], pants:'#2C3E50', boot:'#1A252F', straps:'#C8A030', hat:'cowboy', hatC:'#7B4A1A', band:'#5A3010', hairC:'#5A3010', icon:'👒', desc:'Klasik tarla kıyafeti' },
+        cowboy:   { name:'Kovboy',         gender:'male',   price:350, skirt:false, shirt:['#8B3A1A','#A04A25','#7A2E10'], pants:'#1A3060', boot:'#0A1A30', straps:'#C87820', hat:'cowboy', hatC:'#4A2808', band:'#C87820', hairC:'#3A2010', icon:'🤠', desc:'Vahşi Batı stili' },
+        chef:     { name:'Aşçı',           gender:'male',   price:550, skirt:false, shirt:['#E8E8E8','#F8F8F8','#D5D5D5'], pants:'#CCCCCC', boot:'#555555', straps:null,      hat:'chef',   hatC:'#FFFFFF', band:'#CCCCCC', hairC:'#3A2010', icon:'🍳', desc:'Mutfak ustası' },
+        knight:   { name:'Şövalye',        gender:'male',   price:900, skirt:false, shirt:['#607080','#788898','#506070'], pants:'#485060', boot:'#303840', straps:'#8090A8', hat:'helmet', hatC:'#8090A8', band:'#5A6878', hairC:'#2A3040', icon:'⚔️', desc:'Efsanevi savaşçı' },
+        farmer_f: { name:'Çiftçi Kız',     gender:'female', price:0,   skirt:false, shirt:['#E07090','#F08090','#C06070'], pants:'#5A8A30', boot:'#3A5A20', straps:'#FFD060', hat:'sun',    hatC:'#F0D060', band:'#C8A030', hairC:'#8B4513', icon:'🌻', desc:'Neşeli bahçıvan' },
+        florist:  { name:'Çiçekçi',        gender:'female', price:350, skirt:true,  shirt:['#C060B0','#D070C0','#B050A0'], pants:'#F0D0E8', boot:'#B09090', straps:null,      hat:'flower', hatC:'#F0D060', band:'#E08020', hairC:'#C04080', icon:'🌸', desc:'Çiçek aşığı' },
+        chef_f:   { name:'Aşçı Kız',       gender:'female', price:550, skirt:false, shirt:['#E8E8E8','#F8F8F8','#D5D5D5'], pants:'#E0E8E8', boot:'#909090', straps:null,      hat:'chef',   hatC:'#FFFFFF', band:'#CCCCCC', hairC:'#8B4513', icon:'🎂', desc:'Pasta şefi' },
+        empress:  { name:'İmparatoriçe',    gender:'female', price:900, skirt:true,  shirt:['#7030A0','#9040C0','#5A2090'], pants:'#8030B0', boot:'#501A80', straps:null,      hat:'crown',  hatC:'#FFD700', band:'#CC9900', hairC:'#2A1808', icon:'👑', desc:'Kraliyet çiftçisi' },
+      };
       const TRUCKS = {
         basic:  { name: 'Temel Kamyon',  price: 0,    baseSpeed: 1.2, boostSpeed: 3.2, cargo: 6,  color: '#D0392B', cabColor: '#A02820', icon: '🚛', desc: 'Standart tarım aracı' },
         pickup: { name: 'Pikap',         price: 500,  baseSpeed: 1.8, boostSpeed: 4.8, cargo: 9,  color: '#1565C0', cabColor: '#0D47A1', icon: '🚙', desc: 'Hızlı ve çevik' },
@@ -1096,6 +1113,9 @@
       let playerTruck = 'basic';
       let ownedTrucks = ['basic'];
       let truckUpgrades = { basic: { speed: 0, cargo: 0 }, pickup: { speed: 0, cargo: 0 }, semi: { speed: 0, cargo: 0 }, racer: { speed: 0, cargo: 0 } };
+      let playerGender = null;   // 'male' | 'female' — null = karakter oluşturulmamış
+      let playerOutfit = null;   // OUTFITS key
+      let ownedOutfits = [];
       // Meyve bahçesi: tarla çevresinde 4 interaktif ağaç yuvası
       let orchardSlots = [];
       function _defaultOrchard() {
@@ -1131,7 +1151,8 @@
           tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
           animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
           activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown,
-          orchardSlots, currentTool, playerTruck, ownedTrucks, truckUpgrades, savedAt: Date.now()
+          orchardSlots, currentTool, playerTruck, ownedTrucks, truckUpgrades,
+          playerGender, playerOutfit, ownedOutfits, savedAt: Date.now()
         };
         try {
           localStorage.setItem('tarlam_save', JSON.stringify(data));
@@ -1164,6 +1185,9 @@
           ownedTrucks = d.ownedTrucks || ['basic'];
           const defUpg = { basic: { speed: 0, cargo: 0 }, pickup: { speed: 0, cargo: 0 }, semi: { speed: 0, cargo: 0 }, racer: { speed: 0, cargo: 0 } };
           truckUpgrades = d.truckUpgrades ? Object.assign(defUpg, d.truckUpgrades) : defUpg;
+          playerGender = d.playerGender || null;
+          playerOutfit = d.playerOutfit || null;
+          ownedOutfits = d.ownedOutfits || [];
           return true;
         } catch (e) { console.warn('Yükleme hatası:', e); return false; }
       }
@@ -2456,6 +2480,245 @@
         setTimeout(() => { ov.style.display = 'none'; }, PU.won ? 200 : 2400);
       }
 
+      // ══════════════════════════════════════════════════════
+      // KARAKTER ÖZELLEŞTIRME
+      // ══════════════════════════════════════════════════════
+      function drawCharacterPreview(canvas, gender, outfitId, frame) {
+        const pc = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        pc.clearRect(0, 0, w, h);
+        const bg = pc.createLinearGradient(0, 0, 0, h);
+        bg.addColorStop(0, '#1a3020'); bg.addColorStop(1, '#0a1a10');
+        pc.fillStyle = bg; pc.fillRect(0, 0, w, h);
+        pc.fillStyle = '#2a4a20'; pc.fillRect(0, h * 0.72, w, h * 0.28);
+        pc.strokeStyle = '#3a6a28'; pc.lineWidth = 1;
+        pc.beginPath(); pc.moveTo(0, h * 0.72); pc.lineTo(w, h * 0.72); pc.stroke();
+        // Grass tufts
+        [0.15, 0.40, 0.65, 0.88].forEach(f => {
+          pc.fillStyle = '#3a7a28'; pc.fillRect(f * w - 2, h * 0.72 - 4, 4, 5);
+          pc.fillRect(f * w + 5, h * 0.72 - 3, 3, 4);
+        });
+        const oft = OUTFITS[outfitId] || OUTFITS[gender === 'female' ? 'farmer_f' : 'farmer'];
+        const isFem = gender === 'female';
+        const sc = Math.min(w, h) * 0.038;
+        const px2 = w * 0.45, py2 = h * 0.72;
+        const bob2 = Math.sin(frame * 0.06) * 1.5 * sc;
+        const bodyY2 = py2 - 22 * sc + bob2;
+        const headY2 = py2 - 36 * sc + bob2;
+        // Shadow
+        pc.fillStyle = 'rgba(0,0,0,0.25)'; pc.beginPath(); pc.ellipse(px2, py2 + 1, 13 * sc, 4 * sc, 0, 0, Math.PI * 2); pc.fill();
+        // Legs/skirt
+        const legY2 = py2 - 2 * sc + bob2;
+        if (oft.skirt) {
+          pc.fillStyle = oft.pants; pc.beginPath(); pc.moveTo(px2 - 9 * sc, legY2); pc.lineTo(px2 + 9 * sc, legY2); pc.lineTo(px2 + 12 * sc, legY2 + 16 * sc); pc.lineTo(px2 - 12 * sc, legY2 + 16 * sc); pc.closePath(); pc.fill();
+          pc.fillStyle = oft.boot; pc.fillRect(px2 - 12 * sc, legY2 + 13 * sc, 10 * sc, 4 * sc); pc.fillRect(px2 + 2 * sc, legY2 + 13 * sc, 10 * sc, 4 * sc);
+        } else {
+          pc.fillStyle = oft.pants; pc.fillRect(px2 - 7.5 * sc, legY2, 7 * sc, 16 * sc); pc.fillRect(px2 + 0.5 * sc, legY2, 7 * sc, 16 * sc);
+          pc.fillStyle = oft.boot; pc.fillRect(px2 - 8 * sc, legY2 + 13 * sc, 8 * sc, 4 * sc); pc.fillRect(px2, legY2 + 13 * sc, 8 * sc, 4 * sc);
+        }
+        // Body
+        const sg2 = pc.createLinearGradient(px2 - 9 * sc, 0, px2 + 9 * sc, 0);
+        sg2.addColorStop(0, oft.shirt[0]); sg2.addColorStop(0.5, oft.shirt[1]); sg2.addColorStop(1, oft.shirt[2]);
+        pc.fillStyle = sg2; pc.fillRect(px2 - 9 * sc, bodyY2, 18 * sc, 20 * sc);
+        if (oft.straps) { pc.strokeStyle = oft.straps; pc.lineWidth = 2 * sc; pc.beginPath(); pc.moveTo(px2 - 5 * sc, bodyY2 + 8 * sc); pc.lineTo(px2 - 3 * sc, bodyY2); pc.stroke(); pc.beginPath(); pc.moveTo(px2 + 5 * sc, bodyY2 + 8 * sc); pc.lineTo(px2 + 3 * sc, bodyY2); pc.stroke(); }
+        // Arms
+        pc.fillStyle = '#F5C5A0'; pc.fillRect(px2 - 14 * sc, bodyY2 + 4 * sc, 6 * sc, 13 * sc); pc.fillRect(px2 + 8 * sc, bodyY2 + 4 * sc, 6 * sc, 13 * sc);
+        // Hair behind head
+        pc.fillStyle = oft.hairC;
+        if (isFem) { pc.beginPath(); pc.ellipse(px2 - 10 * sc, headY2 + 5 * sc, 4 * sc, 9 * sc, -0.15, 0, Math.PI * 2); pc.fill(); pc.beginPath(); pc.ellipse(px2 + 10 * sc, headY2 + 5 * sc, 4 * sc, 9 * sc, 0.15, 0, Math.PI * 2); pc.fill(); }
+        else { pc.fillRect(px2 - 10 * sc, headY2 - 8 * sc, 20 * sc, 5 * sc); }
+        // Head
+        const hg2 = pc.createRadialGradient(px2 - 3 * sc, headY2 - 6 * sc, 1 * sc, px2, headY2, 11 * sc);
+        hg2.addColorStop(0, '#FFD5A8'); hg2.addColorStop(1, '#E8A878');
+        pc.fillStyle = hg2; pc.beginPath(); pc.ellipse(px2, headY2, 11 * sc, 12 * sc, 0, 0, Math.PI * 2); pc.fill();
+        pc.fillStyle = '#2A1A0A'; pc.beginPath(); pc.ellipse(px2 - 4 * sc, headY2 - 2 * sc, 2.5 * sc, 3 * sc, 0, 0, Math.PI * 2); pc.fill(); pc.beginPath(); pc.ellipse(px2 + 4 * sc, headY2 - 2 * sc, 2.5 * sc, 3 * sc, 0, 0, Math.PI * 2); pc.fill();
+        pc.fillStyle = 'rgba(255,255,255,0.6)'; pc.beginPath(); pc.arc(px2 - 3 * sc, headY2 - 3.5 * sc, 1 * sc, 0, Math.PI * 2); pc.fill(); pc.beginPath(); pc.arc(px2 + 5 * sc, headY2 - 3.5 * sc, 1 * sc, 0, Math.PI * 2); pc.fill();
+        pc.fillStyle = '#D09060'; pc.beginPath(); pc.arc(px2, headY2 + 2 * sc, 1.5 * sc, 0, Math.PI * 2); pc.fill();
+        pc.strokeStyle = '#A05030'; pc.lineWidth = 1.2 * sc; pc.beginPath(); pc.arc(px2, headY2 + 3 * sc, 4 * sc, 0.2, Math.PI - 0.2); pc.stroke();
+        pc.fillStyle = 'rgba(255,150,120,0.38)'; pc.beginPath(); pc.ellipse(px2 - 7 * sc, headY2 + 1 * sc, 3.5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); pc.fill(); pc.beginPath(); pc.ellipse(px2 + 7 * sc, headY2 + 1 * sc, 3.5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); pc.fill();
+        if (isFem && oft.hat !== 'helmet') { pc.fillStyle = oft.hairC; pc.beginPath(); pc.arc(px2 - 7 * sc, headY2 - 10 * sc, 4.5 * sc, 0, Math.PI * 2); pc.fill(); pc.beginPath(); pc.arc(px2 + 7 * sc, headY2 - 10 * sc, 4.5 * sc, 0, Math.PI * 2); pc.fill(); }
+        // Hat — reuse main logic via temporary canvas context swap
+        const _savedCtx = ctx;
+        // We draw hat directly on pc by temporarily using a local helper
+        _drawHatOn(pc, px2, headY2 - 9 * sc, sc, oft.hat, oft.hatC, oft.band, frame);
+      }
+
+      function _drawHatOn(pc2, hpx, hatY, sc, type, hatC, band, frame) {
+        if (type === 'cowboy') {
+          pc2.fillStyle = hatC; pc2.beginPath(); pc2.ellipse(hpx, hatY + 3 * sc, 15 * sc, 4.5 * sc, 0, 0, Math.PI * 2); pc2.fill(); pc2.fillRect(hpx - 9 * sc, hatY - 10 * sc, 18 * sc, 13 * sc);
+          pc2.fillStyle = band; pc2.fillRect(hpx - 9 * sc, hatY + 1 * sc, 18 * sc, 3 * sc);
+        } else if (type === 'sun') {
+          pc2.fillStyle = hatC; pc2.beginPath(); pc2.ellipse(hpx, hatY + 2 * sc, 18 * sc, 5 * sc, 0, 0, Math.PI * 2); pc2.fill(); pc2.fillRect(hpx - 8 * sc, hatY - 7 * sc, 16 * sc, 10 * sc);
+          pc2.fillStyle = band; pc2.fillRect(hpx - 8 * sc, hatY + 1 * sc, 16 * sc, 2.5 * sc);
+          const fc2 = ['#FF8080','#FFA040','#FF6090'];
+          for (let p = 0; p < 5; p++) { const a2 = p * Math.PI * 2 / 5; pc2.fillStyle = fc2[p % 3]; pc2.beginPath(); pc2.ellipse(hpx + 9 * sc + Math.cos(a2) * 3 * sc, hatY - 3 * sc + Math.sin(a2) * 3 * sc, 2.5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); pc2.fill(); }
+          pc2.fillStyle = '#FFD700'; pc2.beginPath(); pc2.arc(hpx + 9 * sc, hatY - 3 * sc, 2.8 * sc, 0, Math.PI * 2); pc2.fill();
+        } else if (type === 'chef') {
+          pc2.fillStyle = band; pc2.fillRect(hpx - 10 * sc, hatY + 1 * sc, 20 * sc, 4 * sc);
+          pc2.fillStyle = hatC; pc2.fillRect(hpx - 8 * sc, hatY - 20 * sc, 16 * sc, 22 * sc); pc2.beginPath(); pc2.ellipse(hpx, hatY - 20 * sc, 10 * sc, 5 * sc, 0, 0, Math.PI * 2); pc2.fill();
+        } else if (type === 'helmet') {
+          pc2.fillStyle = hatC; pc2.beginPath(); pc2.arc(hpx, hatY - 6 * sc, 13 * sc, Math.PI, 0); pc2.fill(); pc2.fillRect(hpx - 13 * sc, hatY - 6 * sc, 26 * sc, 12 * sc);
+          pc2.fillStyle = band; pc2.fillRect(hpx - 10 * sc, hatY - 2 * sc, 8 * sc, 2.5 * sc); pc2.fillRect(hpx + 2 * sc, hatY - 2 * sc, 8 * sc, 2.5 * sc);
+          pc2.fillStyle = '#CC2020'; pc2.beginPath(); pc2.moveTo(hpx - 3 * sc, hatY - 19 * sc); pc2.lineTo(hpx + 3 * sc, hatY - 19 * sc); pc2.lineTo(hpx + 5 * sc, hatY - 6 * sc); pc2.lineTo(hpx - 5 * sc, hatY - 6 * sc); pc2.closePath(); pc2.fill();
+        } else if (type === 'flower') {
+          pc2.fillStyle = hatC; pc2.beginPath(); pc2.ellipse(hpx, hatY + 2 * sc, 17 * sc, 4.5 * sc, 0, 0, Math.PI * 2); pc2.fill(); pc2.fillRect(hpx - 8 * sc, hatY - 8 * sc, 16 * sc, 11 * sc);
+          pc2.fillStyle = band; pc2.fillRect(hpx - 8 * sc, hatY + 1 * sc, 16 * sc, 2.5 * sc);
+          const fpc2 = ['#FF6090','#FF8060','#FFB020','#80D020','#6090FF'];
+          for (let p = 0; p < 5; p++) { const a2 = p * Math.PI * 2 / 5 + frame * 0.01; pc2.fillStyle = fpc2[p]; pc2.beginPath(); pc2.ellipse(hpx - 8 * sc + Math.cos(a2) * 4.5 * sc, hatY - 5 * sc + Math.sin(a2) * 4.5 * sc, 3 * sc, 3 * sc, 0, 0, Math.PI * 2); pc2.fill(); }
+          pc2.fillStyle = '#FFD700'; pc2.beginPath(); pc2.arc(hpx - 8 * sc, hatY - 5 * sc, 3.5 * sc, 0, Math.PI * 2); pc2.fill();
+        } else if (type === 'crown') {
+          pc2.fillStyle = hatC; pc2.fillRect(hpx - 12 * sc, hatY - 4 * sc, 24 * sc, 6 * sc);
+          [0,1,2,3,4].forEach(p => { const cx2 = hpx - 10 * sc + p * 5 * sc, h2 = p % 2 === 0 ? 10 * sc : 7 * sc; pc2.beginPath(); pc2.moveTo(cx2 - 2 * sc, hatY - 4 * sc); pc2.lineTo(cx2, hatY - 4 * sc - h2); pc2.lineTo(cx2 + 2 * sc, hatY - 4 * sc); pc2.closePath(); pc2.fill(); });
+          ['#FF4040','#4080FF','#40C840'].forEach((gc, gi) => { pc2.fillStyle = gc; pc2.beginPath(); pc2.arc(hpx - 6 * sc + gi * 6 * sc, hatY - 0.5 * sc, 2 * sc, 0, Math.PI * 2); pc2.fill(); });
+        }
+      }
+
+      let _charSetupRAF = null;
+      function showCharacterSetup(onComplete) {
+        const ov = document.getElementById('char-setup-overlay');
+        const cont = document.getElementById('char-setup-content');
+        ov.style.display = 'flex';
+        let selectedGender = null;
+
+        function renderStep1() {
+          cont.innerHTML = '';
+          const title = document.createElement('h2');
+          title.style.cssText = 'color:#FFD700;font-size:20px;margin:0 0 6px;text-align:center;font-family:Fredoka,sans-serif;';
+          title.textContent = 'Karakterini Seç';
+          const sub = document.createElement('p');
+          sub.style.cssText = 'color:#aaa;font-size:13px;margin:0 0 20px;text-align:center;';
+          sub.textContent = 'Cinsiyetini seç — kıyafetleri sonra değiştirebilirsin!';
+          cont.appendChild(title); cont.appendChild(sub);
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:16px;justify-content:center;flex-wrap:wrap;';
+          [['male','Erkek','💪'], ['female','Kız','🌸']].forEach(([g, label, icon]) => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background:rgba(255,255,255,0.06);border:2px solid #555;border-radius:14px;padding:12px 10px 10px;text-align:center;cursor:pointer;transition:all .2s;width:140px;';
+            const cv = document.createElement('canvas');
+            cv.width = 120; cv.height = 120;
+            cv.style.cssText = 'width:100%;border-radius:8px;display:block;';
+            card.appendChild(cv);
+            const lbl = document.createElement('div');
+            lbl.style.cssText = 'color:#fff;font-size:15px;font-weight:700;margin-top:8px;';
+            lbl.textContent = icon + ' ' + label;
+            card.appendChild(lbl);
+            card.onclick = () => { selectedGender = g; renderStep2(g); };
+            card.onmouseenter = () => { card.style.borderColor = '#FFD700'; card.style.background = 'rgba(255,215,0,0.1)'; };
+            card.onmouseleave = () => { card.style.borderColor = '#555'; card.style.background = 'rgba(255,255,255,0.06)'; };
+            row.appendChild(card);
+            // Animate preview
+            let pf = 0;
+            const startOft = g === 'female' ? 'farmer_f' : 'farmer';
+            function animPrev() { pf++; drawCharacterPreview(cv, g, startOft, pf); requestAnimationFrame(animPrev); }
+            requestAnimationFrame(animPrev);
+          });
+          cont.appendChild(row);
+        }
+
+        function renderStep2(gender) {
+          cont.innerHTML = '';
+          const title = document.createElement('h2');
+          title.style.cssText = 'color:#FFD700;font-size:18px;margin:0 0 4px;text-align:center;font-family:Fredoka,sans-serif;';
+          title.textContent = 'Başlangıç Kıyafetini Seç';
+          const sub = document.createElement('p');
+          sub.style.cssText = 'color:#aaa;font-size:12px;margin:0 0 16px;text-align:center;';
+          sub.textContent = 'Daha fazla kıyafet altınla satın alınabilir!';
+          cont.appendChild(title); cont.appendChild(sub);
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;';
+          const freeOutfits = Object.entries(OUTFITS).filter(([, o]) => o.gender === gender && o.price === 0);
+          freeOutfits.forEach(([id, o]) => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background:rgba(255,255,255,0.06);border:2px solid #4CAF50;border-radius:12px;padding:10px 8px 8px;text-align:center;cursor:pointer;width:130px;';
+            const cv = document.createElement('canvas'); cv.width = 110; cv.height = 110;
+            cv.style.cssText = 'width:100%;border-radius:6px;display:block;';
+            card.appendChild(cv);
+            const nm = document.createElement('div'); nm.style.cssText = 'color:#fff;font-size:13px;font-weight:700;margin:5px 0 2px;'; nm.textContent = o.icon + ' ' + o.name;
+            const desc = document.createElement('div'); desc.style.cssText = 'color:#aaa;font-size:10px;'; desc.textContent = o.desc;
+            card.appendChild(nm); card.appendChild(desc);
+            const btn = document.createElement('button');
+            btn.style.cssText = 'margin-top:8px;padding:5px 18px;background:#4CAF50;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;';
+            btn.textContent = 'Seç';
+            btn.onclick = () => { finishSetup(gender, id); };
+            card.appendChild(btn);
+            row.appendChild(card);
+            let pf2 = 0;
+            function animPrev2() { pf2++; drawCharacterPreview(cv, gender, id, pf2); requestAnimationFrame(animPrev2); }
+            requestAnimationFrame(animPrev2);
+          });
+          cont.appendChild(row);
+          const back = document.createElement('button');
+          back.style.cssText = 'display:block;margin:0 auto;padding:6px 20px;background:#555;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;';
+          back.textContent = 'Geri';
+          back.onclick = renderStep1;
+          cont.appendChild(back);
+        }
+
+        function finishSetup(gender, outfitId) {
+          playerGender = gender;
+          playerOutfit = outfitId;
+          ownedOutfits = [outfitId];
+          ov.style.display = 'none';
+          saveGame();
+          onComplete();
+        }
+
+        renderStep1();
+      }
+
+      function openWardrobe() {
+        const mc = document.getElementById('modal-content');
+        const modal = document.getElementById('modal');
+        const gender = playerGender || 'male';
+        let h = '<h2 style="color:#FFD700;margin:0 0 6px;font-size:17px;">👗 Gardırop</h2>';
+        h += `<div style="color:#FFD700;font-size:12px;text-align:center;margin-bottom:10px;">💰 ${gold}₺</div>`;
+        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
+        Object.entries(OUTFITS).filter(([, o]) => o.gender === gender).forEach(([id, o]) => {
+          const owned = ownedOutfits.includes(id);
+          const active = playerOutfit === id;
+          const canBuy = !owned && gold >= o.price;
+          h += `<div style="background:${active ? 'rgba(255,215,0,0.14)' : 'rgba(255,255,255,0.04)'};border:2px solid ${active ? '#FFD700' : owned ? '#4CAF50' : '#555'};border-radius:10px;padding:8px;text-align:center;">`;
+          h += `<canvas id="wrd-${id}" width="110" height="100" style="width:100%;border-radius:6px;background:#0d1a10;display:block;margin-bottom:4px;"></canvas>`;
+          h += `<div style="font-weight:700;color:#FFF;font-size:12px;">${o.icon} ${o.name}</div>`;
+          h += `<div style="color:#aaa;font-size:10px;margin:1px 0 3px;">${o.desc}</div>`;
+          if (o.price > 0) h += `<div style="color:#FFD700;font-size:10px;">💰 ${o.price}₺</div>`;
+          if (active) h += `<div style="color:#FFD700;font-size:10px;margin-top:3px;">✅ Giyili</div>`;
+          else if (owned) h += `<button onclick="wearOutfit('${id}')" style="margin-top:3px;padding:2px 12px;background:#4CAF50;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Giy</button>`;
+          else if (canBuy) h += `<button onclick="buyOutfit('${id}')" style="margin-top:3px;padding:2px 12px;background:#FF8F00;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Satın Al</button>`;
+          else h += `<div style="color:#888;font-size:10px;margin-top:3px;">🔒 ${o.price - gold}₺ eksik</div>`;
+          h += '</div>';
+        });
+        h += '</div>';
+        h += `<button onclick="closeModal()" style="padding:7px 22px;background:#555;color:#fff;border:none;border-radius:8px;cursor:pointer;">Kapat</button>`;
+        mc.innerHTML = h;
+        modal.classList.add('show');
+        let _wf = 0;
+        function _animWrd() {
+          _wf++;
+          Object.keys(OUTFITS).filter(id => OUTFITS[id].gender === gender).forEach(id => {
+            const c = document.getElementById('wrd-' + id);
+            if (c) drawCharacterPreview(c, gender, id, _wf);
+          });
+          if (modal.classList.contains('show')) requestAnimationFrame(_animWrd);
+        }
+        requestAnimationFrame(_animWrd);
+      }
+      function wearOutfit(id) {
+        if (!ownedOutfits.includes(id)) return;
+        playerOutfit = id; saveGame();
+        showMsg(OUTFITS[id].icon + ' ' + OUTFITS[id].name + ' giyildi!', 1500);
+        openWardrobe();
+      }
+      function buyOutfit(id) {
+        const o = OUTFITS[id];
+        if (!o || ownedOutfits.includes(id)) return;
+        if (gold < o.price) { showMsg('Yeterli altın yok! 💰 ' + gold + '₺ / ' + o.price + '₺', 1800); return; }
+        gold -= o.price; updateHUD();
+        ownedOutfits.push(id); playerOutfit = id; saveGame();
+        showMsg('🎉 ' + o.name + ' satın alındı ve giyildi!', 2000);
+        openWardrobe();
+      }
+
       function drawTruckPreview(canvas, truckId, frame) {
         const pc = canvas.getContext('2d');
         const w = canvas.width, h = canvas.height;
@@ -3283,9 +3546,63 @@
         ctx.fillStyle = barColor; ctx.fillRect(x + 5 * SCALE, y + cs - 8 * SCALE, (cs - 10 * SCALE) * prog, 5 * SCALE);
       }
 
+      function drawHat(hpx, hatY, sc, type, hatC, band) {
+        if (type === 'cowboy') {
+          ctx.fillStyle = hatC;
+          ctx.beginPath(); ctx.ellipse(hpx, hatY + 3 * sc, 15 * sc, 4.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillRect(hpx - 9 * sc, hatY - 10 * sc, 18 * sc, 13 * sc);
+          ctx.fillStyle = band; ctx.fillRect(hpx - 9 * sc, hatY + 1 * sc, 18 * sc, 3 * sc);
+        } else if (type === 'sun') {
+          ctx.fillStyle = hatC;
+          ctx.beginPath(); ctx.ellipse(hpx, hatY + 2 * sc, 18 * sc, 5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillRect(hpx - 8 * sc, hatY - 7 * sc, 16 * sc, 10 * sc);
+          ctx.fillStyle = band; ctx.fillRect(hpx - 8 * sc, hatY + 1 * sc, 16 * sc, 2.5 * sc);
+          // Flower decoration
+          const fc2 = ['#FF8080','#FFA040','#FF6090'];
+          for (let p = 0; p < 5; p++) { const a2 = p * Math.PI * 2 / 5; ctx.fillStyle = fc2[p % 3]; ctx.beginPath(); ctx.ellipse(hpx + 9 * sc + Math.cos(a2) * 3 * sc, hatY - 3 * sc + Math.sin(a2) * 3 * sc, 2.5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); ctx.fill(); }
+          ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(hpx + 9 * sc, hatY - 3 * sc, 2.8 * sc, 0, Math.PI * 2); ctx.fill();
+        } else if (type === 'chef') {
+          ctx.fillStyle = band; ctx.fillRect(hpx - 10 * sc, hatY + 1 * sc, 20 * sc, 4 * sc);
+          ctx.fillStyle = hatC;
+          ctx.fillRect(hpx - 8 * sc, hatY - 20 * sc, 16 * sc, 22 * sc);
+          ctx.beginPath(); ctx.ellipse(hpx, hatY - 20 * sc, 10 * sc, 5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 0.5 * sc;
+          for (let p = 0; p < 3; p++) { ctx.beginPath(); ctx.moveTo(hpx - 5 * sc + p * 5 * sc, hatY - 18 * sc); ctx.lineTo(hpx - 5 * sc + p * 5 * sc, hatY - 1 * sc); ctx.stroke(); }
+        } else if (type === 'helmet') {
+          ctx.fillStyle = hatC;
+          ctx.beginPath(); ctx.arc(hpx, hatY - 6 * sc, 13 * sc, Math.PI, 0); ctx.fill();
+          ctx.fillRect(hpx - 13 * sc, hatY - 6 * sc, 26 * sc, 12 * sc);
+          ctx.fillStyle = band;
+          ctx.fillRect(hpx - 10 * sc, hatY - 2 * sc, 8 * sc, 2.5 * sc);
+          ctx.fillRect(hpx + 2 * sc, hatY - 2 * sc, 8 * sc, 2.5 * sc);
+          ctx.fillRect(hpx - 10 * sc, hatY + 2 * sc, 8 * sc, 2 * sc);
+          ctx.fillRect(hpx + 2 * sc, hatY + 2 * sc, 8 * sc, 2 * sc);
+          ctx.fillStyle = '#CC2020';
+          ctx.beginPath(); ctx.moveTo(hpx - 3 * sc, hatY - 19 * sc); ctx.lineTo(hpx + 3 * sc, hatY - 19 * sc); ctx.lineTo(hpx + 5 * sc, hatY - 6 * sc); ctx.lineTo(hpx - 5 * sc, hatY - 6 * sc); ctx.closePath(); ctx.fill();
+        } else if (type === 'flower') {
+          ctx.fillStyle = hatC;
+          ctx.beginPath(); ctx.ellipse(hpx, hatY + 2 * sc, 17 * sc, 4.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillRect(hpx - 8 * sc, hatY - 8 * sc, 16 * sc, 11 * sc);
+          ctx.fillStyle = band; ctx.fillRect(hpx - 8 * sc, hatY + 1 * sc, 16 * sc, 2.5 * sc);
+          const fpc = ['#FF6090','#FF8060','#FFB020','#80D020','#6090FF'];
+          for (let p = 0; p < 5; p++) { const a2 = p * Math.PI * 2 / 5 + animT * 0.01; ctx.fillStyle = fpc[p]; ctx.beginPath(); ctx.ellipse(hpx - 8 * sc + Math.cos(a2) * 4.5 * sc, hatY - 5 * sc + Math.sin(a2) * 4.5 * sc, 3 * sc, 3 * sc, 0, 0, Math.PI * 2); ctx.fill(); }
+          ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(hpx - 8 * sc, hatY - 5 * sc, 3.5 * sc, 0, Math.PI * 2); ctx.fill();
+        } else if (type === 'crown') {
+          ctx.fillStyle = hatC;
+          ctx.fillRect(hpx - 12 * sc, hatY - 4 * sc, 24 * sc, 6 * sc);
+          [0, 1, 2, 3, 4].forEach(p => {
+            const cx2 = hpx - 10 * sc + p * 5 * sc, h2 = p % 2 === 0 ? 10 * sc : 7 * sc;
+            ctx.beginPath(); ctx.moveTo(cx2 - 2 * sc, hatY - 4 * sc); ctx.lineTo(cx2, hatY - 4 * sc - h2); ctx.lineTo(cx2 + 2 * sc, hatY - 4 * sc); ctx.closePath(); ctx.fill();
+          });
+          ['#FF4040','#4080FF','#40C840'].forEach((gc, gi) => { ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(hpx - 6 * sc + gi * 6 * sc, hatY - 0.5 * sc, 2 * sc, 0, Math.PI * 2); ctx.fill(); });
+        }
+      }
+
       function drawPlayer() {
         const px = OX + player.x * CELL * SCALE + CELL * SCALE * .5, py = OY + player.y * CELL * SCALE + CELL * SCALE * .7;
         const sc = SCALE;
+        const isFemale = playerGender === 'female';
+        const outfit = OUTFITS[playerOutfit] || OUTFITS[isFemale ? 'farmer_f' : 'farmer'];
         const isMoving = player.moving || false;
         const walkPhase = animT * .18;
         const bob = isMoving ? Math.sin(walkPhase) * 1.5 * sc : 0;
@@ -3295,36 +3612,44 @@
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(px, py + 1, 14 * sc, 4 * sc, 0, 0, Math.PI * 2); ctx.fill();
 
-        // --- Legs ---
+        // --- Legs / Skirt ---
         const legY = py - 2 * sc + bob;
-        // Left leg
-        ctx.save(); ctx.translate(px - 4 * sc, legY); ctx.rotate(legSwing * Math.PI / 180);
-        ctx.fillStyle = '#2C3E50'; ctx.fillRect(-3.5 * sc, 0, 7 * sc, 16 * sc);
-        ctx.fillStyle = '#1A252F'; ctx.fillRect(-4 * sc, 13 * sc, 8 * sc, 4 * sc); ctx.restore();
-        // Right leg
-        ctx.save(); ctx.translate(px + 4 * sc, legY); ctx.rotate(-legSwing * Math.PI / 180);
-        ctx.fillStyle = '#2C3E50'; ctx.fillRect(-3.5 * sc, 0, 7 * sc, 16 * sc);
-        ctx.fillStyle = '#1A252F'; ctx.fillRect(-4 * sc, 13 * sc, 8 * sc, 4 * sc); ctx.restore();
+        if (outfit.skirt) {
+          // Trapezoid skirt
+          ctx.fillStyle = outfit.pants;
+          ctx.beginPath(); ctx.moveTo(px - 9 * sc, legY); ctx.lineTo(px + 9 * sc, legY); ctx.lineTo(px + 12 * sc, legY + 16 * sc); ctx.lineTo(px - 12 * sc, legY + 16 * sc); ctx.closePath(); ctx.fill();
+          // Shoes
+          ctx.fillStyle = outfit.boot;
+          ctx.fillRect(px - 12 * sc, legY + 13 * sc, 10 * sc, 4 * sc);
+          ctx.fillRect(px + 2 * sc, legY + 13 * sc, 10 * sc, 4 * sc);
+        } else {
+          ctx.save(); ctx.translate(px - 4 * sc, legY); ctx.rotate(legSwing * Math.PI / 180);
+          ctx.fillStyle = outfit.pants; ctx.fillRect(-3.5 * sc, 0, 7 * sc, 16 * sc);
+          ctx.fillStyle = outfit.boot; ctx.fillRect(-4 * sc, 13 * sc, 8 * sc, 4 * sc); ctx.restore();
+          ctx.save(); ctx.translate(px + 4 * sc, legY); ctx.rotate(-legSwing * Math.PI / 180);
+          ctx.fillStyle = outfit.pants; ctx.fillRect(-3.5 * sc, 0, 7 * sc, 16 * sc);
+          ctx.fillStyle = outfit.boot; ctx.fillRect(-4 * sc, 13 * sc, 8 * sc, 4 * sc); ctx.restore();
+        }
 
         // --- Body (shirt) ---
         const bodyY = py - 22 * sc + bob;
         const shirtGrad = ctx.createLinearGradient(px - 9 * sc, 0, px + 9 * sc, 0);
-        shirtGrad.addColorStop(0, '#3A80C9'); shirtGrad.addColorStop(0.5, '#4A90D9'); shirtGrad.addColorStop(1, '#2E6AB0');
+        shirtGrad.addColorStop(0, outfit.shirt[0]); shirtGrad.addColorStop(0.5, outfit.shirt[1]); shirtGrad.addColorStop(1, outfit.shirt[2]);
         ctx.fillStyle = shirtGrad; ctx.fillRect(px - 9 * sc, bodyY, 18 * sc, 20 * sc);
-        // Shirt buttons
-        ctx.fillStyle = '#2A5A90';
-        for (let b = 0; b < 3; b++) { ctx.beginPath(); ctx.arc(px, bodyY + 4 * sc + b * 6 * sc, 1.2 * sc, 0, Math.PI * 2); ctx.fill(); }
-        // Overall straps
-        ctx.strokeStyle = '#C8A030'; ctx.lineWidth = 2 * sc;
-        ctx.beginPath(); ctx.moveTo(px - 5 * sc, bodyY + 8 * sc); ctx.lineTo(px - 3 * sc, bodyY); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px + 5 * sc, bodyY + 8 * sc); ctx.lineTo(px + 3 * sc, bodyY); ctx.stroke();
+        // Shirt detail line
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = sc;
+        ctx.beginPath(); ctx.moveTo(px, bodyY + 2 * sc); ctx.lineTo(px, bodyY + 18 * sc); ctx.stroke();
+        // Overall straps (if applicable)
+        if (outfit.straps) {
+          ctx.strokeStyle = outfit.straps; ctx.lineWidth = 2 * sc;
+          ctx.beginPath(); ctx.moveTo(px - 5 * sc, bodyY + 8 * sc); ctx.lineTo(px - 3 * sc, bodyY); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(px + 5 * sc, bodyY + 8 * sc); ctx.lineTo(px + 3 * sc, bodyY); ctx.stroke();
+        }
 
         // --- Arms ---
         const hasTool = currentTool === 'hoe' || currentTool === 'water' || currentTool === 'seed';
-        // Left arm
         ctx.save(); ctx.translate(px - 9 * sc, bodyY + 4 * sc); ctx.rotate((-armSwing - (hasTool ? 20 : 0)) * Math.PI / 180);
         ctx.fillStyle = '#F5C5A0'; ctx.fillRect(-3 * sc, 0, 6 * sc, 14 * sc); ctx.restore();
-        // Right arm (holds tool)
         ctx.save(); ctx.translate(px + 9 * sc, bodyY + 4 * sc); ctx.rotate((armSwing + (hasTool ? -30 : 0)) * Math.PI / 180);
         ctx.fillStyle = '#F5C5A0'; ctx.fillRect(-3 * sc, 0, 6 * sc, 14 * sc); ctx.restore();
 
@@ -3342,8 +3667,18 @@
           ctx.fillStyle = '#A07010'; ctx.fillRect(px + 9 * sc, bodyY + 1 * sc, 9 * sc, 3 * sc);
         }
 
-        // --- Head ---
+        // --- Hair (behind head) ---
         const headY = py - 36 * sc + bob;
+        ctx.fillStyle = outfit.hairC;
+        if (isFemale) {
+          // Long hair sides visible behind head
+          ctx.beginPath(); ctx.ellipse(px - 10 * sc, headY + 5 * sc, 4 * sc, 9 * sc, -0.15, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(px + 10 * sc, headY + 5 * sc, 4 * sc, 9 * sc, 0.15, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillRect(px - 10 * sc, headY - 8 * sc, 20 * sc, 5 * sc);
+        }
+
+        // --- Head ---
         const skinGrad = ctx.createRadialGradient(px - 3 * sc, headY - 6 * sc, 1 * sc, px, headY, 11 * sc);
         skinGrad.addColorStop(0, '#FFD5A8'); skinGrad.addColorStop(1, '#E8A878');
         ctx.fillStyle = skinGrad; ctx.beginPath(); ctx.ellipse(px, headY, 11 * sc, 12 * sc, 0, 0, Math.PI * 2); ctx.fill();
@@ -3353,31 +3688,33 @@
         ctx.fillStyle = '#2A1A0A';
         ctx.beginPath(); ctx.ellipse(px - 4 * sc, headY - 2 * sc, 2.5 * sc, 3 * sc * blinkMod, 0, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.ellipse(px + 4 * sc, headY - 2 * sc, 2.5 * sc, 3 * sc * blinkMod, 0, 0, Math.PI * 2); ctx.fill();
-        // Eye highlights
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
         ctx.beginPath(); ctx.arc(px - 3 * sc, headY - 3.5 * sc, 1 * sc, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(px + 5 * sc, headY - 3.5 * sc, 1 * sc, 0, Math.PI * 2); ctx.fill();
-        // Nose
+        if (isFemale) {
+          // Eyelashes
+          ctx.strokeStyle = '#1A0A0A'; ctx.lineWidth = 0.8 * sc;
+          [[-5.5, -4.5], [-4, -5.2], [-2.5, -4.8], [2.5, -4.8], [4, -5.2], [5.5, -4.5]].forEach(([ex, ey]) => {
+            ctx.beginPath(); ctx.moveTo(px + ex * sc, headY + ey * sc); ctx.lineTo(px + ex * sc * 1.1, headY + (ey - 1.5) * sc); ctx.stroke();
+          });
+        }
         ctx.fillStyle = '#D09060'; ctx.beginPath(); ctx.arc(px, headY + 2 * sc, 1.5 * sc, 0, Math.PI * 2); ctx.fill();
-        // Smile
         ctx.strokeStyle = '#A05030'; ctx.lineWidth = 1.2 * sc;
         ctx.beginPath(); ctx.arc(px, headY + 3 * sc, 4 * sc, 0.2, Math.PI - 0.2); ctx.stroke();
-        // Cheek blush
-        ctx.fillStyle = 'rgba(255,150,120,0.35)';
+        ctx.fillStyle = 'rgba(255,150,120,0.38)';
         ctx.beginPath(); ctx.ellipse(px - 7 * sc, headY + 1 * sc, 3.5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.ellipse(px + 7 * sc, headY + 1 * sc, 3.5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
 
+        // --- Hair buns (female, on top — drawn after head so they appear in front) ---
+        if (isFemale && outfit.hat !== 'helmet') {
+          ctx.fillStyle = outfit.hairC;
+          ctx.beginPath(); ctx.arc(px - 7 * sc, headY - 10 * sc, 4.5 * sc, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(px + 7 * sc, headY - 10 * sc, 4.5 * sc, 0, Math.PI * 2); ctx.fill();
+        }
+
         // --- Hat ---
         const hatY = headY - 9 * sc;
-        ctx.fillStyle = '#7B4A1A';
-        // Brim
-        ctx.beginPath(); ctx.ellipse(px, hatY + 3 * sc, 15 * sc, 4.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
-        // Crown
-        ctx.fillStyle = '#8B5A1A'; ctx.fillRect(px - 9 * sc, hatY - 10 * sc, 18 * sc, 13 * sc);
-        // Hat band
-        ctx.fillStyle = '#5A3010'; ctx.fillRect(px - 9 * sc, hatY + 1 * sc, 18 * sc, 3 * sc);
-        // Hat top
-        ctx.fillStyle = '#7A4A15'; ctx.fillRect(px - 9 * sc, hatY - 11 * sc, 18 * sc, 3 * sc);
+        drawHat(px, hatY, sc, outfit.hat, outfit.hatC, outfit.band);
       }
       function drawDarkOverlay() {
         const h = (gameTime / 60) % 24; let d = 0;
@@ -3510,7 +3847,7 @@
 
       function startGame(uid, isNewUser = false) {
         resize(); window.addEventListener('resize', resize);
-        const _boot = () => {
+        const _startGame = () => {
           initFruitTrees(); initQuests(); initNeighborRequests(); updateHUD();
           const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
           if (isMobile) {
@@ -3526,6 +3863,15 @@
           requestAnimationFrame(mainLoop);
           setInterval(() => { if (_SEC._uid) _saveToCloud(_SEC._uid); }, 60000);
           window.addEventListener('pagehide', () => { if (_SEC._uid) { window._FB.logSession(_SEC._uid, 'logout').catch(() => { }); } });
+        };
+        const _boot = () => {
+          if (!playerGender) {
+            // İlk kez oynuyor — karakter kurulumu göster
+            _startGame(); // mainLoop başlat (arka plan çizimi için)
+            showCharacterSetup(() => { /* setup tamamlandı */ });
+          } else {
+            _startGame();
+          }
         };
 
         if (isNewUser) {
@@ -3567,6 +3913,9 @@
           questProgress = Object.assign({ harvest: 0, buy_animal: 0, feed_animal: 0, pickup: 0, earn_gold: 0, water: 0, slaughter: 0, give_neighbor: 0, breed: 0 }, d.questProgress || {});
           neighborRequests = d.neighborRequests || [];
           orchardSlots = d.orchardSlots && d.orchardSlots.length > 0 ? d.orchardSlots : _defaultOrchard();
+          playerGender = d.playerGender || null;
+          playerOutfit = d.playerOutfit || null;
+          ownedOutfits = d.ownedOutfits || [];
           _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
           return true;
         } catch (err) { console.warn('Cloud load error:', err); return false; }
@@ -3889,6 +4238,7 @@
           ['openSettings', openSettings], ['closeSettings', closeSettings],
           ['buyOrchardTree', buyOrchardTree],
           ['openGarage', openGarage], ['buyTruck', buyTruck], ['selectTruck', selectTruck], ['upgradeTruck', upgradeTruck],
+          ['openWardrobe', openWardrobe], ['wearOutfit', wearOutfit], ['buyOutfit', buyOutfit],
           ['openRegister', openRegister], ['closeRegister', closeRegister], ['doRegister', doRegister],
           ['promptChangeName', promptChangeName], ['promptChangeEmail', promptChangeEmail],
           ['promptChangePass', promptChangePass], ['doLogout', doLogout],
