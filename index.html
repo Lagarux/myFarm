@@ -1078,6 +1078,7 @@
         { type: 'grape', qty: 2, reward: 70, name: 'Nurgül Teyze' }
       ];
       // ── NAKLİYE ARAÇLARI ──
+      const UPGRADE_COSTS = [200, 450, 800];
       const TRUCKS = {
         basic:  { name: 'Temel Kamyon',  price: 0,    baseSpeed: 1.2, boostSpeed: 3.2, cargo: 6,  color: '#D0392B', cabColor: '#A02820', icon: '🚛', desc: 'Standart tarım aracı' },
         pickup: { name: 'Pikap',         price: 500,  baseSpeed: 1.8, boostSpeed: 4.8, cargo: 9,  color: '#1565C0', cabColor: '#0D47A1', icon: '🚙', desc: 'Hızlı ve çevik' },
@@ -1094,6 +1095,7 @@
       let inventory = { wheat: 0, corn: 0, tomato: 0, carrot: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0 };
       let playerTruck = 'basic';
       let ownedTrucks = ['basic'];
+      let truckUpgrades = { basic: { speed: 0, cargo: 0 }, pickup: { speed: 0, cargo: 0 }, semi: { speed: 0, cargo: 0 }, racer: { speed: 0, cargo: 0 } };
       // Meyve bahçesi: tarla çevresinde 4 interaktif ağaç yuvası
       let orchardSlots = [];
       function _defaultOrchard() {
@@ -1129,7 +1131,7 @@
           tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
           animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
           activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown,
-          orchardSlots, currentTool, playerTruck, ownedTrucks, savedAt: Date.now()
+          orchardSlots, currentTool, playerTruck, ownedTrucks, truckUpgrades, savedAt: Date.now()
         };
         try {
           localStorage.setItem('tarlam_save', JSON.stringify(data));
@@ -1160,6 +1162,8 @@
           currentTool = d.currentTool || 'hoe';
           playerTruck = d.playerTruck || 'basic';
           ownedTrucks = d.ownedTrucks || ['basic'];
+          const defUpg = { basic: { speed: 0, cargo: 0 }, pickup: { speed: 0, cargo: 0 }, semi: { speed: 0, cargo: 0 }, racer: { speed: 0, cargo: 0 } };
+          truckUpgrades = d.truckUpgrades ? Object.assign(defUpg, d.truckUpgrades) : defUpg;
           return true;
         } catch (e) { console.warn('Yükleme hatası:', e); return false; }
       }
@@ -1193,32 +1197,22 @@
       const ORCHARD_SEED_COST = { apple: 30, orange: 40, grape: 50 };
 
       function getOrchardSlotPos(slot) {
-        // Left side slots: left of farm fence
-        const slotH = CELL * SCALE * 1.3;
         if (slot.side === 'left') {
-          const x = OX - 62 * SCALE;
-          const y = OY + slot.idx * slotH + slotH * 0.4;
-          return { x, y };
+          const x = OX - 52 * SCALE - slot.idx * 62 * SCALE;
+          return { x, y: groundY(x) };
         } else {
-          const x = OX + COLS * CELL * SCALE + 62 * SCALE;
-          const y = OY + slot.idx * slotH + slotH * 0.4;
-          return { x, y };
+          const rightEdge = OX + COLS * CELL * SCALE;
+          const x = rightEdge + 52 * SCALE + slot.idx * 62 * SCALE;
+          return { x, y: groundY(x) };
         }
       }
 
       function drawOrchard() {
-        // Draw orchard zones (background areas)
-        // Left zone
-        ctx.fillStyle = 'rgba(30,80,10,0.18)';
-        ctx.strokeStyle = '#5A8A2B'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
-        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(OX - 90 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75, 8) : ctx.rect(OX - 90 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75); ctx.fill(); ctx.stroke();
-        // Right zone
-        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(OX + COLS * CELL * SCALE + 16 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75, 8) : ctx.rect(OX + COLS * CELL * SCALE + 16 * SCALE, OY - 8 * SCALE, 74 * SCALE, ROWS * CELL * SCALE * 0.75); ctx.fill(); ctx.stroke();
-        ctx.setLineDash([]);
-        // Zone labels
-        ctx.fillStyle = 'rgba(180,220,100,0.7)'; ctx.font = (9 * SCALE) + 'px Nunito,sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('🌳 Bahçe', OX - 53 * SCALE, OY - 14 * SCALE);
-        ctx.fillText('🌳 Bahçe', OX + COLS * CELL * SCALE + 53 * SCALE, OY - 14 * SCALE);
+        // Zone labels (trees are horizontal at ground level)
+        const _lCX = OX - 83 * SCALE, _rCX = OX + COLS * CELL * SCALE + 83 * SCALE;
+        ctx.fillStyle = 'rgba(180,220,100,0.72)'; ctx.font = 'bold ' + (9 * SCALE) + 'px Nunito,sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('🌳 Bahçe', _lCX, groundY(_lCX) - 82 * SCALE);
+        ctx.fillText('🌳 Bahçe', _rCX, groundY(_rCX) - 82 * SCALE);
         ctx.textAlign = 'left';
 
         // Draw each slot
@@ -1811,7 +1805,11 @@
         puc.width = pw; puc.height = ph;
         const pc = puc.getContext('2d');
 
-        const tk = TRUCKS[playerTruck] || TRUCKS.basic;
+        const _tkBase = TRUCKS[playerTruck] || TRUCKS.basic;
+        const _upg = truckUpgrades[playerTruck] || { speed: 0, cargo: 0 };
+        const tk = { ..._tkBase, id: playerTruck, baseSpeed: _tkBase.baseSpeed + _upg.speed * 0.4, boostSpeed: _tkBase.boostSpeed + _upg.speed * 0.4, cargo: _tkBase.cargo + _upg.cargo * 2 };
+        const MAP_THEMES = ['countryside', 'desert', 'snow', 'night'];
+        const mapTheme = MAP_THEMES[Math.floor(Math.random() * MAP_THEMES.length)];
         const maxCargo = Math.min(tk.cargo, tot);
         const ROAD_LEN = 6000;
         const cropKeys = Object.keys(inventory).filter(k => inventory[k] > 0);
@@ -1872,7 +1870,8 @@
           mkCooldown: {},
           clouds, birds,
           truckDef: { ...tk, id: playerTruck },
-          speed: 0
+          speed: 0,
+          mapTheme
         };
         const tnEl = document.getElementById('pu-truck-name');
         if (tnEl) tnEl.textContent = tk.icon + ' ' + tk.name;
@@ -2002,18 +2001,47 @@
         const camX = PU.camX;
         const animT = PU.animT;
 
+        // ── TEMA RENKLERİ ──
+        const _THEMES = {
+          countryside: { sky0:'#0D3B8C', sky1:'#1565C0', sky2:'#42A5F5', mtn0:'#455A64', mtn1:'#607D8B', mtnTop:'rgba(240,248,255,0.72)', fld0:'#388E3C', fld1:'#4CAF50', rd:['#795548','#6D4C41','#5D4037'], rdBase:'#5D4037', rdDiv:'rgba(255,255,200,0.32)', rdEdge:'rgba(255,255,200,0.5)' },
+          desert:      { sky0:'#A03010', sky1:'#D06020', sky2:'#F5A830', mtn0:'#8B5A2B', mtn1:'#A07840', mtnTop:'rgba(255,220,150,0.45)', fld0:'#C29030', fld1:'#D4B050', rd:['#8B7355','#7A6248','#695438'], rdBase:'#695438', rdDiv:'rgba(255,235,180,0.28)', rdEdge:'rgba(255,235,180,0.4)' },
+          snow:        { sky0:'#38475A', sky1:'#607080', sky2:'#90A8C0', mtn0:'#7A8E9A', mtn1:'#9EB0BA', mtnTop:'rgba(255,255,255,0.90)', fld0:'#A8C0D0', fld1:'#D0E4F0', rd:['#6A7A86','#596872','#485660'], rdBase:'#485660', rdDiv:'rgba(200,220,255,0.3)', rdEdge:'rgba(200,220,255,0.45)' },
+          night:       { sky0:'#020B1F', sky1:'#071428', sky2:'#0D2040', mtn0:'#141E2A', mtn1:'#1E2E3E', mtnTop:'rgba(80,110,160,0.35)', fld0:'#081408', fld1:'#102010', rd:['#282828','#202020','#181818'], rdBase:'#181818', rdDiv:'rgba(180,180,255,0.22)', rdEdge:'rgba(180,180,255,0.32)' }
+        };
+        const tc = _THEMES[PU.mapTheme] || _THEMES.countryside;
+        const isNight = PU.mapTheme === 'night', isSnow = PU.mapTheme === 'snow', isDesert = PU.mapTheme === 'desert';
+
         // ── GÖK ──
         const skyGrad = pc.createLinearGradient(0, 0, 0, ph * 0.42);
-        skyGrad.addColorStop(0, '#0D3B8C'); skyGrad.addColorStop(0.5, '#1565C0'); skyGrad.addColorStop(1, '#42A5F5');
+        skyGrad.addColorStop(0, tc.sky0); skyGrad.addColorStop(0.5, tc.sky1); skyGrad.addColorStop(1, tc.sky2);
         pc.fillStyle = skyGrad; pc.fillRect(0, 0, pw, ph * 0.42);
 
-        // ── GÜNEŞ ──
-        const sunX = pw * 0.82, sunY = ph * 0.09;
-        const sunGlow = pc.createRadialGradient(sunX, sunY, 0, sunX, sunY, 60);
-        sunGlow.addColorStop(0, 'rgba(255,255,160,0.8)'); sunGlow.addColorStop(0.5, 'rgba(255,220,80,0.3)'); sunGlow.addColorStop(1, 'rgba(255,200,0,0)');
-        pc.fillStyle = sunGlow; pc.beginPath(); pc.arc(sunX, sunY, 60, 0, Math.PI * 2); pc.fill();
-        pc.fillStyle = '#FFEE00'; pc.beginPath(); pc.arc(sunX, sunY, 17, 0, Math.PI * 2); pc.fill();
-        for (let r = 0; r < 8; r++) { const ang = animT * 0.005 + r * Math.PI / 4; const r2 = 30 + Math.sin(animT * 0.06 + r) * 4; pc.strokeStyle = 'rgba(255,238,0,0.35)'; pc.lineWidth = 2; pc.beginPath(); pc.moveTo(sunX + Math.cos(ang) * 21, sunY + Math.sin(ang) * 21); pc.lineTo(sunX + Math.cos(ang) * r2, sunY + Math.sin(ang) * r2); pc.stroke(); }
+        // ── GECE YILDIZLARI / AY ──
+        if (isNight) {
+          // Stars
+          for (let si = 0; si < 60; si++) {
+            const sx2 = ((si * 317 + 41) % pw), sy2 = ((si * 211 + 13) % (ph * 0.35));
+            const starBright = 0.4 + Math.sin(animT * 0.05 + si * 0.8) * 0.3;
+            pc.fillStyle = `rgba(255,255,255,${starBright})`; pc.fillRect(sx2, sy2, si % 3 === 0 ? 2 : 1, si % 3 === 0 ? 2 : 1);
+          }
+          // Moon
+          const moonX = pw * 0.82, moonY = ph * 0.10;
+          const moonGlow = pc.createRadialGradient(moonX, moonY, 0, moonX, moonY, 45);
+          moonGlow.addColorStop(0, 'rgba(200,220,255,0.5)'); moonGlow.addColorStop(1, 'rgba(100,140,220,0)');
+          pc.fillStyle = moonGlow; pc.beginPath(); pc.arc(moonX, moonY, 45, 0, Math.PI * 2); pc.fill();
+          pc.fillStyle = '#D8E8FF'; pc.beginPath(); pc.arc(moonX, moonY, 16, 0, Math.PI * 2); pc.fill();
+          pc.fillStyle = tc.sky1; pc.beginPath(); pc.arc(moonX + 8, moonY - 5, 12, 0, Math.PI * 2); pc.fill();
+        } else {
+          // ── GÜNEŞ ──
+          const sunX = pw * 0.82, sunY = ph * 0.09;
+          const sunColor = isDesert ? 'rgba(255,180,60,0.8)' : 'rgba(255,255,160,0.8)';
+          const sunCore = isDesert ? '#FFA030' : '#FFEE00';
+          const sunGlow = pc.createRadialGradient(sunX, sunY, 0, sunX, sunY, 60);
+          sunGlow.addColorStop(0, sunColor); sunGlow.addColorStop(0.5, isDesert ? 'rgba(255,140,30,0.25)' : 'rgba(255,220,80,0.3)'); sunGlow.addColorStop(1, 'rgba(255,200,0,0)');
+          pc.fillStyle = sunGlow; pc.beginPath(); pc.arc(sunX, sunY, 60, 0, Math.PI * 2); pc.fill();
+          pc.fillStyle = sunCore; pc.beginPath(); pc.arc(sunX, sunY, 17, 0, Math.PI * 2); pc.fill();
+          for (let r = 0; r < 8; r++) { const ang = animT * 0.005 + r * Math.PI / 4; const r2 = 30 + Math.sin(animT * 0.06 + r) * 4; pc.strokeStyle = isDesert ? 'rgba(255,160,30,0.35)' : 'rgba(255,238,0,0.35)'; pc.lineWidth = 2; pc.beginPath(); pc.moveTo(sunX + Math.cos(ang) * 21, sunY + Math.sin(ang) * 21); pc.lineTo(sunX + Math.cos(ang) * r2, sunY + Math.sin(ang) * r2); pc.stroke(); }
+        }
 
         // ── DAĞLAR (parallax 0.08x) ──
         const mParallax = camX * 0.08;
@@ -2021,76 +2049,114 @@
           const mx = ((xf * pw - mParallax) % (pw * 1.3) + pw * 1.3) % (pw * 1.3) - pw * 0.15;
           const mh = ph * hf;
           const mg = pc.createLinearGradient(mx, ph * 0.42 - mh, mx, ph * 0.42);
-          mg.addColorStop(0, '#455A64'); mg.addColorStop(1, '#607D8B');
+          mg.addColorStop(0, tc.mtn0); mg.addColorStop(1, tc.mtn1);
           pc.fillStyle = mg; pc.beginPath(); pc.moveTo(mx - 65, ph * 0.42); pc.lineTo(mx, ph * 0.42 - mh); pc.lineTo(mx + 65, ph * 0.42); pc.closePath(); pc.fill();
-          pc.fillStyle = 'rgba(240,248,255,0.72)'; pc.beginPath(); pc.moveTo(mx - 15, ph * 0.42 - mh * 0.8); pc.lineTo(mx, ph * 0.42 - mh); pc.lineTo(mx + 15, ph * 0.42 - mh * 0.8); pc.closePath(); pc.fill();
+          pc.fillStyle = tc.mtnTop; pc.beginPath(); pc.moveTo(mx - 15, ph * 0.42 - mh * 0.8); pc.lineTo(mx, ph * 0.42 - mh); pc.lineTo(mx + 15, ph * 0.42 - mh * 0.8); pc.closePath(); pc.fill();
         });
 
         // ── BULUTLAR (parallax 0.12x) ──
-        if (PU.clouds) PU.clouds.forEach(cl => {
+        if (PU.clouds && !isNight) PU.clouds.forEach(cl => {
           const sx = ((cl.wx - camX * 0.12) % (pw + 220) + pw + 220) % (pw + 220) - 110;
-          pc.fillStyle = 'rgba(255,255,255,0.88)';
+          pc.fillStyle = isDesert ? 'rgba(255,220,160,0.55)' : isSnow ? 'rgba(230,240,255,0.95)' : 'rgba(255,255,255,0.88)';
           pc.beginPath(); pc.arc(sx, cl.y, cl.w * 0.38, 0, Math.PI * 2); pc.fill();
           pc.beginPath(); pc.arc(sx + cl.w * 0.30, cl.y + 5, cl.w * 0.28, 0, Math.PI * 2); pc.fill();
           pc.beginPath(); pc.arc(sx - cl.w * 0.26, cl.y + 6, cl.w * 0.24, 0, Math.PI * 2); pc.fill();
           pc.beginPath(); pc.arc(sx + cl.w * 0.52, cl.y + 9, cl.w * 0.19, 0, Math.PI * 2); pc.fill();
         });
 
-        // ── KUŞLAR (parallax 0.22x) ──
-        if (PU.birds) PU.birds.forEach(bd => {
+        // ── KUŞLAR (sadece gündüz & kırsal) ──
+        if (PU.birds && !isNight && !isSnow) PU.birds.forEach(bd => {
           const sx = ((bd.wx - camX * 0.22) % (pw + 300) + pw + 300) % (pw + 300) - 150;
           const wf = Math.sin(animT * 0.11 + bd.phase) * 6;
           pc.strokeStyle = 'rgba(30,30,80,0.45)'; pc.lineWidth = 1.5;
           pc.beginPath(); pc.moveTo(sx - 9, bd.y + wf); pc.lineTo(sx, bd.y); pc.lineTo(sx + 9, bd.y + wf); pc.stroke();
         });
 
-        // ── YEŞİL TARLA ──
+        // ── TARLA ──
         const fieldGrad = pc.createLinearGradient(0, ph * 0.38, 0, ph * 0.56);
-        fieldGrad.addColorStop(0, '#388E3C'); fieldGrad.addColorStop(1, '#4CAF50');
+        fieldGrad.addColorStop(0, tc.fld0); fieldGrad.addColorStop(1, tc.fld1);
         pc.fillStyle = fieldGrad; pc.fillRect(0, ph * 0.38, pw, ph * 0.19);
 
-        // Ayçiçekleri (parallax 0.18x)
-        [0.04, 0.11, 0.20, 0.30, 0.40, 0.51, 0.61, 0.72, 0.83, 0.93].forEach((f, i) => {
-          const sfWX = f * PU.ROAD_LEN;
-          const sx = ((sfWX - camX * 0.18) % (pw + 60) + pw + 60) % (pw + 60) - 30;
-          const swy = Math.sin(animT * 0.04 + i) * 2;
-          pc.fillStyle = '#5D4037'; pc.fillRect(sx + swy - 2, ph * 0.44 - 22, 4, 23);
-          pc.fillStyle = '#FFD600';
-          for (let p = 0; p < 8; p++) { const a2 = p * Math.PI / 4; pc.beginPath(); pc.ellipse(sx + swy + Math.cos(a2) * 7, ph * 0.44 - 22 + Math.sin(a2) * 7, 4, 3, a2, 0, Math.PI * 2); pc.fill(); }
-          pc.fillStyle = '#8D5524'; pc.beginPath(); pc.arc(sx + swy, ph * 0.44 - 22, 5, 0, Math.PI * 2); pc.fill();
-        });
-
-        // Arka plan ağaçları (parallax 0.15x)
-        [80, 280, 480, 700, 920, 1140, 1360, 1600, 1840, 2060, 2300, 2540, 2780, 3020, 3260, 3500, 3740, 3980, 4220, 4460, 4700, 4940, 5180, 5440, 5680, 5900].forEach((wo, ti) => {
-          const sx = ((wo - camX * 0.15) % (pw + 70) + pw + 70) % (pw + 70) - 35;
-          const ty = ph * 0.40;
-          const ts = 0.75 + (ti % 3) * 0.14;
-          pc.fillStyle = '#5D4037'; pc.fillRect(sx - 3, ty - 24 * ts, 6, 26 * ts);
-          const tg = pc.createRadialGradient(sx, ty - 28 * ts, 0, sx, ty - 22 * ts, 15 * ts);
-          tg.addColorStop(0, '#2E7D32'); tg.addColorStop(1, '#1B5E20');
-          pc.fillStyle = tg; pc.beginPath(); pc.arc(sx, ty - 26 * ts, 14 * ts, 0, Math.PI * 2); pc.fill();
-          pc.fillStyle = '#388E3C'; pc.beginPath(); pc.arc(sx - 8 * ts, ty - 18 * ts, 10 * ts, 0, Math.PI * 2); pc.fill();
-          pc.beginPath(); pc.arc(sx + 8 * ts, ty - 20 * ts, 11 * ts, 0, Math.PI * 2); pc.fill();
-        });
+        if (isDesert) {
+          // Kaktüsler (parallax 0.18x)
+          [0.06, 0.18, 0.31, 0.44, 0.57, 0.70, 0.84, 0.96].forEach((f, i) => {
+            const cwx = f * PU.ROAD_LEN;
+            const sx = ((cwx - camX * 0.18) % (pw + 60) + pw + 60) % (pw + 60) - 30;
+            const cy2 = ph * 0.425; const ch = (20 + (i % 3) * 8);
+            pc.fillStyle = '#2E6B30';
+            pc.fillRect(sx - 4, cy2 - ch, 8, ch);
+            pc.fillRect(sx - 14, cy2 - ch * 0.7, 10, 5);
+            pc.fillRect(sx + 4, cy2 - ch * 0.55, 10, 5);
+            pc.fillRect(sx - 18, cy2 - ch * 0.7 - 10, 4, 12);
+            pc.fillRect(sx + 14, cy2 - ch * 0.55 - 8, 4, 10);
+          });
+        } else if (isSnow) {
+          // Kar parçacıkları
+          for (let sp = 0; sp < 40; sp++) {
+            const spx = ((sp * 213 + animT * 0.8) % pw + pw) % pw;
+            const spy = ph * 0.05 + ((sp * 157 + animT * 1.2 + sp * 0.4) % (ph * 0.38));
+            const spr = 1 + (sp % 3);
+            pc.fillStyle = `rgba(255,255,255,${0.4 + (sp % 5) * 0.1})`; pc.beginPath(); pc.arc(spx, spy, spr, 0, Math.PI * 2); pc.fill();
+          }
+          // Karlı ağaçlar
+          [80, 320, 560, 800, 1100, 1400, 1700, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800, 5200, 5600].forEach((wo, ti) => {
+            const sx = ((wo - camX * 0.15) % (pw + 70) + pw + 70) % (pw + 70) - 35;
+            const ty = ph * 0.40; const ts = 0.75 + (ti % 3) * 0.14;
+            pc.fillStyle = '#5D4037'; pc.fillRect(sx - 3, ty - 24 * ts, 6, 26 * ts);
+            pc.fillStyle = '#2E4A28'; pc.beginPath(); pc.moveTo(sx, ty - 48 * ts); pc.lineTo(sx - 18 * ts, ty - 24 * ts); pc.lineTo(sx + 18 * ts, ty - 24 * ts); pc.closePath(); pc.fill();
+            pc.fillStyle = 'rgba(255,255,255,0.85)'; pc.beginPath(); pc.moveTo(sx, ty - 50 * ts); pc.lineTo(sx - 18 * ts, ty - 28 * ts); pc.lineTo(sx + 18 * ts, ty - 28 * ts); pc.closePath(); pc.fill();
+          });
+        } else if (isNight) {
+          // Gece ağaçları (karanlık silüet)
+          [80, 280, 480, 700, 920, 1140, 1360, 1600, 1840, 2060, 2300, 2540, 2780, 3020, 3260, 3500, 3740, 3980, 4220, 4460, 4700, 4940, 5180, 5440, 5680, 5900].forEach((wo, ti) => {
+            const sx = ((wo - camX * 0.15) % (pw + 70) + pw + 70) % (pw + 70) - 35;
+            const ty = ph * 0.40; const ts = 0.75 + (ti % 3) * 0.14;
+            pc.fillStyle = '#0A140A'; pc.fillRect(sx - 3, ty - 24 * ts, 6, 26 * ts);
+            pc.fillStyle = '#0D1E0D'; pc.beginPath(); pc.arc(sx, ty - 26 * ts, 14 * ts, 0, Math.PI * 2); pc.fill();
+            pc.beginPath(); pc.arc(sx - 8 * ts, ty - 18 * ts, 10 * ts, 0, Math.PI * 2); pc.fill();
+            pc.beginPath(); pc.arc(sx + 8 * ts, ty - 20 * ts, 11 * ts, 0, Math.PI * 2); pc.fill();
+          });
+        } else {
+          // Ayçiçekleri — kırsal (countryside)
+          [0.04, 0.11, 0.20, 0.30, 0.40, 0.51, 0.61, 0.72, 0.83, 0.93].forEach((f, i) => {
+            const sfWX = f * PU.ROAD_LEN;
+            const sx = ((sfWX - camX * 0.18) % (pw + 60) + pw + 60) % (pw + 60) - 30;
+            const swy = Math.sin(animT * 0.04 + i) * 2;
+            pc.fillStyle = '#5D4037'; pc.fillRect(sx + swy - 2, ph * 0.44 - 22, 4, 23);
+            pc.fillStyle = '#FFD600';
+            for (let p = 0; p < 8; p++) { const a2 = p * Math.PI / 4; pc.beginPath(); pc.ellipse(sx + swy + Math.cos(a2) * 7, ph * 0.44 - 22 + Math.sin(a2) * 7, 4, 3, a2, 0, Math.PI * 2); pc.fill(); }
+            pc.fillStyle = '#8D5524'; pc.beginPath(); pc.arc(sx + swy, ph * 0.44 - 22, 5, 0, Math.PI * 2); pc.fill();
+          });
+          // Arka plan ağaçları
+          [80, 280, 480, 700, 920, 1140, 1360, 1600, 1840, 2060, 2300, 2540, 2780, 3020, 3260, 3500, 3740, 3980, 4220, 4460, 4700, 4940, 5180, 5440, 5680, 5900].forEach((wo, ti) => {
+            const sx = ((wo - camX * 0.15) % (pw + 70) + pw + 70) % (pw + 70) - 35;
+            const ty = ph * 0.40; const ts = 0.75 + (ti % 3) * 0.14;
+            pc.fillStyle = '#5D4037'; pc.fillRect(sx - 3, ty - 24 * ts, 6, 26 * ts);
+            const tg = pc.createRadialGradient(sx, ty - 28 * ts, 0, sx, ty - 22 * ts, 15 * ts);
+            tg.addColorStop(0, '#2E7D32'); tg.addColorStop(1, '#1B5E20');
+            pc.fillStyle = tg; pc.beginPath(); pc.arc(sx, ty - 26 * ts, 14 * ts, 0, Math.PI * 2); pc.fill();
+            pc.fillStyle = '#388E3C'; pc.beginPath(); pc.arc(sx - 8 * ts, ty - 18 * ts, 10 * ts, 0, Math.PI * 2); pc.fill();
+            pc.beginPath(); pc.arc(sx + 8 * ts, ty - 20 * ts, 11 * ts, 0, Math.PI * 2); pc.fill();
+          });
+        }
 
         // ── YOL: 3 şerit ──
         const botY = getLaneY(2, ph) + getLaneH(2, ph);
-        pc.fillStyle = '#5D4037'; pc.fillRect(0, botY, pw, ph - botY);
+        pc.fillStyle = tc.rdBase; pc.fillRect(0, botY, pw, ph - botY);
 
         for (let ln = 0; ln < LANE_COUNT; ln++) {
           const ly = getLaneY(ln, ph);
           const lh = getLaneH(ln, ph);
-          const shades = ['#795548', '#6D4C41', '#5D4037'];
-          pc.fillStyle = shades[ln]; pc.fillRect(0, ly, pw, lh);
+          pc.fillStyle = tc.rd[ln]; pc.fillRect(0, ly, pw, lh);
           // Yol doku noktaları
           pc.fillStyle = 'rgba(0,0,0,0.05)';
           for (let tx = 0; tx < pw; tx += 44) { pc.fillRect(((tx - camX * 0.35) % pw + pw) % pw, ly + lh * 0.22, 14, lh * 0.14); }
           // Animasyonlu orta çizgiler
           const dashOff = (camX * 0.8) % 46;
-          pc.strokeStyle = 'rgba(255,255,200,0.32)'; pc.lineWidth = 2; pc.setLineDash([30, 16]); pc.lineDashOffset = -dashOff;
+          pc.strokeStyle = tc.rdDiv; pc.lineWidth = 2; pc.setLineDash([30, 16]); pc.lineDashOffset = -dashOff;
           pc.beginPath(); pc.moveTo(0, ly + lh * 0.5); pc.lineTo(pw, ly + lh * 0.5); pc.stroke(); pc.setLineDash([]); pc.lineDashOffset = 0;
           // Kenar çizgileri
-          pc.strokeStyle = 'rgba(255,255,200,0.5)'; pc.lineWidth = 1.5;
+          pc.strokeStyle = tc.rdEdge; pc.lineWidth = 1.5;
           pc.beginPath(); pc.moveTo(0, ly); pc.lineTo(pw, ly); pc.stroke();
           pc.beginPath(); pc.moveTo(0, ly + lh); pc.lineTo(pw, ly + lh); pc.stroke();
           // Şeritler arası çim + çiçek
@@ -2390,32 +2456,71 @@
         setTimeout(() => { ov.style.display = 'none'; }, PU.won ? 200 : 2400);
       }
 
+      function drawTruckPreview(canvas, truckId, frame) {
+        const pc = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        pc.clearRect(0, 0, w, h);
+        const bg = pc.createLinearGradient(0, 0, 0, h);
+        bg.addColorStop(0, '#1a2535'); bg.addColorStop(1, '#0d1520');
+        pc.fillStyle = bg; pc.fillRect(0, 0, w, h);
+        pc.fillStyle = '#3a2a18'; pc.fillRect(0, h * 0.7, w, h * 0.3);
+        pc.strokeStyle = '#5a4030'; pc.lineWidth = 1;
+        pc.beginPath(); pc.moveTo(0, h * 0.7); pc.lineTo(w, h * 0.7); pc.stroke();
+        const sc = Math.min(w, h) * 0.024;
+        const cx = w * 0.42, cy = h * 0.7;
+        const tkDef = TRUCKS[truckId] || TRUCKS.basic;
+        const upg = (truckUpgrades[truckId] || { speed: 0, cargo: 0 });
+        puDrawTruckBody(pc, cx, cy, sc, { ...tkDef, id: truckId, baseSpeed: tkDef.baseSpeed + upg.speed * 0.4 }, frame, 1.5);
+      }
+
       function openGarage() {
         const mc = document.getElementById('modal-content');
         const modal = document.getElementById('modal');
-        let h = '<h2 style="color:#FFD700;margin:0 0 12px;font-size:17px;">🚛 Garaj — Araç Seç</h2>';
-        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">';
+        let h = '<h2 style="color:#FFD700;margin:0 0 10px;font-size:17px;">🚛 Garaj</h2>';
+        h += `<div style="color:#FFD700;font-size:12px;text-align:center;margin-bottom:8px;">💰 ${gold}₺</div>`;
+        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
         Object.entries(TRUCKS).forEach(([id, tk]) => {
           const owned = ownedTrucks.includes(id);
           const active = playerTruck === id;
           const canBuy = !owned && gold >= tk.price;
-          h += `<div style="background:${active ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.05)'};border:2px solid ${active ? '#FFD700' : owned ? '#4CAF50' : '#555'};border-radius:10px;padding:10px;text-align:center;">`;
-          h += `<div style="font-size:26px;">${tk.icon}</div>`;
-          h += `<div style="font-weight:700;color:#FFF;font-size:13px;margin:2px 0;">${tk.name}</div>`;
-          h += `<div style="color:#aaa;font-size:10px;">${tk.desc}</div>`;
-          h += `<div style="color:#90CAF9;font-size:10px;margin:3px 0;">🚀 Hız: ${tk.baseSpeed}/${tk.boostSpeed} &nbsp;|&nbsp; 📦 Kargo: ${tk.cargo}</div>`;
-          if (tk.price > 0) h += `<div style="color:#FFD700;font-size:11px;">💰 ${tk.price}₺</div>`;
-          if (active) h += `<div style="color:#FFD700;font-size:11px;margin-top:4px;">✅ Seçili</div>`;
-          else if (owned) h += `<button onclick="selectTruck('${id}')" style="margin-top:5px;padding:3px 12px;background:#4CAF50;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:11px;">Seç</button>`;
-          else if (canBuy) h += `<button onclick="buyTruck('${id}')" style="margin-top:5px;padding:3px 12px;background:#FF8F00;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:11px;">Satın Al</button>`;
-          else h += `<div style="color:#888;font-size:10px;margin-top:4px;">🔒 ${tk.price - gold}₺ eksik</div>`;
+          const upg = truckUpgrades[id] || { speed: 0, cargo: 0 };
+          const effSpeed = (tk.baseSpeed + upg.speed * 0.4).toFixed(1);
+          const effCargo = tk.cargo + upg.cargo * 2;
+          const canUpgSpd = owned && upg.speed < 3 && gold >= UPGRADE_COSTS[upg.speed];
+          const canUpgCrg = owned && upg.cargo < 3 && gold >= UPGRADE_COSTS[upg.cargo];
+          h += `<div style="background:${active ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.04)'};border:2px solid ${active ? '#FFD700' : owned ? '#4CAF50' : '#555'};border-radius:10px;padding:8px;text-align:center;">`;
+          h += `<canvas id="prev-${id}" width="120" height="56" style="width:100%;border-radius:6px;background:#111;display:block;margin-bottom:4px;"></canvas>`;
+          h += `<div style="font-weight:700;color:#FFF;font-size:12px;">${tk.name}</div>`;
+          h += `<div style="color:#90CAF9;font-size:10px;margin:2px 0;">🚀 ${effSpeed} &nbsp;📦 ${effCargo}</div>`;
+          if (owned) {
+            h += `<div style="display:flex;gap:3px;justify-content:center;margin:3px 0;">`;
+            h += `<button onclick="upgradeTruck('${id}','speed')" style="padding:2px 6px;background:${canUpgSpd ? '#1565C0' : '#333'};color:${canUpgSpd ? '#fff' : '#666'};border:none;border-radius:5px;cursor:pointer;font-size:10px;" ${canUpgSpd ? '' : 'disabled'}>⚡${upg.speed}/3${upg.speed < 3 ? ' '+UPGRADE_COSTS[upg.speed]+'₺' : ''}</button>`;
+            h += `<button onclick="upgradeTruck('${id}','cargo')" style="padding:2px 6px;background:${canUpgCrg ? '#2E7D32' : '#333'};color:${canUpgCrg ? '#fff' : '#666'};border:none;border-radius:5px;cursor:pointer;font-size:10px;" ${canUpgCrg ? '' : 'disabled'}>📦${upg.cargo}/3${upg.cargo < 3 ? ' '+UPGRADE_COSTS[upg.cargo]+'₺' : ''}</button>`;
+            h += `</div>`;
+          }
+          if (tk.price > 0 && !owned) h += `<div style="color:#FFD700;font-size:10px;">💰 ${tk.price}₺</div>`;
+          if (active) h += `<div style="color:#FFD700;font-size:10px;margin-top:3px;">✅ Seçili</div>`;
+          else if (owned) h += `<button onclick="selectTruck('${id}')" style="margin-top:3px;padding:2px 10px;background:#4CAF50;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:10px;">Seç</button>`;
+          else if (canBuy) h += `<button onclick="buyTruck('${id}')" style="margin-top:3px;padding:2px 10px;background:#FF8F00;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:10px;">Satın Al</button>`;
+          else h += `<div style="color:#888;font-size:10px;margin-top:3px;">🔒 ${tk.price - gold}₺ eksik</div>`;
           h += '</div>';
         });
         h += '</div>';
-        h += `<div style="color:#aaa;font-size:11px;text-align:center;margin-bottom:8px;">Mevcut altın: 💰 ${gold}₺</div>`;
         h += `<button onclick="closeModal()" style="padding:7px 22px;background:#555;color:#fff;border:none;border-radius:8px;cursor:pointer;">Kapat</button>`;
         mc.innerHTML = h;
         modal.classList.add('show');
+        // Draw canvas previews after DOM insert
+        let _pFrame = 0;
+        const _pIds = Object.keys(TRUCKS);
+        function _animPrev() {
+          _pFrame++;
+          _pIds.forEach(id => {
+            const c = document.getElementById('prev-' + id);
+            if (c) drawTruckPreview(c, id, _pFrame);
+          });
+          if (modal.classList.contains('show')) requestAnimationFrame(_animPrev);
+        }
+        requestAnimationFrame(_animPrev);
       }
       function buyTruck(id) {
         const tk = TRUCKS[id];
@@ -2431,6 +2536,19 @@
         if (!ownedTrucks.includes(id)) return;
         playerTruck = id; saveGame();
         showMsg(TRUCKS[id].icon + ' ' + TRUCKS[id].name + ' seçildi!', 1500);
+        openGarage();
+      }
+      function upgradeTruck(id, stat) {
+        const upg = truckUpgrades[id] || { speed: 0, cargo: 0 };
+        const lvl = upg[stat] || 0;
+        if (lvl >= 3) { showMsg('Maksimum seviye!', 1200); return; }
+        const cost = UPGRADE_COSTS[lvl];
+        if (gold < cost) { showMsg('Yeterli altın yok! 💰 ' + gold + '₺ / ' + cost + '₺', 1800); return; }
+        gold -= cost; updateHUD();
+        truckUpgrades[id] = { ...upg, [stat]: lvl + 1 };
+        saveGame();
+        const label = stat === 'speed' ? '⚡ Hız' : '📦 Kargo';
+        showMsg(label + ' yükseltildi! (Seviye ' + (lvl + 1) + ')', 1800);
         openGarage();
       }
       function closeModal() { document.getElementById('modal').classList.remove('show'); }
@@ -2872,13 +2990,27 @@
         const by = groundY(bx);
         if (sideW > 160 * SCALE) drawBarnBld(bx, by, SCALE * 0.63);
 
-        // Animals near buildings
+        // Animals — walk in/out of barn door
         const emojiMap = { cow: '🐄', sheep: '🐑', chicken: '🐔' };
+        const barnDoorX = sideW > 160 * SCALE ? bx : hx;
         animals.slice(0, 6).forEach((a, i) => {
-          const ax = hx + (i % 3 - 1) * 28 * SCALE, ay = hy + Math.floor(i / 3) * 22 * SCALE;
-          const bob2 = Math.sin(animT * .08 + i * 1.4) * 1.5 * SCALE;
-          ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(ax + 6 * SCALE, ay + 1 * SCALE, 8 * SCALE, 3 * SCALE, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.font = (15 * SCALE) + 'px serif'; ctx.fillText(emojiMap[a.type] || '🐾', ax, ay + bob2);
+          const period = 320 + i * 45;
+          const phase = (animT + i * 88) % period;
+          const halfP = period / 2;
+          const walkFrac = halfP * 0.78;
+          const maxDist = (32 + (i % 3) * 20) * SCALE;
+          const dir = i % 2 === 0 ? -1 : 1;
+          let progress, isWalking;
+          if (phase < walkFrac) { progress = phase / walkFrac; isWalking = true; }
+          else if (phase < halfP) { progress = 1; isWalking = false; }
+          else if (phase < halfP + walkFrac) { progress = 1 - (phase - halfP) / walkFrac; isWalking = true; }
+          else { return; }
+          const ax = barnDoorX + dir * maxDist * progress;
+          const ay = groundY(ax);
+          const legBob = isWalking ? Math.sin(animT * 0.32 + i * 1.1) * 2.5 * SCALE : Math.sin(animT * 0.06 + i) * SCALE;
+          ctx.fillStyle = 'rgba(0,0,0,0.15)';
+          ctx.beginPath(); ctx.ellipse(ax + 5 * SCALE, ay + 1 * SCALE, 8 * SCALE, 3 * SCALE, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.font = (15 * SCALE) + 'px serif'; ctx.fillText(emojiMap[a.type] || '🐾', ax - 8 * SCALE, ay + legBob);
         });
       }
 
@@ -3756,7 +3888,7 @@
           ['refreshNeighborRequests', refreshNeighborRequests],
           ['openSettings', openSettings], ['closeSettings', closeSettings],
           ['buyOrchardTree', buyOrchardTree],
-          ['openGarage', openGarage], ['buyTruck', buyTruck], ['selectTruck', selectTruck],
+          ['openGarage', openGarage], ['buyTruck', buyTruck], ['selectTruck', selectTruck], ['upgradeTruck', upgradeTruck],
           ['openRegister', openRegister], ['closeRegister', closeRegister], ['doRegister', doRegister],
           ['promptChangeName', promptChangeName], ['promptChangeEmail', promptChangeEmail],
           ['promptChangePass', promptChangePass], ['doLogout', doLogout],
