@@ -1116,6 +1116,15 @@
       let playerGender = null;   // 'male' | 'female' — null = karakter oluşturulmamış
       let playerOutfit = null;   // OUTFITS key
       let ownedOutfits = [];
+      // Twemoji animal images preloaded at startup
+      const _animalImgs = {};
+      (() => {
+        const _tw = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/';
+        [['cow','1f404'],['sheep','1f411'],['chicken','1f413']].forEach(([t,c]) => {
+          const img = new Image(); img.crossOrigin = 'anonymous'; img.src = _tw + c + '.png';
+          _animalImgs[t] = img;
+        });
+      })();
       // Meyve bahçesi: tarla çevresinde 4 interaktif ağaç yuvası
       let orchardSlots = [];
       function _defaultOrchard() {
@@ -2660,6 +2669,7 @@
           ownedOutfits = [outfitId];
           ov.style.display = 'none';
           saveGame();
+          if (_SEC._uid) _saveToCloud(_SEC._uid); // buluta hemen kaydet
           onComplete();
         }
 
@@ -3156,9 +3166,12 @@
           mGrad.addColorStop(0, i % 2 === 0 ? '#5A6A7E' : '#4E5F70');
           mGrad.addColorStop(1, '#6B7A8D');
           ctx.fillStyle = mGrad;
-          ctx.beginPath(); ctx.moveTo(md.x - hw, gY); ctx.lineTo(md.x, gY - md.h); ctx.lineTo(md.x + hw, gY); ctx.closePath(); ctx.fill();
+          // Extend shape to screen bottom so terrain gaps are filled
+          ctx.beginPath(); ctx.moveTo(md.x - hw, H); ctx.lineTo(md.x - hw, gY); ctx.lineTo(md.x, gY - md.h); ctx.lineTo(md.x + hw, gY); ctx.lineTo(md.x + hw, H); ctx.closePath(); ctx.fill();
+          // Snow cap
           ctx.fillStyle = '#EEF2F6';
           ctx.beginPath(); ctx.moveTo(md.x - 14 * SCALE, gY - md.h * .78); ctx.lineTo(md.x, gY - md.h); ctx.lineTo(md.x + 14 * SCALE, gY - md.h * .78); ctx.closePath(); ctx.fill();
+          // Shadow side
           ctx.fillStyle = 'rgba(30,40,60,0.12)';
           ctx.beginPath(); ctx.moveTo(md.x, gY - md.h); ctx.lineTo(md.x + hw, gY); ctx.lineTo(md.x + 16 * SCALE, gY); ctx.closePath(); ctx.fill();
         });
@@ -3222,20 +3235,34 @@
         for (let sx = 0; sx <= W; sx += 20) ctx.lineTo(sx, groundY(sx));
         ctx.stroke();
 
-        // ── RIVER — positioned well past all trees/orchards ──
-        if (OX > 185 * SCALE) {
-          const riverLeft = Math.max(5 * SCALE, OX - 255 * SCALE), riverRight = riverLeft + 50 * SCALE;
-          const rY = groundY(riverLeft) - 2 * SCALE, rH = 13 * SCALE;
-          const rGrad = ctx.createLinearGradient(riverLeft, 0, riverRight, 0);
-          rGrad.addColorStop(0, '#1A5F98'); rGrad.addColorStop(0.4, '#2490CC'); rGrad.addColorStop(1, '#1A5F98');
-          ctx.fillStyle = '#1A4A70'; ctx.fillRect(riverLeft - 3 * SCALE, rY + rH, riverRight - riverLeft + 6 * SCALE, 4 * SCALE);
-          ctx.fillStyle = rGrad; ctx.fillRect(riverLeft, rY, riverRight - riverLeft, rH);
-          ctx.fillStyle = 'rgba(200,240,255,0.2)'; ctx.fillRect(riverLeft + 4 * SCALE, rY + 2, (riverRight - riverLeft) * 0.6, rH * 0.4);
+        // ── MOUNTAIN STREAM — flows diagonally from mountain to ground ──
+        if (OX > 100 * SCALE) {
+          const sx0 = OX * 0.22, sy0 = gY - gY * 0.30; // start near mountain
+          const sx1 = OX * 0.30, sy1 = gY - gY * 0.10; // mid-bend
+          const sx2 = OX * 0.25, sy2 = groundY(OX * 0.25) - SCALE; // pool at ground
+          // Stream body
+          ctx.save(); ctx.lineCap = 'round';
+          ctx.strokeStyle = '#1A5F98'; ctx.lineWidth = 7 * SCALE;
+          ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.quadraticCurveTo(sx1, sy1, sx2, sy2); ctx.stroke();
+          ctx.strokeStyle = '#2490CC'; ctx.lineWidth = 5 * SCALE;
+          ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.quadraticCurveTo(sx1, sy1, sx2, sy2); ctx.stroke();
+          ctx.strokeStyle = 'rgba(160,220,255,0.45)'; ctx.lineWidth = 2 * SCALE;
+          ctx.beginPath(); ctx.moveTo(sx0 - SCALE, sy0); ctx.quadraticCurveTo(sx1 - SCALE, sy1, sx2 - SCALE, sy2); ctx.stroke();
+          // Animated water sparkles along stream
           for (let r = 0; r < 4; r++) {
-            const rxOff = (animT * 0.9 + r * 16) % (riverRight - riverLeft);
-            ctx.strokeStyle = `rgba(160,220,255,${0.35 - r * 0.07})`; ctx.lineWidth = 1.2;
-            ctx.beginPath(); ctx.moveTo(riverLeft + rxOff, rY + rH * 0.4); ctx.lineTo(riverLeft + rxOff + 11 * SCALE, rY + rH * 0.4); ctx.stroke();
+            const t = ((animT * 0.012 + r * 0.25) % 1);
+            const bx = sx0 + (sx2 - sx0) * t, by = sy0 + (sy2 - sy0) * t;
+            ctx.fillStyle = `rgba(180,230,255,${0.5 - r * 0.1})`;
+            ctx.beginPath(); ctx.arc(bx, by, 1.8 * SCALE, 0, Math.PI * 2); ctx.fill();
           }
+          // Pool at base
+          ctx.fillStyle = '#1A4A70'; ctx.beginPath(); ctx.ellipse(sx2, sy2 + 3*SCALE, 13*SCALE, 4.5*SCALE, 0, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#2490CC'; ctx.beginPath(); ctx.ellipse(sx2, sy2, 10*SCALE, 3.5*SCALE, 0, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = 'rgba(200,240,255,0.3)'; ctx.beginPath(); ctx.ellipse(sx2 - 3*SCALE, sy2 - SCALE, 5*SCALE, 2*SCALE, 0, 0, Math.PI*2); ctx.fill();
+          const rOff = ((animT * 0.4) % 10) * SCALE;
+          ctx.strokeStyle = 'rgba(160,220,255,0.35)'; ctx.lineWidth = 0.8;
+          ctx.beginPath(); ctx.ellipse(sx2, sy2, rOff + 3*SCALE, (rOff + 3*SCALE) * 0.38, 0, 0, Math.PI*2); ctx.stroke();
+          ctx.restore();
         }
 
         // ── TREES — left of farm, farm-aligned positions ──
@@ -3277,10 +3304,25 @@
           const ay = groundY(ax);
           const walkPh = animT * 0.32 + i * 1.1;
           const facingRight = phase < halfP ? (dir > 0) : (dir <= 0);
-          const sc = SCALE * 0.75;
-          if (a.type === 'chicken') drawPixelChicken(ax, ay, sc, facingRight, isWalking, walkPh);
-          else if (a.type === 'sheep') drawPixelSheep(ax, ay, sc, facingRight, isWalking, walkPh);
-          else drawPixelCow(ax, ay, sc, facingRight, isWalking, walkPh);
+          const img = _animalImgs[a.type];
+          const sz = (a.type === 'cow' ? 36 : a.type === 'sheep' ? 28 : 24) * SCALE;
+          const bob = isWalking ? Math.abs(Math.sin(walkPh)) * 2.5 * SCALE : 0;
+          // Shadow
+          ctx.fillStyle = 'rgba(0,0,0,0.15)';
+          ctx.beginPath(); ctx.ellipse(ax, ay + SCALE, sz * 0.42, SCALE * 2, 0, 0, Math.PI * 2); ctx.fill();
+          if (img && img.complete && img.naturalWidth > 0) {
+            ctx.save();
+            ctx.translate(ax, ay - sz - bob);
+            if (!facingRight) ctx.scale(-1, 1);
+            ctx.drawImage(img, -sz / 2, 0, sz, sz);
+            ctx.restore();
+          } else {
+            // Fallback while image loads
+            const sc = SCALE * 0.75;
+            if (a.type === 'chicken') drawPixelChicken(ax, ay, sc, facingRight, isWalking, walkPh);
+            else if (a.type === 'sheep') drawPixelSheep(ax, ay, sc, facingRight, isWalking, walkPh);
+            else drawPixelCow(ax, ay, sc, facingRight, isWalking, walkPh);
+          }
         });
       }
 
@@ -4083,7 +4125,8 @@
             gold, energy, maxEnergy, level, xp, maxXp, inventory,
             tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
             animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
-            activeQuests, completedQuests, questProgress, neighborRequests, orchardSlots
+            activeQuests, completedQuests, questProgress, neighborRequests, orchardSlots,
+            playerGender, playerOutfit, ownedOutfits, truckUpgrades, playerTruck, ownedTrucks
           });
         } catch (e) { console.warn('Cloud save error:', e); }
       }
