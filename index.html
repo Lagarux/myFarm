@@ -3280,45 +3280,79 @@
             ctx.beginPath(); ctx.arc(bx, by, dr, 0, Math.PI * 2); ctx.fill();
           }
 
-          // ── GROUND RIVER — flows left from pool through green area ──
-          const rvEndX = stBotX + w1 * 0.5;
-          const rvStartX = Math.max(5 * SCALE, OX - 290 * SCALE);
-          const rvH = 8 * SCALE;
+          // Pool where stream hits ground (drawn BEFORE river so river overlaps naturally)
+          const poolX = stBotX, poolY = stBotY;
+          ctx.fillStyle = '#1A4870'; ctx.beginPath(); ctx.ellipse(poolX, poolY + 3*SCALE, 15*SCALE, 5.5*SCALE, 0, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#2C9ECC'; ctx.beginPath(); ctx.ellipse(poolX, poolY, 12*SCALE, 4*SCALE, 0, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = 'rgba(200,240,255,0.35)'; ctx.beginPath(); ctx.ellipse(poolX - 4*SCALE, poolY - SCALE, 5*SCALE, 1.8*SCALE, 0, 0, Math.PI*2); ctx.fill();
+
+          // ── GROUND RIVER — flows RIGHT from pool across green area ──
+          const rvStartX = poolX - 10 * SCALE; // from pool
+          const rvEndX = OX - 12 * SCALE;      // toward the farm edge
+          const rvLen = rvEndX - rvStartX;
+          const rvH = 13 * SCALE;              // river depth (visible width in scene)
+          ctx.lineCap = 'round';
+
+          // River bed shadow (darker, slightly wider)
+          ctx.fillStyle = '#0F3050';
+          ctx.beginPath();
+          ctx.moveTo(rvStartX, groundY(rvStartX) + 2*SCALE);
+          for (let rx = rvStartX; rx <= rvEndX; rx += 7) ctx.lineTo(rx, groundY(rx) + 2*SCALE);
+          ctx.lineTo(rvEndX, groundY(rvEndX) + rvH + 3*SCALE);
+          for (let rx = rvEndX; rx >= rvStartX; rx -= 7) ctx.lineTo(rx, groundY(rx) + rvH + 3*SCALE);
+          ctx.closePath(); ctx.fill();
+
+          // River water — gradient from pool end (deeper blue) to right (lighter)
           const rvGrad = ctx.createLinearGradient(rvStartX, 0, rvEndX, 0);
-          rvGrad.addColorStop(0, '#1A4870'); rvGrad.addColorStop(0.6, '#2490CC'); rvGrad.addColorStop(1, '#1A6BA8');
+          rvGrad.addColorStop(0, '#1A6BA8'); rvGrad.addColorStop(0.45, '#2490CC'); rvGrad.addColorStop(1, '#1A5F98');
           ctx.fillStyle = rvGrad;
           ctx.beginPath();
-          // Top edge (sinuous, follows terrain)
-          ctx.moveTo(rvStartX, groundY(rvStartX));
-          for (let rx = rvStartX; rx <= rvEndX; rx += 6) {
-            const wave = Math.sin(rx * 0.05 + animT * 0.018) * 1.5 * SCALE;
-            ctx.lineTo(rx, groundY(rx) + wave);
+          // Upper bank (slight sine wave)
+          ctx.moveTo(rvStartX, groundY(rvStartX) + 2*SCALE);
+          for (let rx = rvStartX; rx <= rvEndX; rx += 7) {
+            const wv = Math.sin(rx * 0.055 - animT * 0.03) * 1.2 * SCALE;
+            ctx.lineTo(rx, groundY(rx) + 2*SCALE + wv);
           }
-          // Bottom edge (slightly lower)
+          // Lower bank
           ctx.lineTo(rvEndX, groundY(rvEndX) + rvH);
-          for (let rx = rvEndX; rx >= rvStartX; rx -= 6) {
-            const wave = Math.sin(rx * 0.05 + animT * 0.018 + 1.2) * SCALE;
-            ctx.lineTo(rx, groundY(rx) + rvH + wave);
+          for (let rx = rvEndX; rx >= rvStartX; rx -= 7) {
+            const wv = Math.sin(rx * 0.055 - animT * 0.03 + 1.8) * 0.8 * SCALE;
+            ctx.lineTo(rx, groundY(rx) + rvH + wv);
           }
-          ctx.closePath();
-          ctx.fill();
-          // Ripple highlights
-          ctx.lineCap = 'round';
-          for (let r = 0; r < 4; r++) {
-            const rp = ((animT * 1.4 + r * 22) % (rvEndX - rvStartX));
-            const rxy = groundY(rvStartX + rp) + rvH * 0.5;
-            ctx.strokeStyle = `rgba(160,220,255,${0.38 - r * 0.07})`; ctx.lineWidth = 1.2;
-            ctx.beginPath(); ctx.moveTo(rvStartX + rp, rxy); ctx.lineTo(rvStartX + rp + 13 * SCALE, rxy); ctx.stroke();
+          ctx.closePath(); ctx.fill();
+
+          // Surface highlight strip
+          ctx.fillStyle = 'rgba(160,220,255,0.18)';
+          ctx.beginPath();
+          ctx.moveTo(rvStartX, groundY(rvStartX) + 3*SCALE);
+          for (let rx = rvStartX; rx <= rvEndX; rx += 10) ctx.lineTo(rx, groundY(rx) + 3*SCALE);
+          ctx.lineTo(rvEndX, groundY(rvEndX) + rvH * 0.4);
+          for (let rx = rvEndX; rx >= rvStartX; rx -= 10) ctx.lineTo(rx, groundY(rx) + rvH * 0.4);
+          ctx.closePath(); ctx.fill();
+
+          // Animated flow lines moving RIGHT (shows direction)
+          for (let r = 0; r < 7; r++) {
+            const rp = ((animT * 2.8 + r * rvLen / 7) % rvLen);
+            const rx0 = rvStartX + rp;
+            const ry0 = groundY(rx0) + rvH * 0.45;
+            const alpha = 0.5 - (r / 7) * 0.2;
+            ctx.strokeStyle = `rgba(180,235,255,${alpha})`; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.moveTo(rx0, ry0); ctx.lineTo(rx0 + 18 * SCALE, ry0 + SCALE * 0.5); ctx.stroke();
           }
 
-          // Pool where stream meets river
-          ctx.fillStyle = '#1A4870'; ctx.beginPath(); ctx.ellipse(stBotX, stBotY + 2.5*SCALE, 14*SCALE, 5*SCALE, 0, 0, Math.PI*2); ctx.fill();
-          ctx.fillStyle = '#2C9ECC'; ctx.beginPath(); ctx.ellipse(stBotX, stBotY, 11*SCALE, 3.8*SCALE, 0, 0, Math.PI*2); ctx.fill();
-          ctx.fillStyle = 'rgba(200,240,255,0.35)'; ctx.beginPath(); ctx.ellipse(stBotX - 4*SCALE, stBotY - SCALE, 5*SCALE, 1.8*SCALE, 0, 0, Math.PI*2); ctx.fill();
-          // Expanding ripple
+          // Floating sparkle particles moving right
+          for (let r = 0; r < 5; r++) {
+            const t = ((animT * 0.02 + r * 0.2) % 1);
+            const bx = rvStartX + rvLen * t;
+            const by = groundY(bx) + rvH * (0.3 + (r % 3) * 0.2);
+            ctx.fillStyle = `rgba(210,245,255,${0.6 - r * 0.1})`;
+            ctx.beginPath(); ctx.arc(bx, by, (0.8 + t) * SCALE, 0, Math.PI * 2); ctx.fill();
+          }
+
+          // Expanding pool ripple
           const rOff = ((animT * 0.45) % 11) * SCALE;
-          ctx.strokeStyle = 'rgba(160,220,255,0.3)'; ctx.lineWidth = 0.9;
-          ctx.beginPath(); ctx.ellipse(stBotX, stBotY, rOff + 4*SCALE, (rOff + 4*SCALE) * 0.34, 0, 0, Math.PI*2); ctx.stroke();
+          ctx.strokeStyle = 'rgba(160,220,255,0.28)'; ctx.lineWidth = 0.9;
+          ctx.beginPath(); ctx.ellipse(poolX, poolY, rOff + 5*SCALE, (rOff + 5*SCALE) * 0.34, 0, 0, Math.PI*2); ctx.stroke();
           ctx.restore();
         }
 
