@@ -1047,10 +1047,14 @@
       // ══ CONSTANTS ══
       const COLS = 6, ROWS = 5, CELL = 72;
       const CROPS = {
-        wheat: { seedCost: 5, growTime: 30, price: 8, xp: 5, icon: '🌾' },
-        corn: { seedCost: 10, growTime: 50, price: 15, xp: 10, icon: '🌽' },
-        tomato: { seedCost: 15, growTime: 70, price: 25, xp: 15, icon: '🍅' },
-        carrot: { seedCost: 12, growTime: 60, price: 20, xp: 12, icon: '🥕' }
+        wheat:      { seedCost:  5, growTime:  30, price:  10, xp:  5, icon: '🌾' },
+        corn:       { seedCost: 10, growTime:  50, price:  18, xp: 10, icon: '🌽' },
+        tomato:     { seedCost: 15, growTime:  70, price:  28, xp: 15, icon: '🍅' },
+        carrot:     { seedCost: 12, growTime:  60, price:  22, xp: 12, icon: '🥕' },
+        potato:     { seedCost:  8, growTime:  45, price:  15, xp:  8, icon: '🥔' },
+        strawberry: { seedCost: 18, growTime:  55, price:  34, xp: 18, icon: '🍓' },
+        pumpkin:    { seedCost: 22, growTime:  85, price:  42, xp: 22, icon: '🎃' },
+        sunflower:  { seedCost: 14, growTime:  65, price:  26, xp: 14, icon: '🌻' },
       };
       const FRUIT_TREES = [
         { type: 'apple', name: 'Elma', icon: '🍎', x: 0, y: 0, color: '#CC2200', trunkColor: '#7A4A22', leafColor: '#2D7A1E', price: 18, xp: 8 },
@@ -1062,7 +1066,7 @@
         sheep: { name: 'Koyun', buy: 60, food: 'wheat', produceItem: 'wool', sellPrice: 90, slaughterMeat: 2, gestationDays: 4, emoji: '🐑' },
         chicken: { name: 'Tavuk', buy: 30, food: 'corn', produceItem: 'egg', sellPrice: 50, slaughterMeat: 1, gestationDays: 3, emoji: '🐔' }
       };
-      const MARKET_PRICES = { wheat: 8, corn: 15, tomato: 25, carrot: 20, meat: 45, wool: 30, egg: 12, milk: 18, apple: 18, orange: 22, grape: 28 };
+      const MARKET_PRICES = { wheat: 10, corn: 18, tomato: 28, carrot: 22, potato: 15, strawberry: 34, pumpkin: 42, sunflower: 26, meat: 48, wool: 32, egg: 14, milk: 20, apple: 20, orange: 25, grape: 30, cherry: 36, lemon: 22, pear: 28 };
       const SEASONS = ['❄️ Kış', '🌸 İlkbahar', '☀️ Yaz', '🍂 Sonbahar'];
       const WEATHER_TYPES = ['sunny', 'cloudy', 'rainy', 'stormy', 'windy'];
       const QUESTS_DEF = [
@@ -1081,6 +1085,8 @@
         { type: 'wheat', qty: 3, reward: 40, name: 'Ahmet Abi' }, { type: 'corn', qty: 2, reward: 45, name: 'Fatma Hanım' },
         { type: 'tomato', qty: 2, reward: 60, name: 'Mehmet Bey' }, { type: 'carrot', qty: 3, reward: 55, name: 'Ayşe Hanım' },
         { type: 'egg', qty: 4, reward: 70, name: 'Hasan Dede' }, { type: 'wool', qty: 2, reward: 75, name: 'Zeynep Hanım' },
+        { type: 'potato', qty: 3, reward: 50, name: 'Ali Amca' }, { type: 'strawberry', qty: 2, reward: 78, name: 'Gül Hanım' },
+        { type: 'pumpkin', qty: 1, reward: 55, name: 'Veli Dede' }, { type: 'sunflower', qty: 2, reward: 60, name: 'Elif Hanım' },
         { type: 'milk', qty: 3, reward: 65, name: 'Ali Usta' }, { type: 'apple', qty: 2, reward: 55, name: 'Recep Amca' },
         { type: 'grape', qty: 2, reward: 70, name: 'Nurgül Teyze' }
       ];
@@ -1214,20 +1220,27 @@
       function initQuests() {
         if (activeQuests.length === 0) activeQuests = QUESTS_DEF.slice(0, 3).map(q => ({ ...q, progress: 0, done: false }));
       }
+      function _pickNeighborRequests(exclude) {
+        const excSet = new Set((exclude || []).map(r => r.type + '|' + r.name));
+        const avail = NEIGHBOR_REQUESTS.filter(r => !excSet.has(r.type + '|' + r.name));
+        const pool = avail.length >= 3 ? avail : NEIGHBOR_REQUESTS;
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, 3).map((r, i) => ({ ...r, id: Date.now() + i, fulfilled: false }));
+      }
       function initNeighborRequests() {
-        if (neighborRequests.length === 0) {
-          neighborRequests = [];
-          for (let i = 0; i < 3; i++) { const r = NEIGHBOR_REQUESTS[Math.floor(Math.random() * NEIGHBOR_REQUESTS.length)]; neighborRequests.push({ ...r, id: i, fulfilled: false }); }
-        }
+        if (neighborRequests.length === 0) neighborRequests = _pickNeighborRequests([]);
       }
 
       // ══ MEYVE BAHÇESİ (ORCHARD) SİSTEMİ ══
       const ORCHARD_DEF = {
         apple: { name: 'Elma', icon: '🍎', color: '#CC2200', leafColor: '#2D7A1E', growTime: 45, produceTime: 30, price: 20 },
         orange: { name: 'Portakal', icon: '🍊', color: '#FF8800', leafColor: '#3A8A15', growTime: 55, produceTime: 35, price: 24 },
-        grape: { name: 'Üzüm', icon: '🍇', color: '#7B2FBE', leafColor: '#1E6B10', growTime: 65, produceTime: 40, price: 28 },
+        grape:  { name: 'Üzüm',    icon: '🍇', color: '#7B2FBE', leafColor: '#1E6B10', growTime: 65, produceTime: 40, price: 28 },
+        cherry: { name: 'Kiraz',   icon: '🍒', color: '#CC0033', leafColor: '#256B12', growTime: 40, produceTime: 25, price: 36 },
+        lemon:  { name: 'Limon',   icon: '🍋', color: '#F5D300', leafColor: '#3D8B20', growTime: 50, produceTime: 32, price: 22 },
+        pear:   { name: 'Armut',   icon: '🍐', color: '#A8C820', leafColor: '#2A7018', growTime: 60, produceTime: 38, price: 28 },
       };
-      const ORCHARD_SEED_COST = { apple: 30, orange: 40, grape: 50 };
+      const ORCHARD_SEED_COST = { apple: 30, orange: 40, grape: 50, cherry: 48, lemon: 35, pear: 45 };
 
       function getOrchardSlotPos(slot) {
         if (slot.side === 'left') {
@@ -1741,15 +1754,16 @@
       }
       function giveNeighbor(i) {
         callAPI('giveNeighbor', { requestIndex: i }).then(d => {
-          neighborRequests[i].fulfilled = true;
+          // Tamamlanan görevi farklı bir görevle hemen değiştir
+          const _excl = neighborRequests.filter((_, j) => j !== i);
+          neighborRequests[i] = _pickNeighborRequests(_excl)[0] || { ...NEIGHBOR_REQUESTS[0], id: Date.now(), fulfilled: false };
           gold = d.newGold; inventory = d.inventory; _applyLvl(d);
           checkQuestProgress('give_neighbor', 1, true); updateHUD(); openNeighbor();
           showMsg('🧑‍🌾 ' + neighborRequests[i].name + "'e verildi! " + +d.reward + '₺');
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function refreshNeighborRequests() {
-        neighborRequests = [];
-        for (let i = 0; i < 3; i++) { const r = NEIGHBOR_REQUESTS[Math.floor(Math.random() * NEIGHBOR_REQUESTS.length)]; neighborRequests.push({ ...r, id: i, fulfilled: false }); }
+        neighborRequests = _pickNeighborRequests(neighborRequests);
         openNeighbor();
       }
 
@@ -2411,7 +2425,7 @@
           const baseSpeed = tkDef.baseSpeed || 1.2;
           const boostAmt = (tkDef.boostSpeed || 3.2) - baseSpeed;
           const boost = (PU.keys['ArrowRight'] || PU.keys['d'] || PU.keys['D']) ? boostAmt : 0;
-          const brake = (PU.keys['ArrowLeft'] || PU.keys['a'] || PU.keys['A']) ? -2.5 : 0;
+          const brake = (PU.keys['ArrowLeft'] || PU.keys['a'] || PU.keys['A']) ? -(baseSpeed + 2.5) : 0;
           PU.speed = baseSpeed + boost + brake;
           if (t.wx < PU.ROAD_LEN - 50) t.wx = Math.max(0, t.wx + PU.speed);
 
@@ -2479,9 +2493,12 @@
         const ov = document.getElementById('pickup-overlay');
         if (!auto) { ov.style.display = 'none'; return; }
         if (PU.score > 0 || PU.won) {
-          callAPI('completePickup', { score: PU.score, won: PU.won }).then(d => {
-            gold = d.newGold; _applyLvl(d); updateHUD();
-          }).catch(() => { });
+          // gold, teslim sırasında zaten gold += earned ile güncellendi.
+          // Sunucunun eski (kamyon alımı öncesi) bakiyesiyle ezmemek için d.newGold kullanılmıyor.
+          saveGame();
+          callAPI('completePickup', { score: PU.score, won: PU.won, clientGold: gold }).then(d => {
+            _applyLvl(d); updateHUD(); saveGame();
+          }).catch(() => { updateHUD(); });
         }
         if (!PU.won) {
           showMsg('⏱ Süre doldu! +' + PU.score + '₺ kazandın.', 2800);
@@ -2802,6 +2819,7 @@
         gold -= tk.price; updateHUD();
         if (!ownedTrucks.includes(id)) ownedTrucks.push(id);
         playerTruck = id; saveGame();
+        if (_SEC._uid) _saveToCloud(_SEC._uid); // hemen buluta yansıt
         showMsg('🎉 ' + tk.name + ' satın alındı!', 2000);
         openGarage();
       }

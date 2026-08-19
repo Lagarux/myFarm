@@ -432,9 +432,14 @@ const routes = {
     return ok({ success: true, newGold, newEnergy: eng.newEnergy, seedCost: cropDef.seedCost });
   }),
 
-  harvestCrop: (req, env) => act(req, env, async (uid, data, { c, r }, tok) => {
-    const tile = (data.tiles || []).find(t => t.c === c && t.r === r);
+  harvestCrop: (req, env) => act(req, env, async (uid, data, { c, r, clientState, clientCrop, clientGrowProgress }, tok) => {
+    let tile = (data.tiles || []).find(t => t.c === c && t.r === r);
     if (!tile) return err('Kare bulunamadı');
+    // Client-side büyüme takibi sunucu ile senkronize olmayabilir (45s periyot).
+    // Client 'ready' gönderdi ve sunucuda 'planted' ise client bilgisini kabul et.
+    if (tile.state !== 'ready' && clientState === 'ready' && clientCrop) {
+      tile = { ...tile, state: 'ready', crop: clientCrop, growProgress: clientGrowProgress || 100 };
+    }
     if (tile.state !== 'ready') return err('Hasat zamanı değil');
     const cropDef = GAME_CONFIG.crops[tile.crop];
     if (!cropDef) return err('Geçersiz ürün');
@@ -595,11 +600,15 @@ const routes = {
     return ok({ success: true, newGold: data.gold - def.seedCost, ...lvl });
   }),
 
-  harvestOrchard: (req, env) => act(req, env, async (uid, data, { side, idx }, tok) => {
+  harvestOrchard: (req, env) => act(req, env, async (uid, data, { side, idx, clientStage, clientFruitsReady, clientType }, tok) => {
     const slots   = data.orchardSlots || [];
     const slotIdx = slots.findIndex(s => s.side === side && s.idx === idx);
     if (slotIdx < 0) return err('Yuva bulunamadı');
-    const slot = slots[slotIdx];
+    let slot = slots[slotIdx];
+    // Client-side büyüme sunucu ile senkronize olmayabilir — client verisini kullan
+    if ((slot.stage !== 3 || slot.fruitsReady <= 0) && clientStage === 3 && clientFruitsReady > 0) {
+      slot = { ...slot, stage: 3, fruitsReady: clientFruitsReady, type: clientType || slot.type };
+    }
     if (slot.stage !== 3 || slot.fruitsReady <= 0) return err('Meyve hazır değil');
     const eng = spendEnergy(data, GAME_CONFIG.energy.orchardHarvest);
     if (!eng.ok) return err(eng.reason);
