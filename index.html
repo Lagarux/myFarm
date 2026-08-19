@@ -3286,70 +3286,73 @@
           ctx.fillStyle = '#2C9ECC'; ctx.beginPath(); ctx.ellipse(poolX, poolY, 12*SCALE, 4*SCALE, 0, 0, Math.PI*2); ctx.fill();
           ctx.fillStyle = 'rgba(200,240,255,0.35)'; ctx.beginPath(); ctx.ellipse(poolX - 4*SCALE, poolY - SCALE, 5*SCALE, 1.8*SCALE, 0, 0, Math.PI*2); ctx.fill();
 
-          // ── GROUND RIVER — flows RIGHT from pool across green area ──
-          const rvStartX = poolX - 10 * SCALE; // from pool
-          const rvEndX = OX - 12 * SCALE;      // toward the farm edge
-          const rvLen = rvEndX - rvStartX;
-          const rvH = 13 * SCALE;              // river depth (visible width in scene)
+          // ── GROUND RIVER — perspective flow DOWNWARD (toward viewer) ──
+          // Starts narrow at pool, widens toward screen bottom (3D perspective)
+          const rvTopX = poolX, rvTopY = poolY + 3 * SCALE;
+          const rvBotX = poolX + 6 * SCALE;   // slight rightward drift as it spreads
+          const rvBotY = H + 10;               // exits past screen bottom
+          const rvWt = 7 * SCALE;              // half-width at top (far/narrow)
+          const rvWb = 42 * SCALE;             // half-width at bottom (near/wide)
           ctx.lineCap = 'round';
 
-          // River bed shadow (darker, slightly wider)
-          ctx.fillStyle = '#0F3050';
+          // River bed / shadow (slightly wider than water)
+          ctx.fillStyle = '#0D2E48';
           ctx.beginPath();
-          ctx.moveTo(rvStartX, groundY(rvStartX) + 2*SCALE);
-          for (let rx = rvStartX; rx <= rvEndX; rx += 7) ctx.lineTo(rx, groundY(rx) + 2*SCALE);
-          ctx.lineTo(rvEndX, groundY(rvEndX) + rvH + 3*SCALE);
-          for (let rx = rvEndX; rx >= rvStartX; rx -= 7) ctx.lineTo(rx, groundY(rx) + rvH + 3*SCALE);
+          ctx.moveTo(rvTopX - rvWt - SCALE, rvTopY);
+          ctx.quadraticCurveTo(rvBotX - rvWb * 0.7, (rvTopY + rvBotY) * 0.5, rvBotX - rvWb - 3*SCALE, rvBotY);
+          ctx.lineTo(rvBotX + rvWb + 3*SCALE, rvBotY);
+          ctx.quadraticCurveTo(rvBotX + rvWb * 0.7, (rvTopY + rvBotY) * 0.5, rvTopX + rvWt + SCALE, rvTopY);
           ctx.closePath(); ctx.fill();
 
-          // River water — gradient from pool end (deeper blue) to right (lighter)
-          const rvGrad = ctx.createLinearGradient(rvStartX, 0, rvEndX, 0);
-          rvGrad.addColorStop(0, '#1A6BA8'); rvGrad.addColorStop(0.45, '#2490CC'); rvGrad.addColorStop(1, '#1A5F98');
+          // River water body — vertical gradient (dark at top/distant, brighter near)
+          const rvGrad = ctx.createLinearGradient(0, rvTopY, 0, H);
+          rvGrad.addColorStop(0, '#1A5F98'); rvGrad.addColorStop(0.4, '#2490CC'); rvGrad.addColorStop(1, '#1A7AB8');
           ctx.fillStyle = rvGrad;
           ctx.beginPath();
-          // Upper bank (slight sine wave)
-          ctx.moveTo(rvStartX, groundY(rvStartX) + 2*SCALE);
-          for (let rx = rvStartX; rx <= rvEndX; rx += 7) {
-            const wv = Math.sin(rx * 0.055 - animT * 0.03) * 1.2 * SCALE;
-            ctx.lineTo(rx, groundY(rx) + 2*SCALE + wv);
-          }
-          // Lower bank
-          ctx.lineTo(rvEndX, groundY(rvEndX) + rvH);
-          for (let rx = rvEndX; rx >= rvStartX; rx -= 7) {
-            const wv = Math.sin(rx * 0.055 - animT * 0.03 + 1.8) * 0.8 * SCALE;
-            ctx.lineTo(rx, groundY(rx) + rvH + wv);
-          }
+          ctx.moveTo(rvTopX - rvWt, rvTopY);
+          ctx.quadraticCurveTo(rvBotX - rvWb * 0.65, (rvTopY + rvBotY) * 0.5, rvBotX - rvWb, rvBotY);
+          ctx.lineTo(rvBotX + rvWb, rvBotY);
+          ctx.quadraticCurveTo(rvBotX + rvWb * 0.65, (rvTopY + rvBotY) * 0.5, rvTopX + rvWt, rvTopY);
           ctx.closePath(); ctx.fill();
 
-          // Surface highlight strip
-          ctx.fillStyle = 'rgba(160,220,255,0.18)';
+          // Center highlight strip (brighter spine of river)
+          ctx.fillStyle = 'rgba(160,225,255,0.20)';
           ctx.beginPath();
-          ctx.moveTo(rvStartX, groundY(rvStartX) + 3*SCALE);
-          for (let rx = rvStartX; rx <= rvEndX; rx += 10) ctx.lineTo(rx, groundY(rx) + 3*SCALE);
-          ctx.lineTo(rvEndX, groundY(rvEndX) + rvH * 0.4);
-          for (let rx = rvEndX; rx >= rvStartX; rx -= 10) ctx.lineTo(rx, groundY(rx) + rvH * 0.4);
+          ctx.moveTo(rvTopX - rvWt * 0.3, rvTopY);
+          ctx.quadraticCurveTo(rvBotX - rvWb * 0.2, (rvTopY + rvBotY) * 0.5, rvBotX - rvWb * 0.25, rvBotY);
+          ctx.lineTo(rvBotX + rvWb * 0.25, rvBotY);
+          ctx.quadraticCurveTo(rvBotX + rvWb * 0.2, (rvTopY + rvBotY) * 0.5, rvTopX + rvWt * 0.3, rvTopY);
           ctx.closePath(); ctx.fill();
 
-          // Animated flow lines moving RIGHT (shows direction)
-          for (let r = 0; r < 7; r++) {
-            const rp = ((animT * 2.8 + r * rvLen / 7) % rvLen);
-            const rx0 = rvStartX + rp;
-            const ry0 = groundY(rx0) + rvH * 0.45;
-            const alpha = 0.5 - (r / 7) * 0.2;
-            ctx.strokeStyle = `rgba(180,235,255,${alpha})`; ctx.lineWidth = 1.4;
-            ctx.beginPath(); ctx.moveTo(rx0, ry0); ctx.lineTo(rx0 + 18 * SCALE, ry0 + SCALE * 0.5); ctx.stroke();
+          // Animated horizontal ripple lines flowing DOWNWARD with perspective scale
+          for (let r = 0; r < 9; r++) {
+            const t = ((animT * 0.022 + r / 9) % 1);
+            const fy = rvTopY + (H - rvTopY) * t;
+            // Interpolated x-center and half-width at this depth
+            const fcx = rvTopX + (rvBotX - rvTopX) * t;
+            const fw  = rvWt  + (rvWb  - rvWt)  * t;
+            // Sine wave offset gives curved ripple look
+            const wv = Math.sin(animT * 0.04 + r * 1.1) * fw * 0.08;
+            const alpha = 0.48 * (1 - t * 0.5);
+            ctx.strokeStyle = `rgba(180,235,255,${alpha})`; ctx.lineWidth = (0.8 + t * 2) * SCALE;
+            ctx.beginPath();
+            ctx.moveTo(fcx - fw * 0.75 + wv, fy);
+            ctx.quadraticCurveTo(fcx + wv, fy - fw * 0.06, fcx + fw * 0.75 + wv, fy);
+            ctx.stroke();
           }
 
-          // Floating sparkle particles moving right
-          for (let r = 0; r < 5; r++) {
-            const t = ((animT * 0.02 + r * 0.2) % 1);
-            const bx = rvStartX + rvLen * t;
-            const by = groundY(bx) + rvH * (0.3 + (r % 3) * 0.2);
-            ctx.fillStyle = `rgba(210,245,255,${0.6 - r * 0.1})`;
-            ctx.beginPath(); ctx.arc(bx, by, (0.8 + t) * SCALE, 0, Math.PI * 2); ctx.fill();
+          // Sparkle particles flowing downward (depth-scaled)
+          for (let r = 0; r < 6; r++) {
+            const t = ((animT * 0.025 + r / 6) % 1);
+            const fy = rvTopY + (H - rvTopY) * t;
+            const fcx = rvTopX + (rvBotX - rvTopX) * t;
+            const fw  = rvWt  + (rvWb  - rvWt)  * t;
+            const bx = fcx + (Math.sin(r * 2.4) * fw * 0.4);
+            ctx.fillStyle = `rgba(215,248,255,${0.55 - t * 0.3})`;
+            ctx.beginPath(); ctx.arc(bx, fy, (0.6 + t * 2) * SCALE, 0, Math.PI * 2); ctx.fill();
           }
 
-          // Expanding pool ripple
+          // Pool ripple at river source
           const rOff = ((animT * 0.45) % 11) * SCALE;
           ctx.strokeStyle = 'rgba(160,220,255,0.28)'; ctx.lineWidth = 0.9;
           ctx.beginPath(); ctx.ellipse(poolX, poolY, rOff + 5*SCALE, (rOff + 5*SCALE) * 0.34, 0, 0, Math.PI*2); ctx.stroke();
