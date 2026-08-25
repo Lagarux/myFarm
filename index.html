@@ -270,25 +270,43 @@
       line-height: 1.1;
     }
 
-    /* ── MESSAGES ── */
-    #msg {
+    /* ── NOTIFICATIONS ── */
+    #notif-container {
       position: absolute;
-      top: 47%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.9);
-      border: 2px solid #FFD700;
-      color: #FFD700;
-      padding: 8px 18px;
-      border-radius: 10px;
-      font-family: var(--font-ui);
-      font-size: 13px;
-      font-weight: 700;
+      top: 58px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
       pointer-events: none;
+      z-index: 200;
+      max-width: 270px;
+    }
+    .notif-toast {
+      background: rgba(15, 15, 15, 0.93);
+      border-left: 3px solid #FFD700;
+      color: #FFD700;
+      padding: 7px 13px;
+      border-radius: 0 8px 8px 0;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      transform: translateX(calc(-100% - 14px));
       opacity: 0;
-      transition: opacity .3s;
-      text-align: center;
-      max-width: 82vw;
+      transition: transform 0.28s cubic-bezier(.22,1,.36,1), opacity 0.28s;
+      white-space: nowrap;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+    }
+    .notif-toast.nt-show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .notif-toast.nt-hide {
+      transform: translateX(calc(-100% - 14px));
+      opacity: 0;
     }
 
     /* ── MODAL ── */
@@ -882,7 +900,7 @@
       </div>
     </div>
     <div id="weather-banner">🌤️</div>
-    <div id="msg"></div>
+    <div id="notif-container"></div>
     <div id="save-indicator">💾 Kaydedildi</div>
   </div>
 
@@ -1451,8 +1469,19 @@
 
       // ══ MESSAGES ══
       function showMsg(txt, dur = 1800) {
-        const m = document.getElementById('msg'); m.innerHTML = txt; m.style.opacity = '1';
-        clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = '0', dur);
+        const container = document.getElementById('notif-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = 'notif-toast';
+        toast.textContent = txt;
+        container.appendChild(toast);
+        toast.getBoundingClientRect(); // force reflow
+        toast.classList.add('nt-show');
+        setTimeout(() => {
+          toast.classList.remove('nt-show');
+          toast.classList.add('nt-hide');
+          setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 320);
+        }, dur);
       }
       function addParticle(x, y, text, color = '#FFD700') { particles.push({ x, y, text, color, life: 1, vy: -1.5, vx: (Math.random() - .5) * 0.8, type: 'text' }); }
       function addSparkles(x, y, count, color1, color2) {
@@ -4222,6 +4251,10 @@
           playerGender = d.playerGender || null;
           playerOutfit = d.playerOutfit || null;
           ownedOutfits = d.ownedOutfits || [];
+          playerTruck = d.playerTruck || 'basic';
+          ownedTrucks = d.ownedTrucks && d.ownedTrucks.length > 0 ? d.ownedTrucks : ['basic'];
+          const _defUpg = { basic: { speed: 0, cargo: 0 }, pickup: { speed: 0, cargo: 0 }, semi: { speed: 0, cargo: 0 }, racer: { speed: 0, cargo: 0 } };
+          truckUpgrades = d.truckUpgrades ? Object.assign(_defUpg, d.truckUpgrades) : _defUpg;
           _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
           return true;
         } catch (err) { console.warn('Cloud load error:', err); return false; }
