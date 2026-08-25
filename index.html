@@ -1133,7 +1133,7 @@
       let tiles = [], animals = [], animalId = 1;
       let player = { x: 2, y: 2, moving: false };
       let gold = 300, energy = 100, maxEnergy = 100, level = 1, xp = 0, maxXp = 100;
-      let inventory = { wheat: 0, corn: 0, tomato: 0, carrot: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0 };
+      let inventory = { wheat: 0, corn: 0, tomato: 0, carrot: 0, potato: 0, strawberry: 0, pumpkin: 0, sunflower: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0, cherry: 0, lemon: 0, pear: 0 };
       let playerTruck = 'basic';
       let ownedTrucks = ['basic'];
       let truckUpgrades = { basic: { speed: 0, cargo: 0 }, pickup: { speed: 0, cargo: 0 }, semi: { speed: 0, cargo: 0 }, racer: { speed: 0, cargo: 0 } };
@@ -1198,7 +1198,7 @@
           const d = JSON.parse(raw);
           gold = d.gold || 300; energy = d.energy || 100; maxEnergy = d.maxEnergy || 100;
           level = d.level || 1; xp = d.xp || 0; maxXp = d.maxXp || 100;
-          inventory = Object.assign({ wheat: 0, corn: 0, tomato: 0, carrot: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0 }, d.inventory || {});
+          inventory = Object.assign({ wheat: 0, corn: 0, tomato: 0, carrot: 0, potato: 0, strawberry: 0, pumpkin: 0, sunflower: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0, cherry: 0, lemon: 0, pear: 0 }, d.inventory || {});
           if (d.tiles && d.tiles.length) {
             tiles = [];
             for (let r = 0; r < ROWS; r++)for (let c = 0; c < COLS; c++) {
@@ -1676,24 +1676,38 @@
       }
 
       // ══ MARKET ══
+      const MARKET_ITEMS = [
+        { key: 'wheat',      icon: '🌾', name: 'Buğday' },
+        { key: 'corn',       icon: '🌽', name: 'Mısır' },
+        { key: 'tomato',     icon: '🍅', name: 'Domates' },
+        { key: 'carrot',     icon: '🥕', name: 'Havuç' },
+        { key: 'potato',     icon: '🥔', name: 'Patates' },
+        { key: 'strawberry', icon: '🍓', name: 'Çilek' },
+        { key: 'pumpkin',    icon: '🎃', name: 'Kabak' },
+        { key: 'sunflower',  icon: '🌻', name: 'Ayçiçeği' },
+        { key: 'apple',      icon: '🍎', name: 'Elma' },
+        { key: 'orange',     icon: '🍊', name: 'Portakal' },
+        { key: 'grape',      icon: '🍇', name: 'Üzüm' },
+        { key: 'cherry',     icon: '🍒', name: 'Kiraz' },
+        { key: 'lemon',      icon: '🍋', name: 'Limon' },
+        { key: 'pear',       icon: '🍐', name: 'Armut' },
+        { key: 'meat',       icon: '🥩', name: 'Et' },
+        { key: 'wool',       icon: '🧶', name: 'Yün' },
+        { key: 'egg',        icon: '🥚', name: 'Yumurta' },
+        { key: 'milk',       icon: '🍶', name: 'Süt' },
+      ];
       function openMarket() {
         const mc = document.getElementById('modal-content');
         let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🛒 Pazar Yeri</h2>';
-        const items = [
-          { key: 'wheat', icon: '🌾', name: 'Buğday' }, { key: 'corn', icon: '🌽', name: 'Mısır' },
-          { key: 'tomato', icon: '🍅', name: 'Domates' }, { key: 'carrot', icon: '🥕', name: 'Havuç' },
-          { key: 'apple', icon: '🍎', name: 'Elma' }, { key: 'orange', icon: '🍊', name: 'Portakal' },
-          { key: 'grape', icon: '🍇', name: 'Üzüm' }, { key: 'meat', icon: '🥩', name: 'Et' },
-          { key: 'wool', icon: '🧶', name: 'Yün' }, { key: 'egg', icon: '🥚', name: 'Yumurta' }, { key: 'milk', icon: '🍶', name: 'Süt' }
-        ];
         let totalValue = 0;
-        items.forEach(it => {
+        MARKET_ITEMS.forEach(it => {
           const qty = inventory[it.key] || 0; const price = MARKET_PRICES[it.key] || 0; const val = qty * price; totalValue += val;
-          html += `<div class="mrow">
+          const hasItems = qty > 0;
+          html += `<div class="mrow" style="${hasItems ? '' : 'opacity:0.45;'}">
       <div><div class="mrow-label">${it.icon} ${it.name}</div><div class="mrow-sub">${price}₺/adet · Elimde: ${qty}</div></div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="color:#FFD700;font-size:15px;font-weight:800;">${val}₺</span>
-        <button class="mbtn" onclick="sellAll('${it.key}')">Sat</button>
+        <button class="mbtn" onclick="sellAll('${it.key}')" ${hasItems ? '' : 'disabled'}>Sat</button>
       </div>
     </div>`;
         });
@@ -2867,6 +2881,7 @@
         gold -= cost; updateHUD();
         truckUpgrades[id] = { ...upg, [stat]: lvl + 1 };
         saveGame();
+        if (_SEC._uid) _saveToCloud(_SEC._uid);
         const label = stat === 'speed' ? '⚡ Hız' : '📦 Kargo';
         showMsg(label + ' yükseltildi! (Seviye ' + (lvl + 1) + ')', 1800);
         openGarage();
@@ -4233,7 +4248,7 @@
           if (!d) return false;
           gold = d.gold || 300; energy = d.energy || 100; maxEnergy = d.maxEnergy || 100;
           level = d.level || 1; xp = d.xp || 0; maxXp = d.maxXp || 100;
-          inventory = Object.assign({ wheat: 0, corn: 0, tomato: 0, carrot: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0 }, d.inventory || {});
+          inventory = Object.assign({ wheat: 0, corn: 0, tomato: 0, carrot: 0, potato: 0, strawberry: 0, pumpkin: 0, sunflower: 0, meat: 0, wool: 0, egg: 0, milk: 0, apple: 0, orange: 0, grape: 0, cherry: 0, lemon: 0, pear: 0 }, d.inventory || {});
           if (d.tiles && d.tiles.length) {
             tiles = [];
             for (let r = 0; r < ROWS; r++)for (let c = 0; c < COLS; c++) {
@@ -4247,6 +4262,7 @@
           activeQuests = d.activeQuests || []; completedQuests = d.completedQuests || [];
           questProgress = Object.assign({ harvest: 0, buy_animal: 0, feed_animal: 0, pickup: 0, earn_gold: 0, water: 0, slaughter: 0, give_neighbor: 0, breed: 0 }, d.questProgress || {});
           neighborRequests = d.neighborRequests || [];
+          neighborCooldown = d.neighborCooldown || 0;
           orchardSlots = d.orchardSlots && d.orchardSlots.length > 0 ? d.orchardSlots : _defaultOrchard();
           playerGender = d.playerGender || null;
           playerOutfit = d.playerOutfit || null;
@@ -4270,7 +4286,7 @@
             gold, energy, maxEnergy, level, xp, maxXp, inventory,
             tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
             animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
-            activeQuests, completedQuests, questProgress, neighborRequests, orchardSlots,
+            activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown, orchardSlots,
             playerGender, playerOutfit, ownedOutfits, truckUpgrades, playerTruck, ownedTrucks
           });
         } catch (e) { console.warn('Cloud save error:', e); }

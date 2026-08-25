@@ -19,16 +19,21 @@ const GAME_CONFIG = {
   maxLevel:       100,
 
   crops: {
-    wheat:  { seedCost: 5,  growTime: 30, price: 8,  xp: 5  },
-    corn:   { seedCost: 10, growTime: 50, price: 15, xp: 10 },
-    tomato: { seedCost: 15, growTime: 70, price: 25, xp: 15 },
-    carrot: { seedCost: 12, growTime: 60, price: 20, xp: 12 },
+    wheat:      { seedCost:  5, growTime:  30, price: 10, xp:  5 },
+    corn:       { seedCost: 10, growTime:  50, price: 18, xp: 10 },
+    tomato:     { seedCost: 15, growTime:  70, price: 28, xp: 15 },
+    carrot:     { seedCost: 12, growTime:  60, price: 22, xp: 12 },
+    potato:     { seedCost:  8, growTime:  45, price: 15, xp:  8 },
+    strawberry: { seedCost: 18, growTime:  55, price: 34, xp: 18 },
+    pumpkin:    { seedCost: 22, growTime:  85, price: 42, xp: 22 },
+    sunflower:  { seedCost: 14, growTime:  65, price: 26, xp: 14 },
   },
 
   market: {
-    wheat: 8, corn: 15, tomato: 25, carrot: 20,
-    meat: 45, wool: 30, egg: 12, milk: 18,
-    apple: 20, orange: 24, grape: 28,
+    wheat: 10, corn: 18, tomato: 28, carrot: 22,
+    potato: 15, strawberry: 34, pumpkin: 42, sunflower: 26,
+    meat: 48, wool: 32, egg: 14, milk: 20,
+    apple: 20, orange: 25, grape: 30, cherry: 36, lemon: 22, pear: 28,
   },
 
   animals: {
@@ -38,9 +43,12 @@ const GAME_CONFIG = {
   },
 
   orchard: {
-    apple:  { seedCost: 30, producePrice: 20, xp: 8  },
-    orange: { seedCost: 40, producePrice: 24, xp: 10 },
-    grape:  { seedCost: 50, producePrice: 28, xp: 12 },
+    apple:  { seedCost: 30, producePrice: 20, xp:  8 },
+    orange: { seedCost: 42, producePrice: 25, xp: 10 },
+    grape:  { seedCost: 55, producePrice: 30, xp: 12 },
+    cherry: { seedCost: 48, producePrice: 36, xp: 14 },
+    lemon:  { seedCost: 35, producePrice: 22, xp:  9 },
+    pear:   { seedCost: 45, producePrice: 28, xp: 11 },
   },
 
   energy: {
@@ -365,7 +373,7 @@ const routes = {
         level: 1, xp: 0, maxXp: 100,
         dayCount: 1, gameTime: 360, weather: 'sunny', weatherTimer: 300,
         totalGoldEarned: 0,
-        inventory: { wheat:0, corn:0, tomato:0, carrot:0, meat:0, wool:0, egg:0, milk:0, apple:0, orange:0, grape:0 },
+        inventory: { wheat:0, corn:0, tomato:0, carrot:0, potato:0, strawberry:0, pumpkin:0, sunflower:0, meat:0, wool:0, egg:0, milk:0, apple:0, orange:0, grape:0, cherry:0, lemon:0, pear:0 },
         tiles,
         animals: [], animalId: 1,
         orchardSlots: [
