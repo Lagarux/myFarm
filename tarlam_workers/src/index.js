@@ -644,11 +644,17 @@ const routes = {
 
   // ── KOMŞU & GÖREV ─────────────────────────────────────────
 
-  giveNeighbor: (req, env) => act(req, env, async (uid, data, { requestIndex }, tok) => {
+  giveNeighbor: (req, env) => act(req, env, async (uid, data, { requestIndex, clientInventory }, tok) => {
     const reqs = data.neighborRequests || [];
     const req2 = reqs[requestIndex];
     if (!req2 || req2.fulfilled) return err('Geçersiz veya zaten tamamlanmış talep');
-    const inv = data.inventory || {};
+    // Client envanteri sunucudan daha güncel olabilir (harvest → give arası sync gecikmesi)
+    // Her iki kaynaktan maksimumu kullan; yine de fazla teslim önlenir
+    const serverInv = data.inventory || {};
+    const clientInv = (clientInventory && typeof clientInventory === 'object') ? clientInventory : {};
+    const inv = {};
+    const allKeys = new Set([...Object.keys(serverInv), ...Object.keys(clientInv)]);
+    allKeys.forEach(k => { inv[k] = Math.max(serverInv[k] || 0, clientInv[k] || 0); });
     if ((inv[req2.type] || 0) < req2.qty) return err('Yeterli ürün yok');
     const reward       = req2.reward;
     const newInv       = { ...inv, [req2.type]: (inv[req2.type] || 0) - req2.qty };

@@ -1774,8 +1774,8 @@
         const mc = document.getElementById('modal-content');
         let html = '<button class="mclose" onclick="closeModal()">✖ Kapat</button><h2>🧑‍🌾 Komşu Çiftçiler</h2>';
         html += '<div class="section-label" style="font-size:13px;font-weight:400;color:#aaa;">Komşular ürün istiyor — yardım et, altın kazan!</div>';
-        const icons = { wheat: '🌾', corn: '🌽', tomato: '🍅', carrot: '🥕', egg: '🥚', wool: '🧶', milk: '🍶', meat: '🥩', apple: '🍎', grape: '🍇' };
-        const itemNames = { wheat: 'Buğday', corn: 'Mısır', tomato: 'Domates', carrot: 'Havuç', egg: 'Yumurta', wool: 'Yün', milk: 'Süt', meat: 'Et', apple: 'Elma', grape: 'Üzüm' };
+        const icons = { wheat: '🌾', corn: '🌽', tomato: '🍅', carrot: '🥕', potato: '🥔', strawberry: '🍓', pumpkin: '🎃', sunflower: '🌻', egg: '🥚', wool: '🧶', milk: '🍶', meat: '🥩', apple: '🍎', orange: '🍊', grape: '🍇', cherry: '🍒', lemon: '🍋', pear: '🍐' };
+        const itemNames = { wheat: 'Buğday', corn: 'Mısır', tomato: 'Domates', carrot: 'Havuç', potato: 'Patates', strawberry: 'Çilek', pumpkin: 'Kabak', sunflower: 'Ayçiçeği', egg: 'Yumurta', wool: 'Yün', milk: 'Süt', meat: 'Et', apple: 'Elma', orange: 'Portakal', grape: 'Üzüm', cherry: 'Kiraz', lemon: 'Limon', pear: 'Armut' };
         neighborRequests.forEach((req, i) => {
           const have = inventory[req.type] || 0; const canFill = have >= req.qty && !req.fulfilled;
           html += `<div class="mrow">
@@ -1796,13 +1796,14 @@
         mc.innerHTML = html; document.getElementById('modal').classList.add('show');
       }
       function giveNeighbor(i) {
-        callAPI('giveNeighbor', { requestIndex: i }).then(d => {
+        const _oldNeighbor = neighborRequests[i];
+        callAPI('giveNeighbor', { requestIndex: i, clientInventory: inventory }).then(d => {
           // Tamamlanan görevi farklı bir görevle hemen değiştir
           const _excl = neighborRequests.filter((_, j) => j !== i);
           neighborRequests[i] = _pickNeighborRequests(_excl)[0] || { ...NEIGHBOR_REQUESTS[0], id: Date.now(), fulfilled: false };
           gold = d.newGold; inventory = d.inventory; _applyLvl(d);
           checkQuestProgress('give_neighbor', 1, true); updateHUD(); openNeighbor();
-          showMsg('🧑‍🌾 ' + neighborRequests[i].name + "'e verildi! " + +d.reward + '₺');
+          showMsg('🧑‍🌾 ' + _oldNeighbor.name + "'e verildi! +" + d.reward + '₺');
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function refreshNeighborRequests() {
