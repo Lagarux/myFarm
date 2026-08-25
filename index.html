@@ -897,6 +897,7 @@
             id="asheep">0</span> 🐔<span class="val" id="achicken">0</span></div>
         <div class="row" style="justify-content:flex-end">🥩<span class="val" id="imeat">0</span> 🧶<span class="val"
             id="iwool">0</span> 🥚<span class="val" id="iegg">0</span></div>
+        <div class="row" style="justify-content:flex-end;color:#FFD700;">★<span class="val" id="tokens">0</span> Jeton</div>
       </div>
     </div>
     <div id="weather-banner">🌤️</div>
@@ -920,6 +921,18 @@
     <div class="tb" id="btn-carrot" onclick="setTool('carrot')">
       <div class="ti">🥕</div>Havuç
     </div>
+    <div class="tb" id="btn-potato" onclick="setTool('potato')">
+      <div class="ti">🥔</div>Patates
+    </div>
+    <div class="tb" id="btn-strawberry" onclick="setTool('strawberry')">
+      <div class="ti">🍓</div>Çilek
+    </div>
+    <div class="tb" id="btn-pumpkin" onclick="setTool('pumpkin')">
+      <div class="ti">🎃</div>Kabak
+    </div>
+    <div class="tb" id="btn-sunflower" onclick="setTool('sunflower')">
+      <div class="ti">🌻</div>Ayç.
+    </div>
     <div class="tb" id="btn-water" onclick="setTool('water')">
       <div class="ti">💧</div>Sula
     </div>
@@ -940,6 +953,9 @@
     </div>
     <div class="tb" id="btn-quests" onclick="openQuests()">
       <div class="ti">📋</div>Görev
+    </div>
+    <div class="tb" id="btn-daily" onclick="openDailyQuests()">
+      <div class="ti">⭐</div>Günlük
     </div>
     <div class="tb" id="btn-neighbor" onclick="openNeighbor()">
       <div class="ti">🧑‍🌾</div>Komşu
@@ -1085,6 +1101,41 @@
         chicken: { name: 'Tavuk', buy: 30, food: 'corn', produceItem: 'egg', sellPrice: 50, slaughterMeat: 1, gestationDays: 3, emoji: '🐔' }
       };
       const MARKET_PRICES = { wheat: 10, corn: 18, tomato: 28, carrot: 22, potato: 15, strawberry: 34, pumpkin: 42, sunflower: 26, meat: 48, wool: 32, egg: 14, milk: 20, apple: 20, orange: 25, grape: 30, cherry: 36, lemon: 22, pear: 28 };
+
+      // ══ GÜNLÜK GÖREV SİSTEMİ ══
+      const DAILY_QUEST_TEMPLATES = [
+        { type: 'harvest',        goal: 5,   desc: '5 ürün hasat et',                 tokenReward: 2, goldReward: 60  },
+        { type: 'harvest',        goal: 10,  desc: '10 ürün hasat et',                tokenReward: 3, goldReward: 120 },
+        { type: 'water',          goal: 6,   desc: '6 tarla sula',                    tokenReward: 1, goldReward: 40  },
+        { type: 'water',          goal: 10,  desc: '10 tarla sula',                   tokenReward: 2, goldReward: 70  },
+        { type: 'give_neighbor',  goal: 1,   desc: 'Bir komşuya ürün ver',            tokenReward: 2, goldReward: 60  },
+        { type: 'give_neighbor',  goal: 2,   desc: 'İki komşuya ürün ver',            tokenReward: 4, goldReward: 110 },
+        { type: 'feed_animal',    goal: 3,   desc: '3 hayvan besle',                  tokenReward: 2, goldReward: 50  },
+        { type: 'collect_produce',goal: 2,   desc: 'Hayvanlardan 2 ürün topla',       tokenReward: 2, goldReward: 50  },
+        { type: 'pickup',         goal: 1,   desc: 'Nakliye görevini tamamla',        tokenReward: 5, goldReward: 150 },
+        { type: 'harvest_orchard',goal: 3,   desc: 'Meyve bahçesinden 3 meyve topla', tokenReward: 3, goldReward: 80  },
+        { type: 'sell_gold',      goal: 150, desc: '150₺ değerinde ürün sat',         tokenReward: 2, goldReward: 0   },
+        { type: 'sell_gold',      goal: 300, desc: '300₺ değerinde ürün sat',         tokenReward: 3, goldReward: 0   },
+        { type: 'till_tile',      goal: 4,   desc: '4 arazi işle',                    tokenReward: 1, goldReward: 30  },
+        { type: 'harvest',        goal: 20,  desc: '20 ürün hasat et',                tokenReward: 6, goldReward: 200 },
+        { type: 'feed_animal',    goal: 5,   desc: '5 hayvan besle',                  tokenReward: 3, goldReward: 80  },
+      ];
+      const SPECIAL_DAYS = {
+        7:  { desc: '7. Gün Bonusu! 🎁',   tokens: 5,  gold: 300  },
+        14: { desc: '14. Gün Bonusu! 🎁',  tokens: 10, gold: 700  },
+        21: { desc: '3. Hafta Bonusu! 🎁', tokens: 15, gold: 1200 },
+        30: { desc: '1 Ay Bonusu! 🏆',     tokens: 30, gold: 3000 },
+      };
+      const TOKEN_SHOP = [
+        { id: 'skin_golden_truck',   name: 'Altın Kamyon Kaplama', desc: 'Nakliye kamyonun altın görünür',       cost: 20,  icon: '🚛', type: 'cosmetic' },
+        { id: 'outfit_astronaut',    name: 'Astronot Kıyafeti',    desc: 'Galaksi çiftçisi kıyafeti',            cost: 15,  icon: '👨‍🚀', type: 'cosmetic' },
+        { id: 'outfit_robot',        name: 'Robot Kıyafeti',       desc: 'Fütüristik çiftçi görünümü',          cost: 18,  icon: '🤖', type: 'cosmetic' },
+        { id: 'frame_rainbow',       name: 'Gökkuşağı Çerçeve',    desc: 'Tarlanı gökkuşağı çerçeveler',        cost: 12,  icon: '🌈', type: 'cosmetic' },
+        { id: 'energy_potion',       name: 'Enerji İksiri',        desc: 'Anlık +50 enerji (tek kullanım)',      cost: 8,   icon: '⚡', type: 'consumable' },
+        { id: 'gold_boost_2h',       name: '2s Altın Bonusu',      desc: '2 saat boyunca satış %30 daha fazla', cost: 10,  icon: '💰', type: 'consumable' },
+        { id: 'super_seed',          name: 'Süper Tohum Paketi',   desc: '3 tur büyüme süresi yarıya iner',     cost: 14,  icon: '🌱', type: 'consumable' },
+      ];
+
       const SEASONS = ['❄️ Kış', '🌸 İlkbahar', '☀️ Yaz', '🍂 Sonbahar'];
       const WEATHER_TYPES = ['sunny', 'cloudy', 'rainy', 'stormy', 'windy'];
       const QUESTS_DEF = [
@@ -1166,6 +1217,8 @@
       let clouds = [], particles = [];
       let weather = 'sunny', weatherTimer = 300, weatherIntensity = 0;
       let rainDrops = [];
+      let tokens = 0;
+      let dailyQuests = [], lastQuestDay = 0, dailyQuestProgress = {};
       let activeQuests = [], completedQuests = [];
       let questProgress = { harvest: 0, buy_animal: 0, feed_animal: 0, pickup: 0, earn_gold: 0, water: 0, slaughter: 0, give_neighbor: 0, breed: 0 };
       let neighborRequests = [], neighborCooldown = 0;
@@ -1185,7 +1238,8 @@
           animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
           activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown,
           orchardSlots, currentTool, playerTruck, ownedTrucks, truckUpgrades,
-          playerGender, playerOutfit, ownedOutfits, savedAt: Date.now()
+          playerGender, playerOutfit, ownedOutfits,
+          tokens, dailyQuests, lastQuestDay, dailyQuestProgress, savedAt: Date.now()
         };
         try {
           localStorage.setItem('tarlam_save', JSON.stringify(data));
@@ -1221,6 +1275,10 @@
           playerGender = d.playerGender || null;
           playerOutfit = d.playerOutfit || null;
           ownedOutfits = d.ownedOutfits || [];
+          tokens = d.tokens || 0;
+          dailyQuests = d.dailyQuests || [];
+          lastQuestDay = d.lastQuestDay || 0;
+          dailyQuestProgress = d.dailyQuestProgress || {};
           return true;
         } catch (e) { console.warn('Yükleme hatası:', e); return false; }
       }
@@ -1376,7 +1434,7 @@
               addParticle(x, y - 40 * SCALE, def.icon + ' +' + d.count, def.color);
               addSparkles(x, y - 40 * SCALE, 12, def.color, '#FFFFA0');
               slot.fruitsReady = 0; slot.growTimer = 0;
-              _applyLvl(d); updateHUD(); showMsg(def.icon + ' ' + d.count + ' ' + def.name + ' hasat edildi!');
+              _applyLvl(d); updateHUD(); checkDailyQuestProgress('harvest_orchard', d.count); showMsg(def.icon + ' ' + d.count + ' ' + def.name + ' hasat edildi!');
             }).catch(e => showMsg('❌ ' + e.message));
           } else if (currentTool === 'water' && slot.stage >= 1) {
             callAPI('waterOrchard', { side: slot.side, idx: slot.idx }).then(d => {
@@ -1465,6 +1523,7 @@
         document.getElementById('achicken').textContent = animals.filter(a => a.type === 'chicken').length;
         document.getElementById('imeat').textContent = inventory.meat;
         document.getElementById('iwool').textContent = inventory.wool; document.getElementById('iegg').textContent = inventory.egg;
+        const tokEl = document.getElementById('tokens'); if (tokEl) tokEl.textContent = tokens;
       }
 
       // ══ MESSAGES ══
@@ -1504,7 +1563,7 @@
         xp += a;
         while (xp >= maxXp) {
           xp -= maxXp; level++; maxXp = Math.floor(maxXp * 1.4); maxEnergy = 100 + (level - 1) * 10; energy = maxEnergy;
-          showMsg('🎉 SEVİYE ' + level + '!', 3000); addParticle(W / 2, H / 2, '🎉 LEVEL UP!', '#FFD700'); checkQuestProgress('reach_level', level);
+          tokens += 5; showMsg('🎉 SEVİYE ' + level + '! +5 Jeton', 3000); addParticle(W / 2, H / 2, '🎉 LEVEL UP!', '#FFD700'); checkQuestProgress('reach_level', level);
         }
         updateHUD();
       }
@@ -1545,7 +1604,7 @@
             tile.watered = true; tile.waterTimer = d.rainBonus ? 200 : 120;
             energy = d.newEnergy; updateHUD();
             addParticle(cx, cy - 20, '💧', '#5BB8F5');
-            checkQuestProgress('water', 1, true);
+            checkQuestProgress('water', 1, true); checkDailyQuestProgress('water', 1);
             showMsg('Sulandı!' + (d.rainBonus ? ' (Yağmur bonusu!)' : ''));
           }).catch(e => showMsg('❌ ' + e.message));
 
@@ -1555,7 +1614,7 @@
             const cn = tile.crop;
             tile.state = 'tilled'; tile.crop = null; tile.growProgress = 0; tile.watered = false;
             inventory = d.inventory; energy = d.newEnergy;
-            _applyLvl(d); checkQuestProgress('harvest', 1, true);
+            _applyLvl(d); checkQuestProgress('harvest', 1, true); checkDailyQuestProgress('harvest', 1);
             addParticle(cx, cy - 20, CROPS[cn]?.icon + ' +1', CROPS[cn]?.color || '#FFD700');
             addSparkles(cx, cy - 20, 10, CROPS[cn]?.color || '#FFD700', '#FFFFA0');
             showMsg('Hasat yapıldı!'); updateHUD();
@@ -1628,7 +1687,7 @@
           const a = animals.find(x => x.id === id);
           if (a) { a.hunger = d.newHunger; a.happy = Math.min(100, a.happy + 25); }
           inventory = d.inventory;
-          checkQuestProgress('feed_animal', 1, true); updateHUD(); openBarn();
+          checkQuestProgress('feed_animal', 1, true); checkDailyQuestProgress('feed_animal', 1); updateHUD(); openBarn();
           showMsg(ADEF[animals.find(x => x.id === id)?.type]?.emoji + ' beslendi!');
         }).catch(e => showMsg('❌ ' + e.message));
       }
@@ -1637,6 +1696,7 @@
           const a = animals.find(x => x.id === id);
           if (a) { a.readyProduce = false; a.produceTimer = 0; }
           inventory = d.inventory; _applyLvl(d); updateHUD(); openBarn();
+          checkDailyQuestProgress('collect_produce', 1);
           showMsg(ADEF[a?.type]?.emoji + ' → +1 ' + d.produceItem + '!');
         }).catch(e => showMsg('❌ ' + e.message));
       }
@@ -1721,7 +1781,7 @@
         if ((inventory[key] || 0) <= 0) { showMsg('Satacak yok!'); openMarket(); return; }
         callAPI('sellItem', { itemKey: key }).then(d => {
           gold = d.newGold; inventory = Object.assign({}, inventory, { [key]: 0 });
-          _applyLvl(d); updateHUD(); openMarket(); showMsg('✅ +' + d.earned + '₺ kazanıldı!');
+          _applyLvl(d); updateHUD(); openMarket(); checkDailyQuestProgress('sell_gold', d.earned); showMsg('✅ +' + d.earned + '₺ kazanıldı!');
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function sellAllItems() {
@@ -1802,13 +1862,112 @@
           const _excl = neighborRequests.filter((_, j) => j !== i);
           neighborRequests[i] = _pickNeighborRequests(_excl)[0] || { ...NEIGHBOR_REQUESTS[0], id: Date.now(), fulfilled: false };
           gold = d.newGold; inventory = d.inventory; _applyLvl(d);
-          checkQuestProgress('give_neighbor', 1, true); updateHUD(); openNeighbor();
+          checkQuestProgress('give_neighbor', 1, true); checkDailyQuestProgress('give_neighbor', 1); updateHUD(); openNeighbor();
           showMsg('🧑‍🌾 ' + _oldNeighbor.name + "'e verildi! +" + d.reward + '₺');
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function refreshNeighborRequests() {
         neighborRequests = _pickNeighborRequests(neighborRequests);
         openNeighbor();
+      }
+
+      // ══ GÜNLÜK GÖREV SİSTEMİ ══
+      function _generateDailyQuests(day) {
+        const shuffled = [...DAILY_QUEST_TEMPLATES].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, 5).map((t, i) => ({
+          ...t, id: 'dq_' + day + '_' + i, done: false, claimed: false, progress: 0
+        }));
+      }
+      function _initDailyQuests() {
+        if (lastQuestDay !== dayCount || dailyQuests.length === 0) {
+          dailyQuests = _generateDailyQuests(dayCount);
+          lastQuestDay = dayCount;
+          dailyQuestProgress = {};
+          saveGame();
+        }
+      }
+      function checkDailyQuestProgress(type, amount) {
+        let anyCompleted = false;
+        dailyQuests.forEach(q => {
+          if (q.done || q.claimed) return;
+          if (q.type === type) {
+            q.progress = (q.progress || 0) + amount;
+            if (q.progress >= q.goal) {
+              q.done = true; anyCompleted = true;
+              showMsg('⭐ Günlük görev tamamlandı! Ödül almak için "Günlük" sekmesine git.', 2500);
+            }
+          }
+        });
+        if (anyCompleted) saveGame();
+      }
+      function claimDailyQuest(idx) {
+        const q = dailyQuests[idx];
+        if (!q || !q.done || q.claimed) { showMsg('Bu görev henüz tamamlanmadı.'); return; }
+        q.claimed = true;
+        tokens += q.tokenReward;
+        gold += q.goldReward;
+        updateHUD(); saveGame();
+        if (_SEC._uid) _saveToCloud(_SEC._uid);
+        showMsg('⭐ +' + q.tokenReward + ' Jeton' + (q.goldReward > 0 ? ' · +' + q.goldReward + '₺' : '') + ' kazandın!', 2500);
+        openDailyQuests();
+      }
+      function openDailyQuests() {
+        _initDailyQuests();
+        const mc = document.getElementById('modal-content');
+        const allDone = dailyQuests.filter(q => q.done && !q.claimed).length;
+        let h = '<button class="mclose" onclick="closeModal()">✖ Kapat</button>';
+        h += '<h2 style="color:#FFD700;margin:0 0 4px;">⭐ Günlük Görevler</h2>';
+        h += '<div style="color:#aaa;font-size:12px;margin-bottom:10px;">Gün ' + dayCount + ' — Her uyku sonrası yenilenir</div>';
+        if (allDone > 0) h += '<div style="color:#4FA028;font-size:12px;margin-bottom:8px;">✅ ' + allDone + ' görev ödül bekliyor!</div>';
+        dailyQuests.forEach((q, i) => {
+          const prog = Math.min(q.progress || 0, q.goal);
+          const pct = Math.round(prog / q.goal * 100);
+          const statusColor = q.claimed ? '#555' : q.done ? '#4FA028' : '#aaa';
+          const statusText = q.claimed ? '✅ Alındı' : q.done ? '🎁 Al!' : prog + '/' + q.goal;
+          h += `<div class="mrow" style="${q.claimed ? 'opacity:0.4;' : ''}">
+            <div style="flex:1;">
+              <div class="mrow-label" style="color:${statusColor}">${q.desc}</div>
+              <div style="margin-top:4px;background:#333;border-radius:4px;height:6px;overflow:hidden;">
+                <div style="background:${q.done ? '#4FA028' : '#C8A020'};width:${pct}%;height:100%;transition:width .3s;"></div>
+              </div>
+              <div style="font-size:11px;color:#aaa;margin-top:2px;">★${q.tokenReward} Jeton${q.goldReward > 0 ? ' · ' + q.goldReward + '₺' : ''}</div>
+            </div>
+            <div style="min-width:70px;text-align:right;font-size:12px;color:${q.done && !q.claimed ? '#FFD700' : statusColor};">
+              ${q.done && !q.claimed ? '<button class="mbtn" onclick="claimDailyQuest(' + i + ')">Al</button>' : statusText}
+            </div>
+          </div>`;
+        });
+        const spec = SPECIAL_DAYS[dayCount];
+        if (spec) h += `<div style="margin-top:10px;padding:8px;background:rgba(255,200,0,0.1);border:1px solid #FFD700;border-radius:8px;color:#FFD700;font-size:13px;">🎁 ${spec.desc} — +${spec.tokens} Jeton · +${spec.gold}₺</div>`;
+        h += `<div style="margin-top:10px;"><button class="mbtn gold" onclick="openTokenShop()">★ Jeton Mağazası (${tokens} Jeton)</button></div>`;
+        mc.innerHTML = h; document.getElementById('modal').classList.add('show');
+      }
+      function openTokenShop() {
+        const mc = document.getElementById('modal-content');
+        let h = '<button class="mclose" onclick="closeModal()">✖ Kapat</button>';
+        h += '<h2 style="color:#FFD700;margin:0 0 8px;">★ Jeton Mağazası</h2>';
+        h += '<div style="color:#FFD700;font-size:13px;margin-bottom:10px;">Elindeki Jeton: ★' + tokens + '</div>';
+        TOKEN_SHOP.forEach(item => {
+          const canBuy = tokens >= item.cost;
+          h += `<div class="mrow">
+            <div><div class="mrow-label">${item.icon} ${item.name}</div><div class="mrow-sub">${item.desc}</div></div>
+            <button class="mbtn" ${canBuy ? '' : 'disabled'} onclick="buyTokenItem('${item.id}')" style="${canBuy ? '' : 'opacity:0.4;'}">★${item.cost}</button>
+          </div>`;
+        });
+        mc.innerHTML = h; document.getElementById('modal').classList.add('show');
+      }
+      function buyTokenItem(id) {
+        const item = TOKEN_SHOP.find(x => x.id === id);
+        if (!item || tokens < item.cost) { showMsg('Yeterli Jeton yok!'); return; }
+        tokens -= item.cost;
+        if (item.type === 'consumable' && item.id === 'energy_potion') {
+          energy = Math.min(maxEnergy, energy + 50);
+          showMsg('⚡ +50 Enerji kazandın!', 2000);
+        } else {
+          showMsg('✅ ' + item.name + ' satın alındı!', 2000);
+        }
+        updateHUD(); saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+        openTokenShop();
       }
 
       // ══ SLEEP ══
@@ -1821,7 +1980,13 @@
         callAPI('sleep').then(d => {
           gameTime = d.newGameTime; dayCount = d.newDay; energy = d.newEnergy; maxEnergy = maxEnergy;
           animals.forEach(a => { a.hunger = Math.max(0, (a.hunger || 0) - 15); });
-          updateHUD();
+          // Günlük görevleri yenile
+          dailyQuests = _generateDailyQuests(dayCount);
+          lastQuestDay = dayCount; dailyQuestProgress = {};
+          // Özel gün bonusu
+          const spec = SPECIAL_DAYS[dayCount];
+          if (spec) { tokens += spec.tokens; gold += spec.gold; setTimeout(() => showMsg('🎁 ' + spec.desc + ' +' + spec.tokens + ' Jeton · +' + spec.gold + '₺', 4000), 2500); }
+          updateHUD(); saveGame();
           setTimeout(() => txt.style.opacity = '0', 1200);
           setTimeout(() => {
             overlay.style.background = 'rgba(0,0,20,0)';
@@ -2542,6 +2707,7 @@
           saveGame();
           callAPI('completePickup', { score: PU.score, won: PU.won, clientGold: gold }).then(d => {
             _applyLvl(d); updateHUD(); saveGame();
+            if (PU.won) { tokens += 1; checkDailyQuestProgress('pickup', 1); updateHUD(); saveGame(); }
           }).catch(() => { updateHUD(); });
         }
         if (!PU.won) {
@@ -3998,7 +4164,7 @@
         }
 
         // --- Arms ---
-        const hasTool = currentTool === 'hoe' || currentTool === 'water' || currentTool === 'seed';
+        const hasTool = currentTool === 'hoe' || currentTool === 'water' || !!CROPS[currentTool];
         ctx.save(); ctx.translate(px - 9 * sc, bodyY + 4 * sc); ctx.rotate((-armSwing - (hasTool ? 20 : 0)) * Math.PI / 180);
         ctx.fillStyle = '#F5C5A0'; ctx.fillRect(-3 * sc, 0, 6 * sc, 14 * sc); ctx.restore();
         ctx.save(); ctx.translate(px + 9 * sc, bodyY + 4 * sc); ctx.rotate((armSwing + (hasTool ? -30 : 0)) * Math.PI / 180);
@@ -4013,9 +4179,12 @@
           ctx.fillStyle = '#5BB8F5'; ctx.fillRect(px + 9 * sc, bodyY - 2 * sc, 14 * sc, 11 * sc);
           ctx.fillStyle = '#3A9AD9'; ctx.fillRect(px + 9 * sc, bodyY - 2 * sc, 14 * sc, 4 * sc);
           ctx.fillStyle = '#888'; ctx.fillRect(px + 20 * sc, bodyY + 3 * sc, 5 * sc, 3 * sc);
-        } else if (currentTool === 'seed') {
+        } else if (CROPS[currentTool]) {
+          const _ci = CROPS[currentTool].icon || '🌱';
           ctx.fillStyle = '#C8901A'; ctx.fillRect(px + 9 * sc, bodyY + 1 * sc, 9 * sc, 8 * sc);
           ctx.fillStyle = '#A07010'; ctx.fillRect(px + 9 * sc, bodyY + 1 * sc, 9 * sc, 3 * sc);
+          ctx.font = (7 * sc) + 'px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(_ci, px + 13.5 * sc, bodyY + 8.5 * sc); ctx.textAlign = 'left';
         }
 
         // --- Hair (behind head) ---
@@ -4210,6 +4379,7 @@
           document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
           if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => { });
           const displayName = _fbUser?.displayName || (_fbUser?.email?.split('@')[0]) || 'Çiftçi';
+          _initDailyQuests();
           showMsg(isNewUser ? '🌾 Hoş geldin ' + displayName + '! İlk tarlanı kurmanın vakti!' : '💾 Hoş geldin ' + displayName + '! Gün ' + dayCount + ' devam ediyor.', 3500);
           requestAnimationFrame(mainLoop);
           setInterval(() => { if (_SEC._uid) _saveToCloud(_SEC._uid); }, 60000);
@@ -4272,6 +4442,10 @@
           ownedTrucks = d.ownedTrucks && d.ownedTrucks.length > 0 ? d.ownedTrucks : ['basic'];
           const _defUpg = { basic: { speed: 0, cargo: 0 }, pickup: { speed: 0, cargo: 0 }, semi: { speed: 0, cargo: 0 }, racer: { speed: 0, cargo: 0 } };
           truckUpgrades = d.truckUpgrades ? Object.assign(_defUpg, d.truckUpgrades) : _defUpg;
+          tokens = d.tokens || 0;
+          dailyQuests = d.dailyQuests || [];
+          lastQuestDay = d.lastQuestDay || 0;
+          dailyQuestProgress = d.dailyQuestProgress || {};
           _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
           return true;
         } catch (err) { console.warn('Cloud load error:', err); return false; }
@@ -4288,7 +4462,8 @@
             tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
             animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
             activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown, orchardSlots,
-            playerGender, playerOutfit, ownedOutfits, truckUpgrades, playerTruck, ownedTrucks
+            playerGender, playerOutfit, ownedOutfits, truckUpgrades, playerTruck, ownedTrucks,
+            tokens, dailyQuests, lastQuestDay, dailyQuestProgress
           });
         } catch (e) { console.warn('Cloud save error:', e); }
       }
@@ -4596,6 +4771,7 @@
           ['buyOrchardTree', buyOrchardTree],
           ['openGarage', openGarage], ['buyTruck', buyTruck], ['selectTruck', selectTruck], ['upgradeTruck', upgradeTruck],
           ['openWardrobe', openWardrobe], ['wearOutfit', wearOutfit], ['buyOutfit', buyOutfit],
+          ['openDailyQuests', openDailyQuests], ['claimDailyQuest', claimDailyQuest], ['openTokenShop', openTokenShop], ['buyTokenItem', buyTokenItem],
           ['openRegister', openRegister], ['closeRegister', closeRegister], ['doRegister', doRegister],
           ['promptChangeName', promptChangeName], ['promptChangeEmail', promptChangeEmail],
           ['promptChangePass', promptChangePass], ['doLogout', doLogout],
