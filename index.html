@@ -1010,6 +1010,12 @@
     <div class="tb" id="btn-fields" onclick="openFieldManager()">
       <div class="ti">🏡</div>Tarlalar
     </div>
+    <div class="tb" id="btn-tractor_row" onclick="setTool('tractor_row')" style="display:none">
+      <div class="ti">🚜</div>Traktör
+    </div>
+    <div class="tb" id="btn-combine_row" onclick="setTool('combine_row')" style="display:none">
+      <div class="ti">⚙️</div>Biçer
+    </div>
   </div>
 
   <div id="char-setup-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(8,18,10,0.97);z-index:9999;overflow-y:auto;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
@@ -1216,6 +1222,8 @@
         florist:  { name:'Çiçekçi',        gender:'female', price:350, skirt:true,  shirt:['#C060B0','#D070C0','#B050A0'], pants:'#F0D0E8', boot:'#B09090', straps:null,      hat:'flower', hatC:'#F0D060', band:'#E08020', hairC:'#C04080', icon:'🌸', desc:'Çiçek aşığı' },
         chef_f:   { name:'Aşçı Kız',       gender:'female', price:550, skirt:false, shirt:['#E8E8E8','#F8F8F8','#D5D5D5'], pants:'#E0E8E8', boot:'#909090', straps:null,      hat:'chef',   hatC:'#FFFFFF', band:'#CCCCCC', hairC:'#8B4513', icon:'🎂', desc:'Pasta şefi' },
         empress:  { name:'İmparatoriçe',    gender:'female', price:900, skirt:true,  shirt:['#7030A0','#9040C0','#5A2090'], pants:'#8030B0', boot:'#501A80', straps:null,      hat:'crown',  hatC:'#FFD700', band:'#CC9900', hairC:'#2A1808', icon:'👑', desc:'Kraliyet çiftçisi' },
+        astronaut:{ name:'Astronot',         gender:'any',    price:0,   skirt:false, shirt:['#B0C8E0','#C8D8F0','#90A8C0'], pants:'#7090B0', boot:'#506080', straps:null,      hat:'helmet', hatC:'#DDEEFF', band:'#8090A8', hairC:'#2A3040', icon:'👨‍🚀', desc:'Galaksi çiftçisi' },
+        robot:    { name:'Robot',            gender:'any',    price:0,   skirt:false, shirt:['#808890','#9098A0','#707880'], pants:'#606870', boot:'#404850', straps:'#A0B0C0', hat:'helmet', hatC:'#90A0B0', band:'#5A6878', hairC:'#303840', icon:'🤖', desc:'Fütüristik çiftçi' },
       };
       const TRUCKS = {
         basic:  { name: 'Temel Kamyon',  price: 0,    baseSpeed: 1.2, boostSpeed: 3.2, cargo: 6,  color: '#D0392B', cabColor: '#A02820', icon: '🚛', desc: 'Standart tarım aracı' },
@@ -1272,6 +1280,9 @@
       let activeFieldIdx = 0;
       let onboardingStep = 0;
       let ownedFarmVehicles = [];
+      let ownedTokenItems = [];
+      let goldBoostEndTime = 0;
+      let superSeedTurns = 0;
       let lastSaveTime = 0, autoSaveInterval = 30;
 
       // ══ SAVE/LOAD ══
@@ -1290,7 +1301,8 @@
           orchardSlots, currentTool, playerTruck, ownedTrucks, truckUpgrades,
           playerGender, playerOutfit, ownedOutfits,
           tokens, dailyQuests, lastQuestDay, dailyQuestProgress,
-          ownedFields, activeFieldIdx, onboardingStep, ownedFarmVehicles, savedAt: Date.now()
+          ownedFields, activeFieldIdx, onboardingStep, ownedFarmVehicles,
+          ownedTokenItems, goldBoostEndTime, superSeedTurns, savedAt: Date.now()
         };
         try {
           localStorage.setItem('tarlam_save', JSON.stringify(data));
@@ -1334,6 +1346,9 @@
           activeFieldIdx = d.activeFieldIdx || 0;
           onboardingStep = d.onboardingStep !== undefined ? d.onboardingStep : 0;
           ownedFarmVehicles = d.ownedFarmVehicles || [];
+          ownedTokenItems = d.ownedTokenItems || [];
+          goldBoostEndTime = d.goldBoostEndTime || 0;
+          superSeedTurns = d.superSeedTurns || 0;
           return true;
         } catch (e) { console.warn('Yükleme hatası:', e); return false; }
       }
@@ -1820,8 +1835,54 @@
             addParticle(cx, cy - 20, '🌱 Ekildi!', '#4FA028');
             showMsg(CROPS[currentTool].icon + ' ekildi! -' + d.seedCost + '₺');
           }).catch(e => showMsg('❌ ' + e.message));
+        } else if (currentTool === 'tractor_row') {
+          const rowTiles = tiles.filter(t => t.r === r && t.state === 'grass');
+          if (rowTiles.length === 0) { showMsg('Bu sırada çapalanacak arazi yok.'); return; }
+          showMsg('🚜 Traktör çalışıyor...');
+          _tractorRow(rowTiles);
+        } else if (currentTool === 'combine_row') {
+          const rowTiles = tiles.filter(t => t.r === r && t.state === 'ready');
+          if (rowTiles.length === 0) { showMsg('Bu sırada hasat edilecek ekin yok.'); return; }
+          showMsg('⚙️ Biçerdöver çalışıyor...');
+          _combineRow(rowTiles);
         }
       }
+
+      async function _tractorRow(rowTiles) {
+        for (const tile of rowTiles) {
+          try {
+            const d = await callAPI('tillTile', { c: tile.c, r: tile.r });
+            tile.state = 'tilled'; tile.qualityScore = 70;
+            energy = d.newEnergy;
+            const cx = OX + (tile.c + .5) * CELL * SCALE, cy = OY + (tile.r + .5) * CELL * SCALE;
+            addParticle(cx, cy - 20, '🚜 ⛏️', '#A0522D');
+            if (energy <= 0) break;
+          } catch (e) { break; }
+        }
+        updateHUD(); saveGame();
+        showMsg('🚜 Sıra tamamlandı! Başlangıç kalitesi: 70');
+      }
+
+      async function _combineRow(rowTiles) {
+        for (const tile of rowTiles) {
+          try {
+            const _hqs = Math.min(100, (tile.qualityScore || 50) + 20);
+            const d = await callAPI('harvestCrop', { c: tile.c, r: tile.r, clientState: tile.state, clientCrop: tile.crop, clientGrowProgress: tile.growProgress, clientQualityScore: _hqs });
+            const cn = tile.crop;
+            tile.state = 'tilled'; tile.crop = null; tile.growProgress = 0; tile.watered = false; tile.qualityScore = 50;
+            inventory = d.inventory; energy = d.newEnergy;
+            if (d.qualBonus > 0 && d.newGold !== undefined) { gold = d.newGold; }
+            const ql = _qualityLabel(d.qualityScore || 50);
+            const cx = OX + (tile.c + .5) * CELL * SCALE, cy = OY + (tile.r + .5) * CELL * SCALE;
+            addParticle(cx, cy - 20, (CROPS[cn]?.icon || '') + ' +1' + (ql.icon ? ' ' + ql.icon : ''), ql.color || '#FFD700');
+            if (d.qualBonus > 0) addParticle(cx, cy - 48, '+' + d.qualBonus + '₺', ql.color);
+            if (energy <= 0) break;
+          } catch (e) { break; }
+        }
+        updateHUD(); saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+        showMsg('⚙️ Biçerdöver tamamlandı!');
+      }
+
       // Keep handleClick as alias for keyboard use
       function handleClick(e) { handlePointer(e); }
 
@@ -1972,14 +2033,20 @@
       function sellAll(key) {
         if ((inventory[key] || 0) <= 0) { showMsg('Satacak yok!'); openMarket(); return; }
         callAPI('sellItem', { itemKey: key }).then(d => {
-          gold = d.newGold; inventory = Object.assign({}, inventory, { [key]: 0 });
-          _applyLvl(d); updateHUD(); openMarket(); checkDailyQuestProgress('sell_gold', d.earned); showMsg('✅ +' + d.earned + '₺ kazanıldı!');
+          const _boost = goldBoostEndTime > Date.now() ? 0.3 : 0;
+          const _bonus = Math.round(d.earned * _boost);
+          gold = d.newGold + _bonus; inventory = Object.assign({}, inventory, { [key]: 0 });
+          _applyLvl(d); updateHUD(); openMarket();
+          checkDailyQuestProgress('sell_gold', d.earned + _bonus);
+          showMsg('✅ +' + (d.earned + _bonus) + '₺' + (_bonus > 0 ? ' (💰+' + _bonus + '₺ boost!)' : '') + ' kazanıldı!');
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function sellAllItems() {
         callAPI('sellAllItems').then(d => {
-          gold = d.newGold; inventory = d.inventory; _applyLvl(d); updateHUD(); closeModal();
-          showMsg('🎉 +' + d.total + '₺ kazanıldı!');
+          const _boost = goldBoostEndTime > Date.now() ? 0.3 : 0;
+          const _bonus = Math.round(d.total * _boost);
+          gold = d.newGold + _bonus; inventory = d.inventory; _applyLvl(d); updateHUD(); closeModal();
+          showMsg('🎉 +' + (d.total + _bonus) + '₺' + (_bonus > 0 ? ' (💰+' + _bonus + '₺ boost!)' : '') + ' kazanıldı!');
         }).catch(e => showMsg('❌ ' + e.message));
       }
 
@@ -2138,25 +2205,50 @@
         const mc = document.getElementById('modal-content');
         let h = '<button class="mclose" onclick="closeModal()">✖ Kapat</button>';
         h += '<h2 style="color:#FFD700;margin:0 0 8px;">★ Jeton Mağazası</h2>';
-        h += '<div style="color:#FFD700;font-size:13px;margin-bottom:10px;">Elindeki Jeton: ★' + tokens + '</div>';
+        const boostLeft = goldBoostEndTime > Date.now() ? Math.ceil((goldBoostEndTime - Date.now()) / 60000) : 0;
+        h += `<div style="color:#FFD700;font-size:13px;margin-bottom:10px;">Elindeki Jeton: ★${tokens}`;
+        if (boostLeft > 0) h += ` &nbsp;·&nbsp; <span style="color:#90EE90;">💰 Boost: ${boostLeft}dk kaldı</span>`;
+        if (superSeedTurns > 0) h += ` &nbsp;·&nbsp; <span style="color:#90EE90;">🌱 Süper Tohum: ${superSeedTurns} gün</span>`;
+        h += '</div>';
         TOKEN_SHOP.forEach(item => {
-          const canBuy = tokens >= item.cost;
+          const owned = ownedTokenItems.includes(item.id);
+          const canBuy = tokens >= item.cost && !owned;
+          let badge = '';
+          if (owned) badge = '<span style="color:#90EE90;font-size:11px;margin-left:6px;">✔ Aktif</span>';
+          else if (item.id === 'gold_boost_2h' && boostLeft > 0) badge = '<span style="color:#90EE90;font-size:11px;margin-left:6px;">⏱ Aktif</span>';
+          else if (item.id === 'super_seed' && superSeedTurns > 0) badge = '<span style="color:#90EE90;font-size:11px;margin-left:6px;">🌱 Aktif</span>';
           h += `<div class="mrow">
-            <div><div class="mrow-label">${item.icon} ${item.name}</div><div class="mrow-sub">${item.desc}</div></div>
+            <div><div class="mrow-label">${item.icon} ${item.name}${badge}</div><div class="mrow-sub">${item.desc}</div></div>
             <button class="mbtn" ${canBuy ? '' : 'disabled'} onclick="buyTokenItem('${item.id}')" style="${canBuy ? '' : 'opacity:0.4;'}">★${item.cost}</button>
           </div>`;
         });
         mc.innerHTML = h; document.getElementById('modal').classList.add('show');
       }
       function buyTokenItem(id) {
-        const item = TOKEN_SHOP.find(x => x.id === id);
-        if (!item || tokens < item.cost) { showMsg('Yeterli Jeton yok!'); return; }
+        const item = TOKEN_SHOP.find(x => x.id === id); if (!item) return;
+        if (item.type === 'cosmetic' && ownedTokenItems.includes(id)) { showMsg('Bu eşya zaten aktif!', 1500); return; }
+        if (tokens < item.cost) { showMsg('Yeterli Jeton yok!', 1500); return; }
         tokens -= item.cost;
-        if (item.type === 'consumable' && item.id === 'energy_potion') {
+        if (id === 'energy_potion') {
           energy = Math.min(maxEnergy, energy + 50);
           showMsg('⚡ +50 Enerji kazandın!', 2000);
+        } else if (id === 'gold_boost_2h') {
+          goldBoostEndTime = Date.now() + 2 * 60 * 60 * 1000;
+          showMsg('💰 2 saat boyunca satışta %30 bonus!', 2500);
+        } else if (id === 'super_seed') {
+          superSeedTurns = Math.max(superSeedTurns, 0) + 3;
+          showMsg('🌱 Süper Tohum aktif — büyüme 2× (3 gün)', 2500);
+        } else if (id === 'outfit_astronaut') {
+          ownedTokenItems = ownedTokenItems.filter(x => x !== 'outfit_robot');
+          ownedTokenItems.push(id);
+          showMsg('👨‍🚀 Astronot kıyafeti giyildi!', 2000);
+        } else if (id === 'outfit_robot') {
+          ownedTokenItems = ownedTokenItems.filter(x => x !== 'outfit_astronaut');
+          ownedTokenItems.push(id);
+          showMsg('🤖 Robot kıyafeti giyildi!', 2000);
         } else {
-          showMsg('✅ ' + item.name + ' satın alındı!', 2000);
+          ownedTokenItems.push(id);
+          showMsg('✅ ' + item.name + ' aktif!', 2000);
         }
         updateHUD(); saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
         openTokenShop();
@@ -2172,6 +2264,7 @@
         callAPI('sleep').then(d => {
           gameTime = d.newGameTime; dayCount = d.newDay; energy = d.newEnergy; maxEnergy = maxEnergy;
           animals.forEach(a => { a.hunger = Math.max(0, (a.hunger || 0) - 15); });
+          if (superSeedTurns > 0) { superSeedTurns--; if (superSeedTurns === 0) showMsg('🌱 Süper Tohum süresi doldu.', 2000); }
           // Günlük görevleri yenile
           dailyQuests = _generateDailyQuests(dayCount);
           lastQuestDay = dayCount; dailyQuestProgress = {};
@@ -2359,9 +2452,30 @@
       function puDrawTruckBody(pc, TSX, TSY, sc, tkDef, animT, speed) {
         const moving = speed > 0.5;
         const wheelAng = animT * 0.15;
-        const id = tkDef.id || 'basic';
+        const id = ownedTokenItems.includes('skin_golden_truck') ? 'golden' : (tkDef.id || 'basic');
 
-        if (id === 'pickup') {
+        if (id === 'golden') {
+          // Altın kaplama kamyon
+          const pulse = 0.85 + Math.sin(animT * 0.08) * 0.1;
+          const bg0 = pc.createLinearGradient(TSX - 52 * sc, 0, TSX + 38 * sc, 0);
+          bg0.addColorStop(0, `hsl(42,${Math.round(90*pulse)}%,${Math.round(48*pulse)}%)`);
+          bg0.addColorStop(0.5, `hsl(50,100%,60%)`);
+          bg0.addColorStop(1, `hsl(38,90%,40%)`);
+          pc.fillStyle = bg0; pc.fillRect(TSX - 52 * sc, TSY - 22 * sc, 90 * sc, 22 * sc);
+          pc.fillStyle = '#CC8800'; pc.fillRect(TSX - 52 * sc, TSY - 22 * sc, 6 * sc, 22 * sc); pc.fillRect(TSX + 30 * sc, TSY - 22 * sc, 6 * sc, 22 * sc);
+          const cb0 = pc.createLinearGradient(TSX + 28 * sc, 0, TSX + 52 * sc, 0);
+          cb0.addColorStop(0, '#FFD700'); cb0.addColorStop(1, '#B8860B');
+          pc.fillStyle = cb0; pc.fillRect(TSX + 28 * sc, TSY - 36 * sc, 24 * sc, 36 * sc);
+          pc.fillStyle = 'rgba(255,255,200,0.9)'; pc.fillRect(TSX + 30 * sc, TSY - 34 * sc, 20 * sc, 16 * sc);
+          pc.strokeStyle = 'rgba(255,230,0,0.6)'; pc.lineWidth = 1.5; pc.beginPath(); pc.moveTo(TSX + 34 * sc, TSY - 34 * sc); pc.lineTo(TSX + 34 * sc, TSY - 18 * sc); pc.stroke();
+          pc.fillStyle = '#FFE566'; pc.fillRect(TSX + 46 * sc, TSY - 22 * sc, 6 * sc, 9 * sc);
+          // Gold sparkles when moving
+          if (moving) for (let s = 0; s < 4; s++) { const sa = ((animT + s * 6) % 24) / 24; pc.fillStyle = `rgba(255,215,0,${0.55 - sa * 0.55})`; pc.beginPath(); pc.arc(TSX - 54 * sc + s * 2, TSY - 11 * sc - sa * 22 * sc, (4 + sa * 8) * sc, 0, Math.PI * 2); pc.fill(); }
+          // Gold star emoji on side
+          pc.font = (10 * sc) + 'px sans-serif'; pc.textAlign = 'center'; pc.fillText('⭐', TSX - 20 * sc, TSY - 8 * sc); pc.textAlign = 'left';
+          [[TSX - 30 * sc, TSY + 12 * sc, 11 * sc], [TSX + 14 * sc, TSY + 12 * sc, 11 * sc]].forEach(([wx2, wy2, wr]) => { puDrawWheel(pc, wx2, wy2, wr, wheelAng, '#B8860B'); });
+
+        } else if (id === 'pickup') {
           // Mavi Pikap
           const bg = pc.createLinearGradient(TSX - 42 * sc, 0, TSX + 50 * sc, 0);
           bg.addColorStop(0, '#1565C0'); bg.addColorStop(1, '#1976D2');
@@ -3249,6 +3363,8 @@
         ownedFarmVehicles.push(id);
         saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
         showMsg('🎉 ' + v.name + ' satın alındı!', 2000);
+        const _tbBtn = document.getElementById('btn-' + id + '_row');
+        if (_tbBtn) _tbBtn.style.display = '';
         openGarage();
       }
       function upgradeTruck(id, stat) {
@@ -4180,17 +4296,24 @@
       }
       function drawTile(tile) {
         const x = OX + tile.c * CELL * SCALE, y = OY + tile.r * CELL * SCALE, cs = CELL * SCALE;
+        const _fType = (ownedFields[activeFieldIdx] || {}).typeId || 'karma';
         if (tile.state === 'grass') {
-          // Grass tile with checkerboard variation
-          const gv = (tile.c + tile.r) % 2 === 0 ? '#52AA2C' : '#48981F';
-          ctx.fillStyle = gv; ctx.fillRect(x, y, cs, cs);
+          // Grass tile: color varies by field type
+          const _even = (tile.c + tile.r) % 2 === 0;
+          const _g1 = _fType === 'meyve' ? (_even ? '#3DBF1A' : '#33A815') :
+                      _fType === 'ekin'  ? (_even ? '#60B535' : '#54A228') :
+                                           (_even ? '#52AA2C' : '#48981F');
+          ctx.fillStyle = _g1; ctx.fillRect(x, y, cs, cs);
           // Grass tufts
-          ctx.fillStyle = '#2D6A12';
+          const _tuftC = _fType === 'meyve' ? '#1A7A08' : '#2D6A12';
+          ctx.fillStyle = _tuftC;
           for (let g = 0; g < 5; g++) {
             const gx = x + (tile.c * 19 + g * 11 + 7) % (cs - 8);
             const gy = y + (tile.r * 13 + g * 17 + 5) % (cs - 8);
             ctx.fillRect(gx, gy, 2 * SCALE, 4 * SCALE);
           }
+          // Ekin tarlası: sarımsı buğday tonu overlay
+          if (_fType === 'ekin') { ctx.fillStyle = 'rgba(255,220,80,0.07)'; ctx.fillRect(x, y, cs, cs); }
         } else {
           // Soil — richer browns
           ctx.fillStyle = tile.watered ? '#2E1D08' : '#6A3C18'; ctx.fillRect(x, y, cs, cs);
@@ -4338,7 +4461,8 @@
         const px = OX + player.x * CELL * SCALE + CELL * SCALE * .5, py = OY + player.y * CELL * SCALE + CELL * SCALE * .7;
         const sc = SCALE;
         const isFemale = playerGender === 'female';
-        const outfit = OUTFITS[playerOutfit] || OUTFITS[isFemale ? 'farmer_f' : 'farmer'];
+        const _tokenOutfit = ownedTokenItems.includes('outfit_robot') ? 'robot' : ownedTokenItems.includes('outfit_astronaut') ? 'astronaut' : null;
+        const outfit = OUTFITS[_tokenOutfit || playerOutfit] || OUTFITS[isFemale ? 'farmer_f' : 'farmer'];
         const isMoving = player.moving || false;
         const walkPhase = animT * .18;
         const bob = isMoving ? Math.sin(walkPhase) * 1.5 * sc : 0;
@@ -4488,7 +4612,8 @@
         tiles.forEach(tile => {
           if (tile.state === 'planted') {
             const bonus = (weather === 'rainy' || weather === 'stormy') ? 1.8 : 1;
-            tile.growProgress += (tile.watered ? dt * 1.8 : dt * 1.0) * bonus * _gameSpeed;
+            const _superMult = superSeedTurns > 0 ? 2.0 : 1.0;
+            tile.growProgress += (tile.watered ? dt * 1.8 : dt * 1.0) * bonus * _gameSpeed * _superMult;
             if (tile.waterTimer > 0) { tile.waterTimer -= dt * 60; if (tile.waterTimer <= 0) tile.watered = false; }
             if (tile.growProgress >= CROPS[tile.crop].growTime) {
               tile.state = 'ready'; tile.growProgress = CROPS[tile.crop].growTime;
@@ -4522,6 +4647,22 @@
         ctx.clearRect(0, 0, W, H);
         drawBg(); drawOrchard(); drawFence(); tiles.forEach(drawTile); drawPlayer(); drawDarkOverlay();
         ctx.globalAlpha = 1;
+        // Gökkuşağı çerçeve (token cosmetic)
+        if (ownedTokenItems.includes('frame_rainbow')) {
+          ctx.save();
+          const _rT = (animT * 0.008) % 1;
+          const _rX = OX - 5 * SCALE, _rY = OY - 5 * SCALE;
+          const _rW = COLS * CELL * SCALE + 10 * SCALE, _rH = ROWS * CELL * SCALE + 10 * SCALE;
+          const _rColors = ['#FF3030','#FF9000','#FFE500','#20DD20','#2090FF','#9B30FF'];
+          ctx.lineWidth = 3.5 * SCALE;
+          _rColors.forEach((col, i) => {
+            const hOff = ((_rT + i / _rColors.length) % 1);
+            ctx.strokeStyle = `hsl(${Math.round(hOff * 360)},100%,55%)`;
+            ctx.globalAlpha = 0.75 + Math.sin(animT * 0.1 + i) * 0.15;
+            ctx.beginPath(); ctx.roundRect(_rX - i * SCALE * 0.5, _rY - i * SCALE * 0.5, _rW + i * SCALE, _rH + i * SCALE, 6); ctx.stroke();
+          });
+          ctx.globalAlpha = 1; ctx.restore();
+        }
         // Tarla geçiş okları ve isim göstergesi
         if (ownedFields && ownedFields.length > 1) {
           ctx.save();
@@ -4610,6 +4751,9 @@
         const _startGame = () => {
           initFruitTrees(); initQuests(); initNeighborRequests(); _initOwnedFields(); updateHUD();
           if (onboardingStep > 0) setTimeout(_showTutorialHint, 800);
+          const _tb = document.getElementById('btn-tractor_row'), _cb = document.getElementById('btn-combine_row');
+          if (_tb) _tb.style.display = ownedFarmVehicles.includes('tractor') ? '' : 'none';
+          if (_cb) _cb.style.display = ownedFarmVehicles.includes('combine') ? '' : 'none';
           const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
           if (isMobile) {
             let tMoved = false;
@@ -4691,6 +4835,9 @@
           activeFieldIdx = d.activeFieldIdx || 0;
           onboardingStep = d.onboardingStep !== undefined ? d.onboardingStep : 0;
           ownedFarmVehicles = d.ownedFarmVehicles || [];
+          ownedTokenItems = d.ownedTokenItems || [];
+          goldBoostEndTime = d.goldBoostEndTime || 0;
+          superSeedTurns = d.superSeedTurns || 0;
           _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
           return true;
         } catch (err) { console.warn('Cloud load error:', err); return false; }
@@ -4709,7 +4856,8 @@
             activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown, orchardSlots,
             playerGender, playerOutfit, ownedOutfits, truckUpgrades, playerTruck, ownedTrucks,
             tokens, dailyQuests, lastQuestDay, dailyQuestProgress,
-            ownedFields, activeFieldIdx, onboardingStep, ownedFarmVehicles
+            ownedFields, activeFieldIdx, onboardingStep, ownedFarmVehicles,
+            ownedTokenItems, goldBoostEndTime, superSeedTurns
           });
         } catch (e) { console.warn('Cloud save error:', e); }
       }
