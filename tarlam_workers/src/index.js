@@ -402,7 +402,7 @@ const routes = {
     if (tile.state !== 'grass') return err('Zaten hazır');
     const eng = spendEnergy(data, GAME_CONFIG.energy.hoe);
     if (!eng.ok) return err(eng.reason);
-    const newTiles = data.tiles.map(t => t.c === c && t.r === r ? { ...t, state: 'tilled' } : t);
+    const newTiles = data.tiles.map(t => t.c === c && t.r === r ? { ...t, state: 'tilled', qualityScore: 50 } : t);
     const lvl = calcXP(data.xp, data.level, data.maxXp, GAME_CONFIG.xp.hoe);
     await fsUpdate(`users/${uid}/gameData/save`, { tiles: newTiles, energy: eng.newEnergy, ...lvl }, tok);
     return ok({ success: true, newEnergy: eng.newEnergy, ...lvl });
@@ -416,8 +416,9 @@ const routes = {
     const eng = spendEnergy(data, GAME_CONFIG.energy.water);
     if (!eng.ok) return err(eng.reason);
     const rainBonus = data.weather === 'rainy' || data.weather === 'stormy';
+    const newQS = Math.min(100, (tile.qualityScore || 50) + 15);
     const newTiles  = data.tiles.map(t =>
-      t.c === c && t.r === r ? { ...t, watered: true, waterTimer: rainBonus ? 200 : 120 } : t
+      t.c === c && t.r === r ? { ...t, watered: true, waterTimer: rainBonus ? 200 : 120, qualityScore: newQS } : t
     );
     await fsUpdate(`users/${uid}/gameData/save`, { tiles: newTiles, energy: eng.newEnergy }, tok);
     return ok({ success: true, newEnergy: eng.newEnergy, rainBonus });
@@ -440,7 +441,7 @@ const routes = {
     return ok({ success: true, newGold, newEnergy: eng.newEnergy, seedCost: cropDef.seedCost });
   }),
 
-  harvestCrop: (req, env) => act(req, env, async (uid, data, { c, r, clientState, clientCrop, clientGrowProgress }, tok) => {
+  harvestCrop: (req, env) => act(req, env, async (uid, data, { c, r, clientState, clientCrop, clientGrowProgress, clientQualityScore }, tok) => {
     let tile = (data.tiles || []).find(t => t.c === c && t.r === r);
     if (!tile) return err('Kare bulunamadı');
     // Client-side büyüme takibi sunucu ile senkronize olmayabilir (45s periyot).
@@ -454,15 +455,25 @@ const routes = {
     const eng = spendEnergy(data, GAME_CONFIG.energy.harvest);
     if (!eng.ok) return err(eng.reason);
     const cropType = tile.crop;
+    // Kalite hesaplama
+    const clientQS = typeof clientQualityScore === 'number' ? clientQualityScore : 0;
+    const qualScore = Math.min(100, Math.max(tile.qualityScore || 50, clientQS));
+    let qualMult = 1.0;
+    if (qualScore >= 75) qualMult = 1.7;
+    else if (qualScore >= 50) qualMult = 1.3;
+    const qualBonus = Math.round(cropDef.price * (qualMult - 1.0));
+    const newGold = (data.gold || 0) + qualBonus;
     const newTiles = data.tiles.map(t =>
-      t.c === c && t.r === r ? { ...t, state: 'tilled', crop: null, growProgress: 0, watered: false } : t
+      t.c === c && t.r === r ? { ...t, state: 'tilled', crop: null, growProgress: 0, watered: false, qualityScore: 50 } : t
     );
     const inv    = data.inventory || {};
     const newInv = { ...inv, [cropType]: (inv[cropType] || 0) + 1 };
     const qp     = { ...(data.questProgress || {}), harvest: ((data.questProgress || {}).harvest || 0) + 1 };
     const lvl    = calcXP(data.xp, data.level, data.maxXp, cropDef.xp);
-    await fsUpdate(`users/${uid}/gameData/save`, { tiles: newTiles, inventory: newInv, energy: eng.newEnergy, questProgress: qp, ...lvl }, tok);
-    return ok({ success: true, cropType, newEnergy: eng.newEnergy, inventory: newInv, ...lvl });
+    const savePayload = { tiles: newTiles, inventory: newInv, energy: eng.newEnergy, questProgress: qp, ...lvl };
+    if (qualBonus > 0) savePayload.gold = newGold;
+    await fsUpdate(`users/${uid}/gameData/save`, savePayload, tok);
+    return ok({ success: true, cropType, newEnergy: eng.newEnergy, inventory: newInv, qualityScore: qualScore, qualBonus, newGold, ...lvl });
   }),
 
   // ── PAZAR ─────────────────────────────────────────────────

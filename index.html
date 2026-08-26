@@ -309,6 +309,37 @@
       opacity: 0;
     }
 
+    /* ── ONBOARDING TUTORIAL HINT ── */
+    #tutorial-hint {
+      display: none;
+      position: absolute;
+      bottom: 82px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10,10,10,0.93);
+      border: 2px solid #FFD700;
+      border-radius: 12px;
+      padding: 10px 16px 8px;
+      color: #FFD700;
+      font-size: 13px;
+      font-weight: 700;
+      max-width: 280px;
+      text-align: center;
+      z-index: 150;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      animation: tutHintIn 0.3s cubic-bezier(.22,1,.36,1);
+      pointer-events: all;
+    }
+    #tutorial-hint.th-show { display: block; }
+    #tutorial-hint .th-step { color: #aaa; font-size: 10px; margin-bottom: 4px; }
+    #tutorial-hint .th-btn {
+      margin-top: 8px; display: block; width: 100%;
+      background: #FFD700; color: #000; border: none;
+      border-radius: 6px; padding: 5px; font-weight: 700;
+      font-size: 12px; cursor: pointer; font-family: inherit;
+    }
+    @keyframes tutHintIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
     /* ── MODAL ── */
     #modal {
       position: absolute;
@@ -903,6 +934,7 @@
     <div id="weather-banner">🌤️</div>
     <div id="notif-container"></div>
     <div id="save-indicator">💾 Kaydedildi</div>
+    <div id="tutorial-hint"></div>
   </div>
 
   <div id="toolbar">
@@ -974,6 +1006,9 @@
     </div>
     <div class="tb" id="btn-wardrobe" onclick="openWardrobe()">
       <div class="ti">👗</div>Kıyafet
+    </div>
+    <div class="tb" id="btn-fields" onclick="openFieldManager()">
+      <div class="ti">🏡</div>Tarlalar
     </div>
   </div>
 
@@ -1050,7 +1085,7 @@
         _syncTimer = 0;
         if (!_SEC._uid || !window._fbUser) return;
         callAPI('syncGameState', {
-          tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
+          tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered, qualityScore: t.qualityScore || 50 })),
           orchardSlots,
           animals,
           gameTime, dayCount, weather, weatherTimer
@@ -1134,6 +1169,17 @@
         { id: 'energy_potion',       name: 'Enerji İksiri',        desc: 'Anlık +50 enerji (tek kullanım)',      cost: 8,   icon: '⚡', type: 'consumable' },
         { id: 'gold_boost_2h',       name: '2s Altın Bonusu',      desc: '2 saat boyunca satış %30 daha fazla', cost: 10,  icon: '💰', type: 'consumable' },
         { id: 'super_seed',          name: 'Süper Tohum Paketi',   desc: '3 tur büyüme süresi yarıya iner',     cost: 14,  icon: '🌱', type: 'consumable' },
+      ];
+
+      const FARM_VEHICLES = {
+        tractor: { name: '🚜 Traktör',    desc: 'Toprağı sürerken başlangıç kalitesi 70 olur (Normal: 50)', price: 1200, icon: '🚜' },
+        combine: { name: '⚙️ Biçerdöver',  desc: 'Hasat sırasında kalite skoru +20 bonus alır',              price: 2000, icon: '⚙️' },
+      };
+
+      const FIELD_CATALOG = [
+        { typeId: 'ekin',  name: '🌾 Ekin Tarlası',  desc: 'Ek ekin + meyve alanı — standart boyut', price: 700  },
+        { typeId: 'meyve', name: '🍎 Meyve Bahçesi', desc: 'Meyve ağaçlarına odaklı ek alan',        price: 1200 },
+        { typeId: 'karma', name: '🏡 Karma Çiftlik',  desc: 'Tam donanımlı büyük alan',               price: 2500 },
       ];
 
       const SEASONS = ['❄️ Kış', '🌸 İlkbahar', '☀️ Yaz', '🍂 Sonbahar'];
@@ -1222,6 +1268,10 @@
       let activeQuests = [], completedQuests = [];
       let questProgress = { harvest: 0, buy_animal: 0, feed_animal: 0, pickup: 0, earn_gold: 0, water: 0, slaughter: 0, give_neighbor: 0, breed: 0 };
       let neighborRequests = [], neighborCooldown = 0;
+      let ownedFields = [];
+      let activeFieldIdx = 0;
+      let onboardingStep = 0;
+      let ownedFarmVehicles = [];
       let lastSaveTime = 0, autoSaveInterval = 30;
 
       // ══ SAVE/LOAD ══
@@ -1234,12 +1284,13 @@
       function _localSaveGame() {
         const data = {
           gold, energy, maxEnergy, level, xp, maxXp, inventory,
-          tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
+          tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered, qualityScore: t.qualityScore || 50 })),
           animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
           activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown,
           orchardSlots, currentTool, playerTruck, ownedTrucks, truckUpgrades,
           playerGender, playerOutfit, ownedOutfits,
-          tokens, dailyQuests, lastQuestDay, dailyQuestProgress, savedAt: Date.now()
+          tokens, dailyQuests, lastQuestDay, dailyQuestProgress,
+          ownedFields, activeFieldIdx, onboardingStep, ownedFarmVehicles, savedAt: Date.now()
         };
         try {
           localStorage.setItem('tarlam_save', JSON.stringify(data));
@@ -1257,7 +1308,7 @@
             tiles = [];
             for (let r = 0; r < ROWS; r++)for (let c = 0; c < COLS; c++) {
               const st = d.tiles.find(t => t.c === c && t.r === r) || {};
-              tiles.push({ c, r, state: st.state || 'grass', crop: st.crop || null, growProgress: st.growProgress || 0, watered: st.watered || false, waterTimer: 0 });
+              tiles.push({ c, r, state: st.state || 'grass', crop: st.crop || null, growProgress: st.growProgress || 0, watered: st.watered || false, waterTimer: 0, qualityScore: st.qualityScore || 50 });
             }
           }
           animals = (d.animals || []).map(a => ({ ...a })); animalId = d.animalId || 1;
@@ -1279,6 +1330,10 @@
           dailyQuests = d.dailyQuests || [];
           lastQuestDay = d.lastQuestDay || 0;
           dailyQuestProgress = d.dailyQuestProgress || {};
+          ownedFields = d.ownedFields || [];
+          activeFieldIdx = d.activeFieldIdx || 0;
+          onboardingStep = d.onboardingStep !== undefined ? d.onboardingStep : 0;
+          ownedFarmVehicles = d.ownedFarmVehicles || [];
           return true;
         } catch (e) { console.warn('Yükleme hatası:', e); return false; }
       }
@@ -1287,7 +1342,7 @@
       function initTiles() {
         tiles = [];
         for (let r = 0; r < ROWS; r++)for (let c = 0; c < COLS; c++)
-          tiles.push({ c, r, state: 'grass', crop: null, growProgress: 0, watered: false, waterTimer: 0 });
+          tiles.push({ c, r, state: 'grass', crop: null, growProgress: 0, watered: false, waterTimer: 0, qualityScore: 50 });
       }
       function initFruitTrees() {
         // orchardSlots varsa zaten init edilmiş
@@ -1305,6 +1360,131 @@
       }
       function initNeighborRequests() {
         if (neighborRequests.length === 0) neighborRequests = _pickNeighborRequests([]);
+      }
+
+      // ══ ÇOKLU TARLA SİSTEMİ ══
+      function _makeFieldTiles() {
+        const t = [];
+        for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+          t.push({ c, r, state: 'grass', crop: null, growProgress: 0, watered: false, waterTimer: 0 });
+        return t;
+      }
+      function _initOwnedFields() {
+        if (!ownedFields || ownedFields.length === 0)
+          ownedFields = [{ id: 0, typeId: 'karma', name: 'Ana Tarla', tiles: null, orchardSlots: null, purchasedDay: 1, lastSwitch: Date.now() }];
+      }
+
+      // ══ ONBOARDING TUTORIAL ══
+      const TUTORIAL_STEPS = [
+        '⛏️ Çapa seçerek bir kareye tıkla ve toprağı işle!',
+        '🌾 Bir tohum seç (buğday, mısır...) ve işlenmiş toprağa tıkla.',
+        '💧 "Sula" seçerek ekini sula — sulamak büyümeyi 2× hızlandırır!',
+        '⏳ Ekin olgunlaşınca ✂️ "Hasat" seçip toprağa tıkla.',
+        '🛒 "Pazar" butonuna tıkla ve ürünlerini satarak altın kazan!',
+        '🧑‍🌾 "Komşu" bölümünden komşu isteklerini karşıla — ekstra ödül var!',
+        '😴 "Uyu" ile enerji yenile ve güneşe yeni bir gün başlat.',
+        '🎉 Tebrikler! Artık gerçek bir çiftçisin! 🏡 "Tarlalar" ile yeni alan da satın alabilirsin.',
+      ];
+      function _showTutorialHint() {
+        const el = document.getElementById('tutorial-hint'); if (!el) return;
+        if (onboardingStep === 0 || onboardingStep > TUTORIAL_STEPS.length) { el.classList.remove('th-show'); return; }
+        el.innerHTML = '<div class="th-step">İpucu ' + onboardingStep + '/' + TUTORIAL_STEPS.length + '</div>' +
+          '<div>' + TUTORIAL_STEPS[onboardingStep - 1] + '</div>' +
+          '<button class="th-btn" onclick="advanceTutorial()">Anladım! →</button>';
+        el.classList.add('th-show');
+      }
+      function advanceTutorial() {
+        onboardingStep++;
+        if (onboardingStep > TUTORIAL_STEPS.length) onboardingStep = 0;
+        _showTutorialHint();
+        saveGame();
+      }
+      function startOnboarding() {
+        if (onboardingStep !== 0) return; // Zaten başladı veya bitti
+        onboardingStep = 1;
+        _showTutorialHint();
+      }
+      function _qualityLabel(score) {
+        if (score >= 75) return { label: 'Mükemmel', icon: '⭐⭐', mult: 1.7, color: '#FFD700' };
+        if (score >= 50) return { label: 'İyi',      icon: '⭐',   mult: 1.3, color: '#90EE90' };
+        return                   { label: 'Normal',   icon: '',    mult: 1.0, color: '#FFFFFF' };
+      }
+      function _advanceFieldGrowth(field, elapsedMs) {
+        if (elapsedMs <= 0) return;
+        const elapsedSec = Math.min(elapsedMs / 1000, 86400);
+        const speedMult = (weather === 'rainy' || weather === 'stormy') ? 1.6 : 1;
+        (field.tiles || []).forEach(t => {
+          if (t.state !== 'planted' || !t.crop) return;
+          const def = CROPS[t.crop]; if (!def) return;
+          t.growProgress = (t.growProgress || 0) + elapsedSec / def.growTime * speedMult;
+          if (t.growProgress >= 1) { t.growProgress = 1; t.state = 'ready'; }
+        });
+        (field.orchardSlots || []).forEach(s => {
+          if (!s.type || s.stage < 1) return;
+          const def = ORCHARD_DEF[s.type]; if (!def) return;
+          if (s.stage < 3) {
+            s.growTimer = (s.growTimer || 0) + elapsedSec * (s.watered ? 1.5 : 1) * speedMult;
+            if (s.growTimer >= def.growTime) { s.stage++; s.growTimer = 0; }
+          } else {
+            s.produceTimer = (s.produceTimer || 0) + elapsedSec * speedMult;
+            if (s.produceTimer >= def.produceTime) { s.fruitsReady = (s.fruitsReady || 0) + 1; s.produceTimer = 0; }
+          }
+        });
+      }
+      function switchField(newIdx) {
+        if (newIdx === activeFieldIdx || newIdx < 0 || newIdx >= ownedFields.length) return;
+        const cur = ownedFields[activeFieldIdx];
+        cur.tiles = tiles.map(t => ({ ...t }));
+        cur.orchardSlots = orchardSlots.map(s => ({ ...s }));
+        cur.lastSwitch = Date.now();
+        const target = ownedFields[newIdx];
+        if (target.tiles) _advanceFieldGrowth(target, Date.now() - (target.lastSwitch || Date.now()));
+        activeFieldIdx = newIdx;
+        tiles = (target.tiles || _makeFieldTiles()).map(t => ({ ...t }));
+        orchardSlots = (target.orchardSlots || _defaultOrchard()).map(s => ({ ...s }));
+        target.tiles = null; target.orchardSlots = null;
+        target.lastSwitch = Date.now();
+        saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+        showMsg('🏡 ' + target.name + "'e geçildi", 2000);
+      }
+      function purchaseField(typeId) {
+        const cat = FIELD_CATALOG.find(f => f.typeId === typeId); if (!cat) return;
+        if (gold < cat.price) { showMsg('Yeterli altın yok! ' + gold + '₺ / ' + cat.price + '₺', 2000); return; }
+        gold -= cat.price; updateHUD();
+        const newId = ownedFields.length;
+        const names = { ekin: 'Ekin Tarlası ' + newId, meyve: 'Meyve Bahçesi ' + newId, karma: 'Karma Çiftlik ' + newId };
+        ownedFields.push({ id: newId, typeId, name: names[typeId] || 'Tarla ' + newId, tiles: _makeFieldTiles(), orchardSlots: _defaultOrchard(), purchasedDay: dayCount, lastSwitch: Date.now() });
+        saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+        showMsg('🏡 ' + cat.name + ' satın alındı! (Tarla ' + (newId + 1) + ')', 2500);
+        openFieldManager();
+      }
+      function openFieldManager() {
+        _initOwnedFields();
+        const mc = document.getElementById('modal-content');
+        let h = '<button class="mclose" onclick="closeModal()">✖ Kapat</button>';
+        h += '<h2 style="color:#FFD700;margin:0 0 4px;">🏡 Tarlalarım</h2>';
+        h += '<div style="color:#aaa;font-size:11px;margin-bottom:10px;">Tarlalar arasında geçiş yap veya yeni tarla satın al</div>';
+        ownedFields.forEach((f, i) => {
+          const act = i === activeFieldIdx;
+          const readyCrops = (act ? tiles : (f.tiles || [])).filter(t => t.state === 'ready').length;
+          h += '<div class="mrow" style="' + (act ? 'border:1px solid #FFD700;border-radius:8px;padding:8px;' : '') + '">' +
+            '<div><div class="mrow-label">' + f.name + '</div>' +
+            '<div class="mrow-sub">' + (act ? '✅ Şu an aktif' : 'Gün ' + f.purchasedDay + "'de alındı") +
+            (readyCrops > 0 ? ' · <span style="color:#4CAF50">🌾 ' + readyCrops + ' hasat bekliyor</span>' : '') + '</div></div>' +
+            (act ? '<span style="color:#FFD700;font-size:13px;">📍</span>' : '<button class="mbtn" onclick="switchField(' + i + ');openFieldManager()">Geç →</button>') +
+            '</div>';
+        });
+        if (ownedFields.length < 6) {
+          h += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:8px;color:#aaa;font-size:11px;margin-bottom:6px;">Yeni Tarla Satın Al</div>';
+          FIELD_CATALOG.forEach(cat => {
+            const ok = gold >= cat.price;
+            h += '<div class="mrow"><div><div class="mrow-label">' + cat.name + '</div><div class="mrow-sub">' + cat.desc + '</div></div>' +
+              '<button class="mbtn" onclick="purchaseField(\'' + cat.typeId + '\')" ' + (ok ? '' : 'disabled style="opacity:.4"') + '>' + cat.price + '₺</button></div>';
+          });
+        } else {
+          h += '<div style="color:#aaa;font-size:11px;margin-top:10px;text-align:center;">Maksimum 6 tarla satın alınabilir</div>';
+        }
+        mc.innerHTML = h; document.getElementById('modal').classList.add('show');
       }
 
       // ══ MEYVE BAHÇESİ (ORCHARD) SİSTEMİ ══
@@ -1581,6 +1761,11 @@
         } else { clientX = e.clientX; clientY = e.clientY; }
         const rect = canvas.getBoundingClientRect();
         const sx = clientX - rect.left, sy = clientY - rect.top;
+        // Tarla geçiş okları
+        if (ownedFields && ownedFields.length > 1) {
+          if (sx < 32 && activeFieldIdx > 0) { switchField(activeFieldIdx - 1); return; }
+          if (sx > W - 32 && activeFieldIdx < ownedFields.length - 1) { switchField(activeFieldIdx + 1); return; }
+        }
         // Önce bahçe (orchard) alanını kontrol et
         if (handleOrchardClick(sx, sy)) return;
         const c = Math.floor((sx - OX) / (CELL * SCALE)), r = Math.floor((sy - OY) / (CELL * SCALE));
@@ -1594,30 +1779,37 @@
           showMsg('⏳ İşleniyor...');
           callAPI('tillTile', { c, r }).then(d => {
             tile.state = 'tilled';
+            tile.qualityScore = ownedFarmVehicles.includes('tractor') ? 70 : 50;
             energy = d.newEnergy; _applyLvl(d);
-            addParticle(cx, cy - 20, '⛏️+2xp', '#A0522D'); showMsg('Toprak sürüldü!'); updateHUD();
+            addParticle(cx, cy - 20, ownedFarmVehicles.includes('tractor') ? '🚜⛏️+2xp' : '⛏️+2xp', '#A0522D');
+            showMsg('Toprak sürüldü!' + (ownedFarmVehicles.includes('tractor') ? ' 🚜 Traktör bonusu!' : '')); updateHUD();
           }).catch(e => showMsg('❌ ' + e.message));
 
         } else if (currentTool === 'water') {
           if (tile.state !== 'tilled' && !(tile.state === 'planted' && !tile.watered)) { showMsg('Sulanacak alan yok.'); return; }
           callAPI('waterTile', { c, r }).then(d => {
             tile.watered = true; tile.waterTimer = d.rainBonus ? 200 : 120;
+            tile.qualityScore = Math.min(100, (tile.qualityScore || 50) + 15);
             energy = d.newEnergy; updateHUD();
-            addParticle(cx, cy - 20, '💧', '#5BB8F5');
+            addParticle(cx, cy - 20, '💧 +kalite', '#5BB8F5');
             checkQuestProgress('water', 1, true); checkDailyQuestProgress('water', 1);
             showMsg('Sulandı!' + (d.rainBonus ? ' (Yağmur bonusu!)' : ''));
           }).catch(e => showMsg('❌ ' + e.message));
 
         } else if (currentTool === 'harvest') {
           if (tile.state !== 'ready') { showMsg('Henüz hasat zamanı değil.'); return; }
-          callAPI('harvestCrop', { c, r, clientState: tile.state, clientCrop: tile.crop, clientGrowProgress: tile.growProgress }).then(d => {
+          const _hqs = Math.min(100, (tile.qualityScore || 50) + (ownedFarmVehicles.includes('combine') ? 20 : 0));
+          callAPI('harvestCrop', { c, r, clientState: tile.state, clientCrop: tile.crop, clientGrowProgress: tile.growProgress, clientQualityScore: _hqs }).then(d => {
             const cn = tile.crop;
-            tile.state = 'tilled'; tile.crop = null; tile.growProgress = 0; tile.watered = false;
+            tile.state = 'tilled'; tile.crop = null; tile.growProgress = 0; tile.watered = false; tile.qualityScore = 50;
             inventory = d.inventory; energy = d.newEnergy;
+            if (d.qualBonus > 0 && d.newGold !== undefined) { gold = d.newGold; }
             _applyLvl(d); checkQuestProgress('harvest', 1, true); checkDailyQuestProgress('harvest', 1);
-            addParticle(cx, cy - 20, CROPS[cn]?.icon + ' +1', CROPS[cn]?.color || '#FFD700');
-            addSparkles(cx, cy - 20, 10, CROPS[cn]?.color || '#FFD700', '#FFFFA0');
-            showMsg('Hasat yapıldı!'); updateHUD();
+            const ql = _qualityLabel(d.qualityScore || 50);
+            addParticle(cx, cy - 20, (CROPS[cn]?.icon || '') + ' +1' + (ql.icon ? ' ' + ql.icon : ''), ql.color || CROPS[cn]?.color || '#FFD700');
+            addSparkles(cx, cy - 20, 10, ql.color || CROPS[cn]?.color || '#FFD700', '#FFFFA0');
+            if (d.qualBonus > 0) addParticle(cx, cy - 48, '+' + d.qualBonus + '₺ ' + ql.label, ql.color);
+            showMsg('Hasat!' + (d.qualBonus > 0 ? ' ' + ql.icon + ' ' + ql.label + ' +' + d.qualBonus + '₺' : '')); updateHUD();
           }).catch(e => showMsg('❌ ' + e.message));
 
         } else if (CROPS[currentTool]) {
@@ -3006,7 +3198,17 @@
           h += '</div>';
         });
         h += '</div>';
-        h += `<button onclick="closeModal()" style="padding:7px 22px;background:#555;color:#fff;border:none;border-radius:8px;cursor:pointer;">Kapat</button>`;
+        h += '<div style="margin-top:12px;border-top:1px solid #333;padding-top:10px;">';
+        h += '<div style="color:#FFD700;font-size:12px;font-weight:700;margin-bottom:6px;">🌾 Çiftlik Araçları <span style="color:#aaa;font-weight:400;">(kalite sistemi)</span></div>';
+        Object.entries(FARM_VEHICLES).forEach(([vid, v]) => {
+          const owned = ownedFarmVehicles.includes(vid);
+          const canBuy = !owned && gold >= v.price;
+          h += '<div class="mrow"><div><div class="mrow-label">' + v.name + '</div><div class="mrow-sub">' + v.desc + '</div></div>' +
+            (owned ? '<span style="color:#4CAF50;font-size:12px;">✅ Sahip</span>' :
+              '<button class="mbtn" onclick="buyFarmVehicle(\'' + vid + '\')" ' + (canBuy ? '' : 'disabled style="opacity:.4"') + '>' + v.price + '₺</button>') + '</div>';
+        });
+        h += '</div>';
+        h += `<button onclick="closeModal()" style="margin-top:8px;padding:7px 22px;background:#555;color:#fff;border:none;border-radius:8px;cursor:pointer;">Kapat</button>`;
         mc.innerHTML = h;
         modal.classList.add('show');
         // Draw canvas previews after DOM insert
@@ -3037,6 +3239,16 @@
         if (!ownedTrucks.includes(id)) return;
         playerTruck = id; saveGame();
         showMsg(TRUCKS[id].icon + ' ' + TRUCKS[id].name + ' seçildi!', 1500);
+        openGarage();
+      }
+      function buyFarmVehicle(id) {
+        const v = FARM_VEHICLES[id]; if (!v) return;
+        if (ownedFarmVehicles.includes(id)) { showMsg('Bu araç zaten senin!', 1500); return; }
+        if (gold < v.price) { showMsg('Yeterli altın yok! ' + gold + '₺ / ' + v.price + '₺', 2000); return; }
+        gold -= v.price; updateHUD();
+        ownedFarmVehicles.push(id);
+        saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+        showMsg('🎉 ' + v.name + ' satın alındı!', 2000);
         openGarage();
       }
       function upgradeTruck(id, stat) {
@@ -4049,7 +4261,14 @@
             ctx.fillStyle = `rgba(255,255,100,${glowAlpha})`; ctx.beginPath(); ctx.arc(topX, cy - sh, glowR, 0, Math.PI * 2); ctx.fill();
             const fz = Math.round(Math.max(12, 19 * SCALE));
             ctx.font = fz + 'px serif'; ctx.textAlign = 'center';
-            ctx.fillText(crop.icon, topX, cy - sh + fz * 0.36); ctx.textAlign = 'left';
+            ctx.fillText(crop.icon, topX, cy - sh + fz * 0.36);
+            const qs = tile.qualityScore || 50;
+            if (qs >= 50) {
+              const sz = Math.round(Math.max(7, 8 * SCALE));
+              ctx.font = sz + 'px serif';
+              ctx.fillText(qs >= 75 ? '⭐⭐' : '⭐', x + cs - 3 * SCALE, y + 11 * SCALE);
+            }
+            ctx.textAlign = 'left';
           } else {
             // Unripe bud
             ctx.fillStyle = '#7AB030'; ctx.beginPath(); ctx.arc(topX, cy - sh, 8 * SCALE, 0, Math.PI * 2); ctx.fill();
@@ -4303,6 +4522,27 @@
         ctx.clearRect(0, 0, W, H);
         drawBg(); drawOrchard(); drawFence(); tiles.forEach(drawTile); drawPlayer(); drawDarkOverlay();
         ctx.globalAlpha = 1;
+        // Tarla geçiş okları ve isim göstergesi
+        if (ownedFields && ownedFields.length > 1) {
+          ctx.save();
+          if (activeFieldIdx > 0) {
+            ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.roundRect(2, H/2 - 32, 28, 64, 5); ctx.fill();
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('◀', 16, H/2 + 8);
+          }
+          if (activeFieldIdx < ownedFields.length - 1) {
+            ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.roundRect(W - 30, H/2 - 32, 28, 64, 5); ctx.fill();
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('▶', W - 16, H/2 + 8);
+          }
+          const fname = (ownedFields[activeFieldIdx] || {}).name || 'Tarla';
+          ctx.font = '10px Nunito,sans-serif';
+          const fw = ctx.measureText('🏡 ' + fname).width + 18;
+          ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.beginPath(); ctx.roundRect(W/2 - fw/2, OY - 22, fw, 18, 5); ctx.fill();
+          ctx.fillStyle = '#FFD700'; ctx.textAlign = 'center';
+          ctx.fillText('🏡 ' + fname, W/2, OY - 8);
+          ctx.restore(); ctx.textAlign = 'left';
+        }
         particles.forEach(p => {
           ctx.globalAlpha = p.life;
           if (p.type === 'sparkle') {
@@ -4368,7 +4608,8 @@
       function startGame(uid, isNewUser = false) {
         resize(); window.addEventListener('resize', resize);
         const _startGame = () => {
-          initFruitTrees(); initQuests(); initNeighborRequests(); updateHUD();
+          initFruitTrees(); initQuests(); initNeighborRequests(); _initOwnedFields(); updateHUD();
+          if (onboardingStep > 0) setTimeout(_showTutorialHint, 800);
           const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
           if (isMobile) {
             let tMoved = false;
@@ -4389,7 +4630,7 @@
           if (!playerGender) {
             // İlk kez oynuyor — karakter kurulumu göster
             _startGame(); // mainLoop başlat (arka plan çizimi için)
-            showCharacterSetup(() => { /* setup tamamlandı */ });
+            showCharacterSetup(() => { startOnboarding(); });
           } else {
             _startGame();
           }
@@ -4424,7 +4665,7 @@
             tiles = [];
             for (let r = 0; r < ROWS; r++)for (let c = 0; c < COLS; c++) {
               const st = d.tiles.find(t => t.c === c && t.r === r) || {};
-              tiles.push({ c, r, state: st.state || 'grass', crop: st.crop || null, growProgress: st.growProgress || 0, watered: st.watered || false, waterTimer: 0 });
+              tiles.push({ c, r, state: st.state || 'grass', crop: st.crop || null, growProgress: st.growProgress || 0, watered: st.watered || false, waterTimer: 0, qualityScore: st.qualityScore || 50 });
             }
           }
           animals = (d.animals || []).map(a => ({ ...a })); animalId = d.animalId || 1;
@@ -4446,6 +4687,10 @@
           dailyQuests = d.dailyQuests || [];
           lastQuestDay = d.lastQuestDay || 0;
           dailyQuestProgress = d.dailyQuestProgress || {};
+          ownedFields = d.ownedFields || [];
+          activeFieldIdx = d.activeFieldIdx || 0;
+          onboardingStep = d.onboardingStep !== undefined ? d.onboardingStep : 0;
+          ownedFarmVehicles = d.ownedFarmVehicles || [];
           _SEC._g = gold; _SEC._e = energy; _SEC._l = level;
           return true;
         } catch (err) { console.warn('Cloud load error:', err); return false; }
@@ -4459,11 +4704,12 @@
         try {
           await window._FB.saveGame(uid, {
             gold, energy, maxEnergy, level, xp, maxXp, inventory,
-            tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered })),
+            tiles: tiles.map(t => ({ c: t.c, r: t.r, state: t.state, crop: t.crop, growProgress: t.growProgress, watered: t.watered, qualityScore: t.qualityScore || 50 })),
             animals, animalId, gameTime, dayCount, totalGoldEarned, weather, weatherTimer,
             activeQuests, completedQuests, questProgress, neighborRequests, neighborCooldown, orchardSlots,
             playerGender, playerOutfit, ownedOutfits, truckUpgrades, playerTruck, ownedTrucks,
-            tokens, dailyQuests, lastQuestDay, dailyQuestProgress
+            tokens, dailyQuests, lastQuestDay, dailyQuestProgress,
+            ownedFields, activeFieldIdx, onboardingStep, ownedFarmVehicles
           });
         } catch (e) { console.warn('Cloud save error:', e); }
       }
@@ -4772,6 +5018,9 @@
           ['openGarage', openGarage], ['buyTruck', buyTruck], ['selectTruck', selectTruck], ['upgradeTruck', upgradeTruck],
           ['openWardrobe', openWardrobe], ['wearOutfit', wearOutfit], ['buyOutfit', buyOutfit],
           ['openDailyQuests', openDailyQuests], ['claimDailyQuest', claimDailyQuest], ['openTokenShop', openTokenShop], ['buyTokenItem', buyTokenItem],
+          ['openFieldManager', openFieldManager], ['switchField', switchField], ['purchaseField', purchaseField],
+          ['advanceTutorial', advanceTutorial], ['startOnboarding', startOnboarding],
+          ['buyFarmVehicle', buyFarmVehicle],
           ['openRegister', openRegister], ['closeRegister', closeRegister], ['doRegister', doRegister],
           ['promptChangeName', promptChangeName], ['promptChangeEmail', promptChangeEmail],
           ['promptChangePass', promptChangePass], ['doLogout', doLogout],
