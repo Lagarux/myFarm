@@ -1799,6 +1799,7 @@
             addParticle(cx, cy - 20, ownedFarmVehicles.includes('tractor') ? '🚜⛏️+2xp' : '⛏️+2xp', '#A0522D');
             showMsg('Toprak sürüldü!' + (ownedFarmVehicles.includes('tractor') ? ' 🚜 Traktör bonusu!' : '')); updateHUD();
             if (onboardingStep === 1) advanceTutorial();
+            saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
           }).catch(e => showMsg('❌ ' + e.message));
 
         } else if (currentTool === 'water') {
@@ -1944,10 +1945,15 @@
       function feedAnimal(id) {
         callAPI('feedAnimal', { animalId: id }).then(d => {
           const a = animals.find(x => x.id === id);
-          if (a) { a.hunger = d.newHunger; a.happy = Math.min(100, a.happy + 25); }
+          if (a) {
+            a.hunger = typeof d.newHunger === 'number' ? d.newHunger : Math.min(100, a.hunger + 40);
+            a.happy  = typeof d.newHappy  === 'number' ? d.newHappy  : Math.min(100, a.happy + 25);
+          }
           inventory = d.inventory;
-          checkQuestProgress('feed_animal', 1, true); checkDailyQuestProgress('feed_animal', 1); updateHUD(); openBarn();
-          showMsg(ADEF[animals.find(x => x.id === id)?.type]?.emoji + ' beslendi!');
+          checkQuestProgress('feed_animal', 1, true); checkDailyQuestProgress('feed_animal', 1);
+          saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+          updateHUD(); openBarn();
+          showMsg((ADEF[a?.type]?.emoji || '🐄') + ' beslendi! 🍽️ +' + Math.round(40) + '% · 😊 +25%');
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function collectProduce(id) {
@@ -4398,15 +4404,28 @@
           ctx.restore();
         }
 
+        // Tüm aşamalarda küçük ikon — oyuncu her zaman ne ektiğini bilsin
+        if (stage < 3) {
+          const _iconSz = Math.round(Math.max(9, (stage === 0 ? 10 : 13) * SCALE));
+          ctx.globalAlpha = stage === 0 ? 0.6 : 0.8;
+          ctx.font = _iconSz + 'px serif'; ctx.textAlign = 'center';
+          ctx.fillText(crop.icon, topX, cy - sh - 3 * SCALE + _iconSz * 0.36);
+          ctx.globalAlpha = 1; ctx.textAlign = 'left';
+        }
         if (stage >= 2) {
           if (stage === 3) {
-            // Ready: glow pulse + emoji
-            const glowR = 14 * SCALE + Math.sin(animT * .12) * 3 * SCALE;
-            const glowAlpha = 0.18 + Math.sin(animT * .1) * 0.08;
-            ctx.fillStyle = `rgba(255,255,100,${glowAlpha})`; ctx.beginPath(); ctx.arc(topX, cy - sh, glowR, 0, Math.PI * 2); ctx.fill();
-            const fz = Math.round(Math.max(12, 19 * SCALE));
+            // Hazır: belirgin parıltı + büyük emoji + "HAZIR!" etiketi
+            const glowR = 18 * SCALE + Math.sin(animT * .12) * 4 * SCALE;
+            const glowAlpha = 0.25 + Math.sin(animT * .1) * 0.1;
+            ctx.fillStyle = `rgba(255,255,80,${glowAlpha})`; ctx.beginPath(); ctx.arc(topX, cy - sh, glowR, 0, Math.PI * 2); ctx.fill();
+            const fz = Math.round(Math.max(16, 24 * SCALE));
             ctx.font = fz + 'px serif'; ctx.textAlign = 'center';
             ctx.fillText(crop.icon, topX, cy - sh + fz * 0.36);
+            // "Hasat et" yazısı
+            const lz = Math.round(Math.max(8, 9 * SCALE));
+            ctx.font = 'bold ' + lz + 'px Nunito,sans-serif';
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText('Hasat et!', topX, cy - sh + fz * 0.36 + lz + 2 * SCALE);
             const qs = tile.qualityScore || 50;
             if (qs >= 50) {
               const sz = Math.round(Math.max(7, 8 * SCALE));
@@ -4415,7 +4434,7 @@
             }
             ctx.textAlign = 'left';
           } else {
-            // Unripe bud
+            // Olgunlaşmamış tomurcuk
             ctx.fillStyle = '#7AB030'; ctx.beginPath(); ctx.arc(topX, cy - sh, 8 * SCALE, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#9ACC40'; ctx.beginPath(); ctx.arc(topX - 2 * SCALE, cy - sh - 2 * SCALE, 3.5 * SCALE, 0, Math.PI * 2); ctx.fill();
           }

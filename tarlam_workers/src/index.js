@@ -546,7 +546,7 @@ const routes = {
     const newInv = { ...inv, [def.food]: (inv[def.food] || 0) - 1 };
     const qp     = { ...(data.questProgress || {}), feed_animal: ((data.questProgress || {}).feed_animal || 0) + 1 };
     await fsUpdate(`users/${uid}/gameData/save`, { animals: newAnimals, inventory: newInv, questProgress: qp }, tok);
-    return ok({ success: true, animalId, newHunger: Math.min(100, animal.hunger + 40), inventory: newInv });
+    return ok({ success: true, animalId, newHunger: Math.min(100, animal.hunger + 40), newHappy: Math.min(100, (animal.happy || 50) + 25), inventory: newInv });
   }),
 
   collectProduce: (req, env) => act(req, env, async (uid, data, { animalId }, tok) => {
