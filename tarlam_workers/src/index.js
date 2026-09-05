@@ -570,7 +570,7 @@ const routes = {
     return ok({ success: true, newGold: data.gold - def.buy, animal: newAnimal, ...lvl });
   }),
 
-  feedAnimal: (req, env) => act(req, env, async (uid, data, { animalId }, tok) => {
+  feedAnimal: (req, env) => act(req, env, async (uid, data, { animalId, clientHunger, clientHappy }, tok) => {
     const animals = data.animals || [];
     const aIdx    = animals.findIndex(a => a.id === animalId);
     if (aIdx < 0) return err('Hayvan bulunamadı');
@@ -578,13 +578,18 @@ const routes = {
     const def     = GAME_CONFIG.animals[animal.type];
     const inv     = data.inventory || {};
     if ((inv[def.food] || 0) < 1) return err(`Yem yok (gereken: ${def.food})`);
+    // clientHunger/clientHappy değerleri Firestore'dan daha güncel olabilir (Firestore stale ise)
+    const baseHunger = Math.max(animal.hunger || 0, typeof clientHunger === 'number' ? clientHunger : 0);
+    const baseHappy  = Math.max(animal.happy  || 0, typeof clientHappy  === 'number' ? clientHappy  : 0);
+    const newHunger  = Math.min(100, baseHunger + 40);
+    const newHappy   = Math.min(100, baseHappy  + 25);
     const newAnimals = animals.map((a, i) =>
-      i === aIdx ? { ...a, hunger: Math.min(100, a.hunger + 40), happy: Math.min(100, a.happy + 25) } : a
+      i === aIdx ? { ...a, hunger: newHunger, happy: newHappy } : a
     );
     const newInv = { ...inv, [def.food]: (inv[def.food] || 0) - 1 };
     const qp     = { ...(data.questProgress || {}), feed_animal: ((data.questProgress || {}).feed_animal || 0) + 1 };
     await fsUpdate(`users/${uid}/gameData/save`, { animals: newAnimals, inventory: newInv, questProgress: qp }, tok);
-    return ok({ success: true, animalId, newHunger: Math.min(100, animal.hunger + 40), newHappy: Math.min(100, (animal.happy || 50) + 25), inventory: newInv });
+    return ok({ success: true, animalId, newHunger, newHappy, inventory: newInv });
   }),
 
   collectProduce: (req, env) => act(req, env, async (uid, data, { animalId }, tok) => {

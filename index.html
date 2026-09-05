@@ -2063,17 +2063,23 @@
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function feedAnimal(id) {
-        callAPI('feedAnimal', { animalId: id }).then(d => {
+        const aRef = animals.find(x => x.id === id);
+        const cHunger = aRef ? Math.round(aRef.hunger) : undefined;
+        const cHappy  = aRef ? Math.round(aRef.happy)  : undefined;
+        callAPI('feedAnimal', { animalId: id, clientHunger: cHunger, clientHappy: cHappy }).then(d => {
           const a = animals.find(x => x.id === id);
           if (a) {
-            a.hunger = typeof d.newHunger === 'number' ? d.newHunger : Math.min(100, a.hunger + 40);
-            a.happy  = typeof d.newHappy  === 'number' ? d.newHappy  : Math.min(100, a.happy + 25);
+            // Client mevcut değeri + 40 ile server'ın döndürdüğü değerin yükseğini al
+            const baseH = typeof d.newHunger === 'number' ? d.newHunger : Math.min(100, a.hunger + 40);
+            const baseP = typeof d.newHappy  === 'number' ? d.newHappy  : Math.min(100, a.happy  + 25);
+            a.hunger = Math.min(100, Math.max(a.hunger + 40, baseH));
+            a.happy  = Math.min(100, Math.max(a.happy  + 25, baseP));
           }
           inventory = d.inventory;
           checkQuestProgress('feed_animal', 1, true); checkDailyQuestProgress('feed_animal', 1);
           saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
           updateHUD(); openBarn();
-          showMsg((ADEF[a?.type]?.emoji || '🐄') + ' beslendi! 🍽️ +' + Math.round(40) + '% · 😊 +25%');
+          showMsg((ADEF[a?.type]?.emoji || '🐄') + ' beslendi! 🍽️ +40% · 😊 +25%');
         }).catch(e => showMsg('❌ ' + e.message));
       }
       function collectProduce(id) {
@@ -2447,7 +2453,7 @@
       function updateAnimals(dt) {
         const dp = dt * (2 / 60 / 24);
         animals.forEach(a => {
-          a.hunger = Math.max(0, a.hunger - dt * .8);
+          a.hunger = Math.max(0, a.hunger - dt * .008);
           if (a.hunger < 20) a.happy = Math.max(0, a.happy - dt * 1.5);
           a.age += dp * 100; a.produceTimer += (dt / 60);
           if (a.produceTimer >= 1 && a.hunger > 25 && !a.readyProduce) { a.readyProduce = true; a.produceTimer = 0; }
