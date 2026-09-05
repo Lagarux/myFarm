@@ -3590,7 +3590,10 @@
         let h = '<h2 style="color:#FFD700;margin:0 0 6px;font-size:17px;">👗 Gardırop</h2>';
         h += `<div style="color:#FFD700;font-size:12px;text-align:center;margin-bottom:10px;">💰 ${gold}₺</div>`;
         h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
-        Object.entries(OUTFITS).filter(([, o]) => o.gender === gender).forEach(([id, o]) => {
+        Object.entries(OUTFITS).filter(([id, o]) =>
+          o.gender === gender ||
+          (o.gender === 'any' && (o.price > 0 || ownedOutfits.includes(id)))
+        ).forEach(([id, o]) => {
           const owned = ownedOutfits.includes(id);
           const active = playerOutfit === id;
           const canBuy = !owned && gold >= o.price;
