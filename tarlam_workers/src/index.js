@@ -476,6 +476,44 @@ const routes = {
     return ok({ success: true, cropType, newEnergy: eng.newEnergy, inventory: newInv, qualityScore: qualScore, qualBonus, newGold, ...lvl });
   }),
 
+  harvestBatch: (req, env) => act(req, env, async (uid, data, { crops }, tok) => {
+    if (!Array.isArray(crops) || crops.length === 0) return err('Hasat listesi boş');
+    let newTiles = [...(data.tiles || [])];
+    let inv = { ...(data.inventory || {}) };
+    let newGold = data.gold || 0;
+    let newEnergy = data.energy || 0;
+    let totalBonus = 0, harvestCount = 0, xpTotal = 0;
+    const qp = { ...(data.questProgress || {}), harvest: (data.questProgress || {}).harvest || 0 };
+
+    for (const { c, r, crop, qualityScore } of crops) {
+      const tileIdx = newTiles.findIndex(t => t.c === c && t.r === r);
+      if (tileIdx < 0) continue;
+      const tile = newTiles[tileIdx];
+      const cropKey = crop || tile.crop;
+      if (!cropKey) continue;
+      const cropDef = GAME_CONFIG.crops[cropKey];
+      if (!cropDef) continue;
+      if (newEnergy < GAME_CONFIG.energy.harvest) break;
+      newEnergy = Math.max(0, newEnergy - GAME_CONFIG.energy.harvest);
+      const qs = Math.min(100, Math.max(tile.qualityScore || 50, typeof qualityScore === 'number' ? qualityScore : 0));
+      let qualMult = 1.0;
+      if (qs >= 75) qualMult = 1.7; else if (qs >= 50) qualMult = 1.3;
+      const qBonus = Math.round(cropDef.price * (qualMult - 1.0));
+      if (qBonus > 0) { newGold += qBonus; totalBonus += qBonus; }
+      inv[cropKey] = (inv[cropKey] || 0) + 1;
+      newTiles[tileIdx] = { ...tile, state: 'tilled', crop: null, growProgress: 0, watered: false, qualityScore: 50 };
+      qp.harvest++;
+      xpTotal += cropDef.xp || 10;
+      harvestCount++;
+    }
+
+    const lvl = calcXP(data.xp, data.level, data.maxXp, xpTotal);
+    const savePayload = { tiles: newTiles, inventory: inv, energy: newEnergy, questProgress: qp, ...lvl };
+    if (totalBonus > 0) savePayload.gold = newGold;
+    await fsUpdate(`users/${uid}/gameData/save`, savePayload, tok);
+    return ok({ success: true, newGold, inventory: inv, totalBonus, harvestCount, newEnergy, ...lvl });
+  }),
+
   // ── PAZAR ─────────────────────────────────────────────────
 
   sellItem: (req, env) => act(req, env, async (uid, data, { itemKey }, tok) => {

@@ -681,6 +681,39 @@
       pointer-events: none;
     }
 
+    /* ── TRAKTÖR HASAT YARIŞI OVERLAY ── */
+    #tractor-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: none;
+      z-index: 35;
+      pointer-events: none;
+    }
+    #tg-hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 12px; background: rgba(0,0,0,0.75);
+      gap: 8px; pointer-events: all;
+    }
+    #tg-hud .hp { font-family: var(--font-main); color: #FFD700; font-size: 13px; font-weight: 700; }
+    #tg-endscreen {
+      display: none; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(5,15,30,0.96); border: 2px solid #FFD700;
+      border-radius: 16px; padding: 22px 28px; text-align: center; min-width: 260px;
+      flex-direction: column; align-items: center; gap: 10px;
+      pointer-events: all;
+    }
+    #tg-dpad {
+      position: absolute; bottom: 22px; right: 16px;
+      width: 148px; height: 148px; pointer-events: all;
+    }
+    #tg-dpad button {
+      position: absolute; width: 48px; height: 48px;
+      background: rgba(0,0,0,0.78); border: 2px solid #FFD700;
+      border-radius: 10px; color: #FFD700; font-size: 20px; cursor: pointer;
+    }
+
     /* ── LOGIN SCREEN ── */
     #login-screen {
       position: fixed;
@@ -1016,6 +1049,15 @@
     <div class="tb" id="btn-combine_row" onclick="setTool('combine_row')" style="display:none">
       <div class="ti">⚙️</div>Biçer
     </div>
+    <div class="tb" id="btn-seeder_row" onclick="setTool('seeder_row')" style="display:none">
+      <div class="ti">🌱</div>Ekici
+    </div>
+    <div class="tb" id="btn-sprayer_row" onclick="setTool('sprayer_row')" style="display:none">
+      <div class="ti">💧</div>Sulama
+    </div>
+    <div class="tb" id="btn-tractor_game" onclick="startTractorGame()" style="display:none">
+      <div class="ti">🏎️</div>Hasat!
+    </div>
   </div>
 
   <div id="char-setup-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(8,18,10,0.97);z-index:9999;overflow-y:auto;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
@@ -1044,6 +1086,31 @@
       style="position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);border:2px solid #FFD700;color:#FFD700;padding:12px 24px;border-radius:12px;font-family:var(--font-main);font-size:18px;font-weight:700;text-align:center;display:none;pointer-events:none;">
     </div>
   </div>
+  <!-- ══ TRAKTÖR HASAT YARIŞI ══ -->
+  <div id="tractor-overlay">
+    <div id="tg-hud">
+      <div id="tg-timer" class="hp" style="color:#FF6040;min-width:48px;">45s</div>
+      <div style="text-align:center;">
+        <div id="tg-score" class="hp">0 puan</div>
+        <div id="tg-combo" class="hp" style="color:#FF8020;font-size:11px;min-height:14px;"></div>
+      </div>
+      <div id="tg-exit-btn" class="hp" style="color:#FF5050;cursor:pointer;background:rgba(200,0,0,0.2);padding:5px 11px;border-radius:8px;border:1px solid #FF5050;">✖ Çık</div>
+    </div>
+    <!-- End screen -->
+    <div id="tg-endscreen">
+      <div id="tg-result-title" style="color:#FFD700;font-size:21px;font-weight:900;font-family:var(--font-main);">🚜 Hasat Tamamlandı!</div>
+      <div id="tg-result-stats" style="color:#ccc;font-size:13px;line-height:1.8;font-family:var(--font-ui);"></div>
+      <button id="tg-close-btn" style="background:#4CAF50;color:#fff;border:none;padding:10px 26px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;">✅ Tarlanıma Dön</button>
+    </div>
+    <!-- Mobile D-pad -->
+    <div id="tg-dpad">
+      <button id="tg-btn-up"    style="top:0;left:50px;">▲</button>
+      <button id="tg-btn-down"  style="bottom:0;left:50px;">▼</button>
+      <button id="tg-btn-left"  style="left:0;top:50px;">◄</button>
+      <button id="tg-btn-right" style="right:0;top:50px;">►</button>
+    </div>
+  </div>
+
   <div id="pickup-overlay">
     <canvas id="puc"></canvas>
     <div id="pu-hud-bar">
@@ -1178,8 +1245,10 @@
       ];
 
       const FARM_VEHICLES = {
-        tractor: { name: '🚜 Traktör',    desc: 'Toprağı sürerken başlangıç kalitesi 70 olur (Normal: 50)', price: 1200, icon: '🚜' },
-        combine: { name: '⚙️ Biçerdöver',  desc: 'Hasat sırasında kalite skoru +20 bonus alır',              price: 2000, icon: '⚙️' },
+        tractor: { name: '🚜 Traktör',       desc: 'Toprağı sürerken başlangıç kalitesi 70 olur. Hasat Yarışı mini oyunu açılır!', price: 1200, icon: '🚜' },
+        combine: { name: '⚙️ Biçerdöver',    desc: 'Hasat sırasında kalite skoru +20 bonus alır',                                   price: 2000, icon: '⚙️' },
+        seeder:  { name: '🌱 Ekim Makinesi', desc: 'Tüm çapalanmış sırayı tek tıkla eker (son seçilen ekin)',                       price: 1800, icon: '🌱' },
+        sprayer: { name: '💧 Sulama Makinesi', desc: 'Tüm ekilmiş/hazır sırayı tek tıkla sular',                                    price: 2500, icon: '💧' },
       };
 
       const FIELD_CATALOG = [
@@ -1224,6 +1293,9 @@
         empress:  { name:'İmparatoriçe',    gender:'female', price:900, skirt:true,  shirt:['#7030A0','#9040C0','#5A2090'], pants:'#8030B0', boot:'#501A80', straps:null,      hat:'crown',  hatC:'#FFD700', band:'#CC9900', hairC:'#2A1808', icon:'👑', desc:'Kraliyet çiftçisi' },
         astronaut:{ name:'Astronot',         gender:'any',    price:0,   skirt:false, shirt:['#B0C8E0','#C8D8F0','#90A8C0'], pants:'#7090B0', boot:'#506080', straps:null,      hat:'helmet', hatC:'#DDEEFF', band:'#8090A8', hairC:'#2A3040', icon:'👨‍🚀', desc:'Galaksi çiftçisi' },
         robot:    { name:'Robot',            gender:'any',    price:0,   skirt:false, shirt:['#808890','#9098A0','#707880'], pants:'#606870', boot:'#404850', straps:'#A0B0C0', hat:'helmet', hatC:'#90A0B0', band:'#5A6878', hairC:'#303840', icon:'🤖', desc:'Fütüristik çiftçi' },
+        mechanic: { name:'Tamirci',          gender:'any',    price:280, skirt:false, shirt:['#1A4A7A','#2A5A8A','#103A6A'], pants:'#1E2A3E', boot:'#111824', straps:'#FFB020', hat:'cap',    hatC:'#1A4A7A', band:'#FFB020', hairC:'#3A2810', icon:'🔧', desc:'Zirai makine uzmanı' },
+        explorer: { name:'Kasif',            gender:'any',    price:320, skirt:false, shirt:['#7A5A10','#9A7020','#6A4A08'], pants:'#3A2808', boot:'#2A1808', straps:'#D4A820', hat:'cowboy', hatC:'#6B4A10', band:'#4A2808', hairC:'#2A1808', icon:'🗺️', desc:'Yigit tarla kasifi' },
+        beekeeper:{ name:'Arici',            gender:'any',    price:380, skirt:false, shirt:['#E8D820','#F8E830','#D8C810'], pants:'#3A3A10', boot:'#282810', straps:null,      hat:'helmet', hatC:'#E8D820', band:'#2A2A10', hairC:'#4A3010', icon:'🐝', desc:'Balli ciftlik ustasi' },
       };
       const TRUCKS = {
         basic:  { name: 'Temel Kamyon',  price: 0,    baseSpeed: 1.2, boostSpeed: 3.2, cargo: 6,  color: '#D0392B', cabColor: '#A02820', icon: '🚛', desc: 'Standart tarım aracı' },
@@ -1748,8 +1820,10 @@
       }
 
       // ══ TOOLS ══
+      let _lastSeedCrop = 'wheat';
       function setTool(t) {
         currentTool = t;
+        if (CROPS[t]) _lastSeedCrop = t;
         document.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
         const el = document.getElementById('btn-' + t); if (el) el.classList.add('on');
       }
@@ -1770,6 +1844,7 @@
       function handlePointer(e) {
         if (document.getElementById('modal').classList.contains('show')) return;
         if (document.getElementById('pickup-overlay').style.display === 'block') return;
+        if (TG.active) return;
         let clientX, clientY;
         if (e.changedTouches) {
           clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY;
@@ -1850,6 +1925,17 @@
           if (rowTiles.length === 0) { showMsg('Bu sırada hasat edilecek ekin yok.'); return; }
           showMsg('⚙️ Biçerdöver çalışıyor...');
           _combineRow(rowTiles);
+        } else if (currentTool === 'seeder_row') {
+          if (!_lastSeedCrop || !CROPS[_lastSeedCrop]) { showMsg('Önce bir ekin seç (buğday, patates vb.)'); return; }
+          const rowTiles = tiles.filter(t => t.r === r && t.state === 'tilled');
+          if (rowTiles.length === 0) { showMsg('Bu sırada çapalanmış boş arazi yok.'); return; }
+          showMsg('🌱 Ekim makinesi çalışıyor...');
+          _seederRow(rowTiles);
+        } else if (currentTool === 'sprayer_row') {
+          const rowTiles = tiles.filter(t => t.r === r && (t.state === 'tilled' || t.state === 'planted') && !t.watered);
+          if (rowTiles.length === 0) { showMsg('Bu sırada sulanacak arazi yok.'); return; }
+          showMsg('💧 Sulama makinesi çalışıyor...');
+          _sprayerRow(rowTiles);
         }
       }
 
@@ -1888,6 +1974,40 @@
         }
         if (!done) showMsg('⚙️ ' + processed + ' ekin hasat edildi!');
         updateHUD(); saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+      }
+
+      async function _seederRow(rowTiles) {
+        let processed = 0, done = false;
+        for (const tile of rowTiles) {
+          if (tile.state !== 'tilled') continue;
+          try {
+            const d = await callAPI('plantCrop', { c: tile.c, r: tile.r, cropType: _lastSeedCrop });
+            tile.state = 'planted'; tile.crop = _lastSeedCrop; tile.growProgress = 0; tile.watered = false;
+            gold = d.newGold !== undefined ? d.newGold : Math.max(0, gold - (CROPS[_lastSeedCrop]?.seedCost || 0));
+            energy = d.newEnergy; processed++;
+            addParticle(OX + (tile.c + .5) * CELL * SCALE, OY + (tile.r + .5) * CELL * SCALE, CROPS[_lastSeedCrop]?.icon || '🌱', '#4FA028');
+            if (energy <= 0) { showMsg('⚡ Enerji bitti! ' + processed + ' kare ekildi.', 2000); done = true; break; }
+          } catch (e) { showMsg('❌ ' + (e.message || 'Hata'), 2000); done = true; break; }
+        }
+        if (!done) showMsg((CROPS[_lastSeedCrop]?.icon || '🌱') + ' ' + processed + ' kare ekildi!');
+        updateHUD(); saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+      }
+
+      async function _sprayerRow(rowTiles) {
+        let processed = 0, done = false;
+        for (const tile of rowTiles) {
+          if (tile.watered || (tile.state !== 'tilled' && tile.state !== 'planted')) continue;
+          try {
+            const d = await callAPI('waterTile', { c: tile.c, r: tile.r });
+            tile.watered = true; tile.waterTimer = (weather === 'rainy' || weather === 'stormy') ? 200 : 120;
+            if (d.qualityScore !== undefined) tile.qualityScore = d.qualityScore;
+            energy = d.newEnergy; processed++;
+            addParticle(OX + (tile.c + .5) * CELL * SCALE, OY + (tile.r + .5) * CELL * SCALE, '💧', '#5BB8F5');
+            if (energy <= 0) { showMsg('⚡ Enerji bitti! ' + processed + ' kare sulandı.', 2000); done = true; break; }
+          } catch (e) { showMsg('❌ ' + (e.message || 'Hata'), 2000); done = true; break; }
+        }
+        if (!done) showMsg('💧 ' + processed + ' kare sulandı!');
+        updateHUD(); saveGame();
       }
 
       // Keep handleClick as alias for keyboard use
@@ -3047,6 +3167,229 @@
         setTimeout(() => { ov.style.display = 'none'; }, PU.won ? 200 : 2400);
       }
 
+      // ══ TRAKTÖR HASAT YARIŞI ══════════════════════════════
+      let TG = { active: false, gameOver: false, tx: 0.5, ty: 0.5, vx: 1, vy: 0, angle: 0,
+                 speed: 2.6, timeLeft: 45, score: 0, combo: 0, comboTimer: 0,
+                 tiles: [], parts: [], harvested: [], keys: {}, touchDir: null, raf: null, lastT: 0 };
+
+      function startTractorGame() {
+        const readyTiles = tiles.filter(t => t.state === 'ready');
+        if (readyTiles.length === 0) { showMsg('Hasat edilecek ekin yok! Önce ekin yetiştir.', 2500); return; }
+        closeModal();
+        Object.assign(TG, {
+          active: true, gameOver: false, tx: 0.5, ty: 0.5, vx: 1, vy: 0, angle: 0,
+          speed: 2.6, timeLeft: 45, score: 0, combo: 0, comboTimer: 0,
+          tiles: tiles.map(t => ({ ...t })), parts: [], harvested: [],
+          keys: {}, touchDir: null, lastT: performance.now()
+        });
+        const ov = document.getElementById('tractor-overlay');
+        ov.style.display = 'block';
+        document.getElementById('tg-endscreen').style.display = 'none';
+        document.getElementById('tg-score').textContent = '0 puan';
+        document.getElementById('tg-combo').textContent = '';
+        document.getElementById('tg-timer').textContent = '45s';
+        // D-pad event listeners (once, guarded by flag)
+        if (!TG._dpadInited) {
+          TG._dpadInited = true;
+          const dirs = { 'tg-btn-up': {x:0,y:-1}, 'tg-btn-down': {x:0,y:1}, 'tg-btn-left': {x:-1,y:0}, 'tg-btn-right': {x:1,y:0} };
+          Object.entries(dirs).forEach(([id, dir]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('pointerdown', () => { if (TG.active) TG.touchDir = dir; });
+            el.addEventListener('pointerup',   () => { TG.touchDir = null; });
+            el.addEventListener('pointerleave',() => { TG.touchDir = null; });
+          });
+          document.getElementById('tg-exit-btn').addEventListener('click', () => closeTractorGame());
+          document.getElementById('tg-close-btn').addEventListener('click', () => closeTractorGame());
+        }
+        if (TG.raf) cancelAnimationFrame(TG.raf);
+        TG.raf = requestAnimationFrame(_tgLoop);
+      }
+
+      function _tgLoop(ts) {
+        if (!TG.active) return;
+        const dt = Math.min((ts - TG.lastT) / 1000, 0.1); TG.lastT = ts;
+
+        if (!TG.gameOver) {
+          TG.timeLeft -= dt;
+          TG.comboTimer -= dt;
+          if (TG.comboTimer <= 0 && TG.combo > 0) TG.combo = 0;
+
+          // Direction input
+          let dx = 0, dy = 0;
+          if (TG.touchDir) { dx = TG.touchDir.x; dy = TG.touchDir.y; }
+          else {
+            if (TG.keys['ArrowLeft']  || TG.keys['a'] || TG.keys['A']) dx = -1;
+            if (TG.keys['ArrowRight'] || TG.keys['d'] || TG.keys['D']) dx =  1;
+            if (TG.keys['ArrowUp']    || TG.keys['w'] || TG.keys['W']) dy = -1;
+            if (TG.keys['ArrowDown']  || TG.keys['s'] || TG.keys['S']) dy =  1;
+          }
+          if (dx !== 0) { TG.vx = dx; TG.vy = 0; TG.angle = dx > 0 ? 0 : Math.PI; }
+          else if (dy !== 0) { TG.vy = dy; TG.vx = 0; TG.angle = dy > 0 ? Math.PI / 2 : -Math.PI / 2; }
+
+          TG.tx += TG.vx * TG.speed * dt;
+          TG.ty += TG.vy * TG.speed * dt;
+          if (TG.tx < 0) TG.tx = COLS - 0.01; if (TG.tx >= COLS) TG.tx = 0.01;
+          if (TG.ty < 0) TG.ty = ROWS - 0.01; if (TG.ty >= ROWS) TG.ty = 0.01;
+
+          // Harvest collision
+          const tc = Math.floor(TG.tx), tr = Math.floor(TG.ty);
+          const ti = TG.tiles.findIndex(t => t.c === tc && t.r === tr);
+          if (ti >= 0 && TG.tiles[ti].state === 'ready') {
+            const ht = TG.tiles[ti];
+            TG.tiles[ti] = { ...ht, state: 'tilled', crop: null, growProgress: 0, watered: false, qualityScore: 50 };
+            TG.combo = Math.min(TG.combo + 1, 10);
+            TG.comboTimer = 2.5;
+            const pts = 10 + (TG.combo - 1) * 5;
+            TG.score += pts;
+            TG.harvested.push({ c: ht.c, r: ht.r, crop: ht.crop, qualityScore: Math.min(100, (ht.qualityScore || 50) + 10) });
+            const hpx = OX + (tc + 0.5) * CELL * SCALE, hpy = OY + (tr + 0.5) * CELL * SCALE;
+            const icon = CROPS[ht.crop]?.icon || '🌾';
+            for (let i = 0; i < 5; i++) {
+              const a = (i / 5) * Math.PI * 2;
+              TG.parts.push({ x: hpx, y: hpy, vx: Math.cos(a) * 72, vy: Math.sin(a) * 72 - 18, life: 0.9, txt: icon, sc: false });
+            }
+            TG.parts.push({ x: hpx, y: hpy - 14 * SCALE, vx: 0, vy: -48, life: 1.2, txt: '+' + pts, sc: true, col: TG.combo >= 3 ? '#FF8020' : '#FFD700' });
+          }
+
+          TG.parts = TG.parts.filter(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; return p.life > 0; });
+
+          const remaining = TG.tiles.filter(t => t.state === 'ready').length;
+          if (TG.timeLeft <= 0 || remaining === 0) {
+            TG.timeLeft = Math.max(0, TG.timeLeft);
+            TG.gameOver = true;
+            _tgShowEnd();
+          }
+
+          const timerEl = document.getElementById('tg-timer');
+          const scoreEl = document.getElementById('tg-score');
+          const comboEl = document.getElementById('tg-combo');
+          if (timerEl) { timerEl.textContent = Math.ceil(TG.timeLeft) + 's'; timerEl.style.color = TG.timeLeft < 10 ? '#FF2020' : TG.timeLeft < 20 ? '#FF8020' : '#FF6040'; }
+          if (scoreEl) scoreEl.textContent = TG.score + ' puan';
+          if (comboEl) comboEl.textContent = TG.combo >= 2 ? 'x' + TG.combo + ' KOMBO 🔥' : '';
+        }
+
+        _tgDraw();
+        TG.raf = requestAnimationFrame(_tgLoop);
+      }
+
+      function _tgDraw() {
+        const sc = SCALE;
+        ctx.fillStyle = '#1E3A10'; ctx.fillRect(0, 0, W, H);
+        TG.tiles.forEach(tile => {
+          const x = OX + tile.c * CELL * sc, y = OY + tile.r * CELL * sc, cs = CELL * sc;
+          if (tile.state === 'grass') {
+            ctx.fillStyle = (tile.c + tile.r) % 2 === 0 ? '#2D6A1A' : '#255610';
+          } else if (tile.state === 'tilled') {
+            ctx.fillStyle = '#6B4010';
+          } else {
+            ctx.fillStyle = '#5A3008';
+          }
+          ctx.fillRect(x, y, cs, cs);
+          if (tile.state === 'ready') {
+            const ga = 0.28 + Math.sin(performance.now() * 0.004 + tile.c) * 0.12;
+            ctx.fillStyle = 'rgba(255,220,50,' + ga + ')'; ctx.fillRect(x, y, cs, cs);
+            const crop = CROPS[tile.crop];
+            if (crop) {
+              const fz = Math.round(Math.max(14, 20 * sc));
+              ctx.font = fz + 'px serif'; ctx.textAlign = 'center';
+              ctx.fillText(crop.icon, x + cs / 2, y + cs / 2 + fz * 0.36);
+              ctx.textAlign = 'left';
+            }
+          } else if (tile.state === 'planted' && CROPS[tile.crop]) {
+            const fz = Math.round(Math.max(9, 11 * sc));
+            ctx.font = fz + 'px serif'; ctx.globalAlpha = 0.65; ctx.textAlign = 'center';
+            ctx.fillText(CROPS[tile.crop].icon, x + cs / 2, y + cs / 2 + fz * 0.36);
+            ctx.textAlign = 'left'; ctx.globalAlpha = 1;
+          }
+          ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, cs, cs);
+        });
+        _tgDrawTractor();
+        TG.parts.forEach(p => {
+          ctx.globalAlpha = Math.max(0, p.life);
+          if (p.sc) { ctx.fillStyle = p.col || '#FFD700'; ctx.font = 'bold ' + Math.round(13 * sc) + 'px Nunito,sans-serif'; }
+          else { ctx.font = Math.round(11 * sc) + 'px serif'; }
+          ctx.textAlign = 'center'; ctx.fillText(p.txt, p.x, p.y); ctx.textAlign = 'left'; ctx.globalAlpha = 1;
+        });
+        if (!TG.gameOver) {
+          const bw = W * 0.54, bx = (W - bw) / 2, by = 44 * sc;
+          ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(bx, by, bw, 7 * sc);
+          const pct = Math.max(0, TG.timeLeft / 45);
+          ctx.fillStyle = pct > 0.5 ? '#40DD40' : pct > 0.25 ? '#FFAA20' : '#FF3020';
+          ctx.fillRect(bx, by, bw * pct, 7 * sc);
+        }
+      }
+
+      function _tgDrawTractor() {
+        const sc = SCALE;
+        const tpx = OX + TG.tx * CELL * sc, tpy = OY + TG.ty * CELL * sc;
+        ctx.save(); ctx.translate(tpx, tpy); ctx.rotate(TG.angle);
+        const bw = 11 * sc, bh = 20 * sc;
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(2 * sc, bh * 0.52, bw * 0.85, 5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+        // Body
+        ctx.fillStyle = '#F0A020'; ctx.fillRect(-bw, -bh / 2, bw * 2, bh);
+        // Cab
+        ctx.fillStyle = '#C88010'; ctx.fillRect(-bw * 0.7, -bh / 2, bw * 1.4, bh * 0.55);
+        // Windshield
+        ctx.fillStyle = 'rgba(160,210,255,0.78)'; ctx.fillRect(-bw * 0.5, -bh * 0.44, bw, bh * 0.28);
+        // Wheels (back large, front small)
+        [[-bw - 4 * sc, bh * 0.06, 7 * sc, 9 * sc, '#1A1A1A'], [bw - 3 * sc, bh * 0.06, 7 * sc, 9 * sc, '#1A1A1A'],
+         [-bw - 3 * sc, -bh * 0.42, 5 * sc, 7 * sc, '#222'],   [bw - 2 * sc, -bh * 0.42, 5 * sc, 7 * sc, '#222']].forEach(([rx, ry, rw, rh, col]) => {
+          ctx.fillStyle = col; ctx.fillRect(rx, ry, rw, rh);
+          ctx.fillStyle = '#333'; ctx.fillRect(rx + sc, ry + sc, rw - 2 * sc, rh - 2 * sc);
+        });
+        // Exhaust puff
+        const ea = 0.3 + Math.sin(performance.now() * 0.013) * 0.2;
+        ctx.fillStyle = 'rgba(120,100,80,' + ea + ')';
+        ctx.beginPath(); ctx.arc(-bw * 0.25, bh * 0.54, 4 * sc, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-bw * 0.3, bh * 0.54 + 6 * sc, 2.5 * sc, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+
+      function _tgShowEnd() {
+        const remaining = TG.tiles.filter(t => t.state === 'ready').length;
+        const total = TG.harvested.length;
+        const allDone = remaining === 0 && total > 0;
+        document.getElementById('tg-result-title').textContent = allDone ? '🏆 Mükemmel Hasat!' : '⏱ Süre Doldu!';
+        document.getElementById('tg-result-stats').innerHTML =
+          '🌾 Hasat edilen: <b>' + total + ' ekin</b><br>' +
+          '⏱ Kalan süre: <b>' + Math.ceil(Math.max(0, TG.timeLeft)) + 's</b><br>' +
+          '⭐ Puan: <b>' + TG.score + '</b>' + (allDone ? '<br>🏅 Tam hasat bonusu!' : '');
+        const el = document.getElementById('tg-endscreen');
+        if (el) el.style.display = 'flex';
+      }
+
+      function closeTractorGame() {
+        TG.active = false;
+        if (TG.raf) { cancelAnimationFrame(TG.raf); TG.raf = null; }
+        document.getElementById('tractor-overlay').style.display = 'none';
+        const harvestedList = TG.harvested.slice();
+        TG.harvested = [];
+        if (harvestedList.length === 0) return;
+        showMsg('⏳ Hasat sonuçları uygulanıyor...', 2000);
+        callAPI('harvestBatch', { crops: harvestedList }).then(d => {
+          harvestedList.forEach(h => {
+            const t = tiles.find(t2 => t2.c === h.c && t2.r === h.r);
+            if (t) { t.state = 'tilled'; t.crop = null; t.growProgress = 0; t.watered = false; t.qualityScore = 50; }
+          });
+          gold = d.newGold; inventory = d.inventory;
+          _applyLvl(d); updateHUD(); saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
+          const bonusTxt = d.totalBonus > 0 ? ' +' + d.totalBonus + '₺ kalite bonusu!' : '';
+          showMsg('🚜 ' + harvestedList.length + ' ekin hasat edildi!' + bonusTxt, 3000);
+          if (d.totalBonus > 0) addParticle(OX + (COLS / 2) * CELL * SCALE, OY + (ROWS / 2) * CELL * SCALE, '+' + d.totalBonus + '₺', '#FFD700');
+          checkQuestProgress('harvest', harvestedList.length);
+          checkDailyQuestProgress('harvest', harvestedList.length);
+        }).catch(() => {
+          harvestedList.forEach(h => {
+            const t = tiles.find(t2 => t2.c === h.c && t2.r === h.r);
+            if (t) { t.state = 'tilled'; t.crop = null; t.growProgress = 0; t.watered = false; t.qualityScore = 50; }
+          });
+          saveGame();
+          showMsg('🚜 ' + harvestedList.length + ' ekin hasat edildi (çevrimdışı).', 2500);
+        });
+      }
+
       // ══════════════════════════════════════════════════════
       // KARAKTER ÖZELLEŞTIRME
       // ══════════════════════════════════════════════════════
@@ -3393,6 +3736,7 @@
         showMsg('🎉 ' + v.name + ' satın alındı!', 2000);
         const _tbBtn = document.getElementById('btn-' + id + '_row');
         if (_tbBtn) _tbBtn.style.display = '';
+        if (id === 'tractor') { const _tgBtn = document.getElementById('btn-tractor_game'); if (_tgBtn) _tgBtn.style.display = ''; }
         openGarage();
       }
       function upgradeTruck(id, stat) {
@@ -4548,7 +4892,7 @@
         }
 
         // --- Arms ---
-        const hasTool = currentTool === 'hoe' || currentTool === 'water' || !!CROPS[currentTool];
+        const hasTool = currentTool === 'hoe' || currentTool === 'water' || currentTool === 'harvest' || !!CROPS[currentTool];
         ctx.save(); ctx.translate(px - 9 * sc, bodyY + 4 * sc); ctx.rotate((-armSwing - (hasTool ? 20 : 0)) * Math.PI / 180);
         ctx.fillStyle = '#F5C5A0'; ctx.fillRect(-3 * sc, 0, 6 * sc, 14 * sc); ctx.restore();
         ctx.save(); ctx.translate(px + 9 * sc, bodyY + 4 * sc); ctx.rotate((armSwing + (hasTool ? -30 : 0)) * Math.PI / 180);
@@ -4569,6 +4913,13 @@
           ctx.fillStyle = '#A07010'; ctx.fillRect(px + 9 * sc, bodyY + 1 * sc, 9 * sc, 3 * sc);
           ctx.font = (7 * sc) + 'px sans-serif'; ctx.textAlign = 'center';
           ctx.fillText(_ci, px + 13.5 * sc, bodyY + 8.5 * sc); ctx.textAlign = 'left';
+        } else if (currentTool === 'harvest') {
+          // Orak — yay bıçak + sap
+          ctx.strokeStyle = '#B8B8B8'; ctx.lineWidth = 2.2 * sc; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.arc(px + 17 * sc, bodyY - 2 * sc, 10 * sc, Math.PI * 0.55, Math.PI * 1.75); ctx.stroke();
+          ctx.fillStyle = '#D4B060'; ctx.fillRect(px + 9 * sc, bodyY, 3.5 * sc, 13 * sc);
+          ctx.fillStyle = '#A08030'; ctx.fillRect(px + 8 * sc, bodyY, 5.5 * sc, 3 * sc);
+          ctx.lineCap = 'butt';
         }
 
         // --- Hair (behind head) ---
@@ -4629,16 +4980,27 @@
       // ══ MAIN LOOP ══
       const keys2 = {};
       window.addEventListener('keydown', e => {
-        keys2[e.key] = true; if (PU.active) PU.keys = keys2;
-        if (['ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
-        if (e.key === 'Escape') closeModal();
+        keys2[e.key] = true;
+        if (PU.active) PU.keys = keys2;
+        if (TG.active) {
+          TG.keys[e.key] = true;
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+        } else {
+          if (['ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
+        }
+        if (e.key === 'Escape') { if (TG.active) closeTractorGame(); else closeModal(); }
       });
-      window.addEventListener('keyup', e => { keys2[e.key] = false; if (PU.active) PU.keys = keys2; });
+      window.addEventListener('keyup', e => {
+        keys2[e.key] = false;
+        if (PU.active) PU.keys = keys2;
+        if (TG.active) TG.keys[e.key] = false;
+      });
 
       let mvT = 0, lastGL = 0;
       function mainLoop(ts) {
         const dt = Math.min((ts - lastGL) / 1000, .1); lastGL = ts;
         if (PU.active) { PU.keys = keys2; requestAnimationFrame(mainLoop); return; }
+        if (TG.active) { requestAnimationFrame(mainLoop); return; }
         animT += dt * 60; gameTime += dt * 2;
         if (gameTime >= 24 * 60) {
           gameTime -= 24 * 60; dayCount++; energy = Math.min(maxEnergy, energy + 30);
@@ -4795,6 +5157,10 @@
           const _tb = document.getElementById('btn-tractor_row'), _cb = document.getElementById('btn-combine_row');
           if (_tb) _tb.style.display = ownedFarmVehicles.includes('tractor') ? '' : 'none';
           if (_cb) _cb.style.display = ownedFarmVehicles.includes('combine') ? '' : 'none';
+          const _sbBtn = document.getElementById('btn-seeder_row'), _spBtn = document.getElementById('btn-sprayer_row'), _tgBtn = document.getElementById('btn-tractor_game');
+          if (_sbBtn) _sbBtn.style.display = ownedFarmVehicles.includes('seeder') ? '' : 'none';
+          if (_spBtn) _spBtn.style.display = ownedFarmVehicles.includes('sprayer') ? '' : 'none';
+          if (_tgBtn) _tgBtn.style.display = ownedFarmVehicles.includes('tractor') ? '' : 'none';
           const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
           if (isMobile) {
             let tMoved = false;
