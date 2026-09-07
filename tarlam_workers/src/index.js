@@ -553,7 +553,8 @@ const routes = {
     const def = GAME_CONFIG.animals[animalType];
     if (!def) return err('Geçersiz hayvan türü');
     if ((data.gold || 0) < def.buy) return err(`Yeterli altın yok (gereken: ${def.buy}₺)`);
-    const newId     = (data.animalId || 1) + 1;
+    const existingMax = (data.animals || []).reduce((m, a) => Math.max(m, a.id || 0), 0);
+    const newId     = Math.max(data.animalId || 1, existingMax) + 1;
     const newAnimal = {
       id: newId, type: animalType,
       name: animalType === 'cow' ? `İnek #${newId}` : animalType === 'sheep' ? `Koyun #${newId}` : `Tavuk #${newId}`,
@@ -570,9 +571,9 @@ const routes = {
     return ok({ success: true, newGold: data.gold - def.buy, animal: newAnimal, ...lvl });
   }),
 
-  feedAnimal: (req, env) => act(req, env, async (uid, data, { animalId, clientHunger, clientHappy }, tok) => {
+  feedAnimal: (req, env) => act(req, env, async (uid, data, { animalId, animalType, clientHunger, clientHappy }, tok) => {
     const animals = data.animals || [];
-    const aIdx    = animals.findIndex(a => a.id === animalId);
+    const aIdx    = animals.findIndex(a => a.id === animalId && (!animalType || a.type === animalType));
     if (aIdx < 0) return err('Hayvan bulunamadı');
     const animal  = animals[aIdx];
     const def     = GAME_CONFIG.animals[animal.type];
@@ -592,9 +593,9 @@ const routes = {
     return ok({ success: true, animalId, newHunger, newHappy, inventory: newInv });
   }),
 
-  collectProduce: (req, env) => act(req, env, async (uid, data, { animalId }, tok) => {
+  collectProduce: (req, env) => act(req, env, async (uid, data, { animalId, animalType }, tok) => {
     const animals = data.animals || [];
-    const aIdx    = animals.findIndex(a => a.id === animalId);
+    const aIdx    = animals.findIndex(a => a.id === animalId && (!animalType || a.type === animalType));
     if (aIdx < 0) return err('Hayvan bulunamadı');
     const animal  = animals[aIdx];
     if (!animal.readyProduce) return err('Ürün hazır değil');
@@ -607,23 +608,25 @@ const routes = {
     return ok({ success: true, produceItem: def.produceItem, inventory: newInv, ...lvl });
   }),
 
-  breedAnimal: (req, env) => act(req, env, async (uid, data, { animalId }, tok) => {
+  breedAnimal: (req, env) => act(req, env, async (uid, data, { animalId, animalType }, tok) => {
     const animals = data.animals || [];
-    const animal  = animals.find(a => a.id === animalId);
-    if (!animal) return err('Hayvan bulunamadı');
+    const aIdx    = animals.findIndex(a => a.id === animalId && (!animalType || a.type === animalType));
+    if (aIdx < 0) return err('Hayvan bulunamadı');
+    const animal  = animals[aIdx];
     if (animal.pregnant) return err('Zaten gebe');
     if (animals.filter(a => a.type === animal.type).length < 2) return err('Aynı türden 2. hayvan gerekli');
-    const newAnimals = animals.map(a => a.id === animalId ? { ...a, pregnant: true, pregnancyDays: 0 } : a);
+    const newAnimals = animals.map((a, i) => i === aIdx ? { ...a, pregnant: true, pregnancyDays: 0 } : a);
     await fsUpdate(`users/${uid}/gameData/save`, { animals: newAnimals }, tok);
     return ok({ success: true, gestationDays: GAME_CONFIG.animals[animal.type].gestationDays });
   }),
 
-  slaughterAnimal: (req, env) => act(req, env, async (uid, data, { animalId }, tok) => {
+  slaughterAnimal: (req, env) => act(req, env, async (uid, data, { animalId, animalType }, tok) => {
     const animals = data.animals || [];
-    const animal  = animals.find(a => a.id === animalId);
-    if (!animal) return err('Hayvan bulunamadı');
+    const aIdx    = animals.findIndex(a => a.id === animalId && (!animalType || a.type === animalType));
+    if (aIdx < 0) return err('Hayvan bulunamadı');
+    const animal     = animals[aIdx];
     const def        = GAME_CONFIG.animals[animal.type];
-    const newAnimals = animals.filter(a => a.id !== animalId);
+    const newAnimals = animals.filter((_, i) => i !== aIdx);
     const inv        = data.inventory || {};
     const newInv     = { ...inv, meat: (inv.meat || 0) + def.slaughterMeat };
     const qp         = { ...(data.questProgress || {}), slaughter: ((data.questProgress || {}).slaughter || 0) + def.slaughterMeat };
@@ -632,14 +635,15 @@ const routes = {
     return ok({ success: true, meatGained: def.slaughterMeat, inventory: newInv, ...lvl });
   }),
 
-  sellAnimal: (req, env) => act(req, env, async (uid, data, { animalId }, tok) => {
+  sellAnimal: (req, env) => act(req, env, async (uid, data, { animalId, animalType }, tok) => {
     const animals = data.animals || [];
-    const animal  = animals.find(a => a.id === animalId);
-    if (!animal) return err('Hayvan bulunamadı');
+    const aIdx    = animals.findIndex(a => a.id === animalId && (!animalType || a.type === animalType));
+    if (aIdx < 0) return err('Hayvan bulunamadı');
+    const animal       = animals[aIdx];
     const def          = GAME_CONFIG.animals[animal.type];
     const newGold      = (data.gold || 0) + def.sellPrice;
     const newTotalGold = (data.totalGoldEarned || 0) + def.sellPrice;
-    const newAnimals   = animals.filter(a => a.id !== animalId);
+    const newAnimals   = animals.filter((_, i) => i !== aIdx);
     const lvl          = calcXP(data.xp, data.level, data.maxXp, 5);
     await fsUpdate(`users/${uid}/gameData/save`, { animals: newAnimals, gold: newGold, totalGoldEarned: newTotalGold, ...lvl }, tok);
     return ok({ success: true, newGold, earned: def.sellPrice, ...lvl });

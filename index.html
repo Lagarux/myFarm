@@ -1396,6 +1396,7 @@
             }
           }
           animals = (d.animals || []).map(a => ({ ...a })); animalId = d.animalId || 1;
+          { const _s = new Set(); let _mx = animalId; animals = animals.map(a => { _mx = Math.max(_mx, a.id||0); if (_s.has(a.id)) { _mx++; return { ...a, id: _mx }; } _s.add(a.id); return a; }); animalId = _mx; }
           gameTime = d.gameTime || 6 * 60; dayCount = d.dayCount || 1; totalGoldEarned = d.totalGoldEarned || 0;
           weather = d.weather || 'sunny'; weatherTimer = d.weatherTimer || 300;
           activeQuests = d.activeQuests || []; completedQuests = d.completedQuests || [];
@@ -2044,11 +2045,11 @@
         <div class="abar-label" style="margin-top:4px;">😊 Mutluluk: ${Math.floor(a.happy)}%</div>
         <div class="abar-wrap"><div class="abar" style="width:${a.happy}%;background:${hpc}"></div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-          <button class="mbtn" onclick="feedAnimal(${a.id})">🍽️ Besle</button>
+          <button class="mbtn" onclick="feedAnimal(${a.id},'${a.type}')">🍽️ Besle</button>
           ${canMG ? `<button class="mbtn blue" onclick="startAnimalMiniGame(${a.id},'${a.type}')">${MG_LABEL[a.type]}</button>` : ''}
-          ${!a.pregnant && a.age >= 5 ? `<button class="mbtn blue" onclick="breedAnimal(${a.id})">🍀 Çiftleş</button>` : ''}
-          <button class="mbtn red" onclick="confirmSlaughter(${a.id})">🔪 Mezbaha</button>
-          <button class="mbtn gold" onclick="sellAnimal(${a.id})">💰 Sat ${d.sellPrice}₺</button>
+          ${!a.pregnant && a.age >= 5 ? `<button class="mbtn blue" onclick="breedAnimal(${a.id},'${a.type}')">🍀 Çiftleş</button>` : ''}
+          <button class="mbtn red" onclick="confirmSlaughter(${a.id},'${a.type}')">🔪 Mezbaha</button>
+          <button class="mbtn gold" onclick="sellAnimal(${a.id},'${a.type}')">💰 Sat ${d.sellPrice}₺</button>
         </div>
       </div>`;
           });
@@ -2057,17 +2058,18 @@
       }
       function buyAnimal(type) {
         callAPI('buyAnimal', { animalType: type }).then(d => {
-          gold = d.newGold; animals.push(d.animal); _applyLvl(d);
+          gold = d.newGold; animals.push(d.animal); animalId = d.animal.id; _applyLvl(d);
           checkQuestProgress('buy_animal', 1, true); updateHUD(); openBarn();
+          saveGame(); if (_SEC._uid) _saveToCloud(_SEC._uid);
           showMsg(ADEF[type].emoji + ' ' + ADEF[type].name + ' satın alındı!');
         }).catch(e => showMsg('❌ ' + e.message));
       }
-      function feedAnimal(id) {
-        const aRef = animals.find(x => x.id === id);
+      function feedAnimal(id, type) {
+        const aRef = animals.find(x => x.id === id && (!type || x.type === type));
         const cHunger = aRef ? Math.round(aRef.hunger) : undefined;
         const cHappy  = aRef ? Math.round(aRef.happy)  : undefined;
-        callAPI('feedAnimal', { animalId: id, clientHunger: cHunger, clientHappy: cHappy }).then(d => {
-          const a = animals.find(x => x.id === id);
+        callAPI('feedAnimal', { animalId: id, animalType: type, clientHunger: cHunger, clientHappy: cHappy }).then(d => {
+          const a = animals.find(x => x.id === id && (!type || x.type === type));
           if (a) {
             // Client mevcut değeri + 40 ile server'ın döndürdüğü değerin yükseğini al
             const baseH = typeof d.newHunger === 'number' ? d.newHunger : Math.min(100, a.hunger + 40);
@@ -2082,45 +2084,47 @@
           showMsg((ADEF[a?.type]?.emoji || '🐄') + ' beslendi! 🍽️ +40% · 😊 +25%');
         }).catch(e => showMsg('❌ ' + e.message));
       }
-      function collectProduce(id) {
-        callAPI('collectProduce', { animalId: id }).then(d => {
-          const a = animals.find(x => x.id === id);
+      function collectProduce(id, type) {
+        callAPI('collectProduce', { animalId: id, animalType: type }).then(d => {
+          const a = animals.find(x => x.id === id && (!type || x.type === type));
           if (a) { a.readyProduce = false; a.produceTimer = 0; }
           inventory = d.inventory; _applyLvl(d); updateHUD(); openBarn();
           checkDailyQuestProgress('collect_produce', 1);
           showMsg(ADEF[a?.type]?.emoji + ' → +1 ' + d.produceItem + '!');
         }).catch(e => showMsg('❌ ' + e.message));
       }
-      function breedAnimal(id) {
-        callAPI('breedAnimal', { animalId: id }).then(d => {
-          const a = animals.find(x => x.id === id);
+      function breedAnimal(id, type) {
+        callAPI('breedAnimal', { animalId: id, animalType: type }).then(d => {
+          const a = animals.find(x => x.id === id && (!type || x.type === type));
           if (a) { a.pregnant = true; a.pregnancyDays = 0; }
           openBarn(); showMsg('🍀 Gebe! ' + d.gestationDays + ' gün sonra doğum.');
         }).catch(e => showMsg('❌ ' + e.message));
       }
-      function confirmSlaughter(id) {
-        const a = animals.find(x => x.id === id); if (!a) return; const d = ADEF[a.type];
+      function confirmSlaughter(id, type) {
+        const a = animals.find(x => x.id === id && (!type || x.type === type)); if (!a) return; const d = ADEF[a.type];
         const mc = document.getElementById('modal-content');
         mc.innerHTML = `<button class="mclose" onclick="openBarn()">← Geri</button><h2>🔪 Mezbaha</h2>
   <div style="padding:12px 0;color:#FF9090;font-size:15px;">${d.emoji} <b>${a.name}</b><br>→ <b>${d.slaughterMeat} kg 🥩 et</b> elde edilir</div>
   <div style="color:#888;font-size:13px;margin-bottom:14px;">⚠️ Bu işlem geri alınamaz!</div>
   <div style="display:flex;gap:10px;">
-    <button class="mbtn red" onclick="slaughterAnimal(${id})">✅ Evet, Kes</button>
+    <button class="mbtn red" onclick="slaughterAnimal(${id},'${type}')">✅ Evet, Kes</button>
     <button class="mbtn" onclick="openBarn()">❌ Vazgeç</button>
   </div>`;
       }
-      function slaughterAnimal(id) {
-        callAPI('slaughterAnimal', { animalId: id }).then(d => {
-          animals = animals.filter(x => x.id !== id);
+      function slaughterAnimal(id, type) {
+        callAPI('slaughterAnimal', { animalId: id, animalType: type }).then(d => {
+          const _idx = animals.findIndex(x => x.id === id && (!type || x.type === type));
+          if (_idx >= 0) animals.splice(_idx, 1);
           inventory = d.inventory; _applyLvl(d);
           checkQuestProgress('slaughter', d.meatGained, true);
           updateHUD(); closeModal(); showMsg('🔪 Hayvan kesildi! +' + d.meatGained + ' 🥩');
         }).catch(e => showMsg('❌ ' + e.message));
       }
-      function sellAnimal(id) {
-        const a = animals.find(x => x.id === id); if (!a) return;
-        callAPI('sellAnimal', { animalId: id }).then(d => {
-          animals = animals.filter(x => x.id !== id);
+      function sellAnimal(id, type) {
+        const a = animals.find(x => x.id === id && (!type || x.type === type)); if (!a) return;
+        callAPI('sellAnimal', { animalId: id, animalType: type }).then(d => {
+          const _idx = animals.findIndex(x => x.id === id && (!type || x.type === type));
+          if (_idx >= 0) animals.splice(_idx, 1);
           gold = d.newGold; _applyLvl(d); updateHUD(); openBarn();
           showMsg('💰 ' + a.name + ' ' + d.earned + "₺'ye satıldı!");
         }).catch(e => showMsg('❌ ' + e.message));
@@ -5229,6 +5233,7 @@
             }
           }
           animals = (d.animals || []).map(a => ({ ...a })); animalId = d.animalId || 1;
+          { const _s = new Set(); let _mx = animalId; animals = animals.map(a => { _mx = Math.max(_mx, a.id||0); if (_s.has(a.id)) { _mx++; return { ...a, id: _mx }; } _s.add(a.id); return a; }); animalId = _mx; }
           gameTime = d.gameTime || 6 * 60; dayCount = d.dayCount || 1; totalGoldEarned = d.totalGoldEarned || 0;
           weather = d.weather || 'sunny'; weatherTimer = d.weatherTimer || 300;
           activeQuests = d.activeQuests || []; completedQuests = d.completedQuests || [];
